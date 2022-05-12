@@ -70,7 +70,7 @@ public:
         front.y = cos(glm::radians(pitch))*sin(glm::radians(yaw));
         front.z = sin(glm::radians(pitch));
         front = normalize(front);
-        right = glm::normalize(glm::cross(front, worldUp));
+        right = glm::normalize(glm::cross(front, world_up));
         up = glm::normalize(glm::cross(right, front));
     }
 

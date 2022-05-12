@@ -3,12 +3,10 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-#include<iostream>
-#include"../headers/shader.h"
+#include<cstdio>
+#include"../include/shader.hpp"
 
-using namespace std;
-
-int winWidth = 900, winHeight = 900;
+int win_width = 900, win_height = 900;
 const char *label = "Point light calculations";
 
 void process_hardware_inputs(GLFWwindow *win)
@@ -33,10 +31,10 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     //create a window object at the center of the screen
-    GLFWwindow *window = glfwCreateWindow(winWidth, winHeight, label, NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, label, NULL, NULL);
     if (window == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -44,16 +42,16 @@ int main()
     int monitx, monity; //monitor's top left corner coordinates in the virtual space
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     glfwGetMonitorPos(monitor, &monitx, &monity);
-    cout << "Monitor's coordinates in virtual space : (" << monitx << "," << monity << ")\n";
+    printf("Monitor's coordinates in virtual space : (%d,%d)\n",monitx,monity);
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
-    glfwSetWindowPos( window, (monitx + mode->width - winWidth)/2, (monity + mode->height - winHeight)/2 );
+    glfwSetWindowPos( window, (monitx + mode->width - win_width)/2, (monity + mode->height - win_height)/2 );
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); //set framebuffer size callback function
 
     //validate glew
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
@@ -103,11 +101,11 @@ int main()
     };
 
     //create cube vao and vbo stuff
-    unsigned int cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glBindVertexArray(cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
+    unsigned int cube_vao, cube_vbo;
+    glGenVertexArrays(1, &cube_vao);
+    glBindVertexArray(cube_vao);
+    glGenBuffers(1, &cube_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, cube_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(geometry), geometry, GL_STATIC_DRAW);
     //vertex attributes
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
@@ -117,19 +115,19 @@ int main()
     glEnableVertexAttribArray(1);
 
     //create lamp (which is also a cube) vao and vbo stuff
-    unsigned int lampVAO, lampVBO;
-    glGenVertexArrays(1, &lampVAO);
-    glBindVertexArray(lampVAO);
-    glGenBuffers(1, &lampVBO);
-    glBindBuffer(GL_ARRAY_BUFFER, lampVBO);
+    unsigned int lamp_vao, lamp_vbo;
+    glGenVertexArrays(1, &lamp_vao);
+    glBindVertexArray(lamp_vao);
+    glGenBuffers(1, &lamp_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, lamp_vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(geometry), geometry, GL_STATIC_DRAW);
     //only vertex attributes are handled here because we want a single color for the lamp, thus no normals are needed
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
     //create shaders
-    shader cubeShad("../shaders/trans_mvpn.vert","../shaders/point_light_ads.frag");
-    shader lampShad("../shaders/trans_mvp.vert","../shaders/monochromatic.frag");
+    shader cube_shad("../shader/trans_mvpn.vert","../shader/point_light_ads.frag");
+    shader lamp_shad("../shader/trans_mvp.vert","../shader/monochromatic.frag");
 
     glEnable(GL_DEPTH_TEST); //enable depth - testing
     glClearColor(0.0f,0.0f,0.0f,1.0f); //background color
@@ -139,48 +137,48 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 lightPos = glm::vec3(0.0f,-2.5f,1.0f); //light position in world coordinates
-        glm::vec3 lightCol = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
-        glm::vec3 cubeCol = glm::vec3(0.8f,0.0f,0.0f); //model color
-        glm::vec3 lampCol = glm::vec3(1.0f,1.0f,1.0f); //lamp color
-        glm::vec3 camPos = glm::vec3(-5.0f,-5.0f,1.0f); //camera position in world coordinates
+        glm::vec3 light_pos = glm::vec3(0.0f,-2.5f,1.0f); //light position in world coordinates
+        glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
+        glm::vec3 cube_col = glm::vec3(0.8f,0.0f,0.0f); //model color
+        glm::vec3 lamp_col = glm::vec3(1.0f,1.0f,1.0f); //lamp color
+        glm::vec3 cam_pos = glm::vec3(-5.0f,-5.0f,1.0f); //camera position in world coordinates
 
-        //winWidth, winHeight are never updated because there's no corresponding "update code" in framebuffer_size_callback()
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)winWidth/(float)winHeight, 0.01f,100.0f);
-        glm::mat4 view = glm::lookAt(camPos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,1.0f));
+        //win_width, win_height are never updated because there's no corresponding "update code" in framebuffer_size_callback()
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/(float)win_height, 0.01f,100.0f);
+        glm::mat4 view = glm::lookAt(cam_pos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,1.0f));
         glm::mat4 model = glm::mat4(1.0f);
 
-        cubeShad.use();
+        cube_shad.use();
         model = glm::rotate(model, (0.5f*(float)glfwGetTime()), glm::vec3(1.0f,1.0f,1.0f));
-        cubeShad.set_mat4_uniform("projection", projection);
-        cubeShad.set_mat4_uniform("view", view);
-        cubeShad.set_mat4_uniform("model", model);
-        cubeShad.set_vec3_uniform("lightPos", lightPos);
-        cubeShad.set_vec3_uniform("camPos", camPos);
-        cubeShad.set_vec3_uniform("lightCol", lightCol);
-        cubeShad.set_vec3_uniform("modelCol", cubeCol);
-        glBindVertexArray(cubeVAO);
+        cube_shad.set_mat4_uniform("projection", projection);
+        cube_shad.set_mat4_uniform("view", view);
+        cube_shad.set_mat4_uniform("model", model);
+        cube_shad.set_vec3_uniform("light_pos", light_pos);
+        cube_shad.set_vec3_uniform("cam_pos", cam_pos);
+        cube_shad.set_vec3_uniform("light_col", light_col);
+        cube_shad.set_vec3_uniform("model_col", cube_col);
+        glBindVertexArray(cube_vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
-        lampShad.use();
+        lamp_shad.use();
         model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
+        model = glm::translate(model, light_pos);
         model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f));
-        lampShad.set_mat4_uniform("projection", projection);
-        lampShad.set_mat4_uniform("view", view);
-        lampShad.set_mat4_uniform("model", model);
-        lampShad.set_vec3_uniform("modelCol", lampCol);
-        glBindVertexArray(lampVAO);
+        lamp_shad.set_mat4_uniform("projection", projection);
+        lamp_shad.set_mat4_uniform("view", view);
+        lamp_shad.set_mat4_uniform("model", model);
+        lamp_shad.set_vec3_uniform("model_col", lamp_col);
+        glBindVertexArray(lamp_vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
 
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteBuffers(1, &cubeVBO);
-    glDeleteVertexArrays(1, &lampVAO);
-    glDeleteBuffers(1, &lampVBO);
+    glDeleteVertexArrays(1, &cube_vao);
+    glDeleteBuffers(1, &cube_vbo);
+    glDeleteVertexArrays(1, &lamp_vao);
+    glDeleteBuffers(1, &lamp_vbo);
 
     glfwTerminate();
     return 0;

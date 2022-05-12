@@ -3,18 +3,16 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-#include<iostream>
-#include"../headers/shader.h"
-#include"../headers/mesh.h"
-#include"../headers/camera.h"
+#include<cstdio>
+#include"../include/shader.hpp"
+#include"../include/mesh.hpp"
+#include"../include/camera.hpp"
 
-using namespace std;
+camera cam(glm::vec3(0.0f,-10.0f,2.0f)); //global camera object
 
-camera cam(glm::vec3(0.0f,-10.0f,0.0f)); //global camera object
-
-float t1 = 0.0f, t2, deltaTime;
-float xposPrevious, yposPrevious;
-bool firstTimeEnteredTheWindow = true;
+float t1 = 0.0f, t2, delta_time;
+float xpos_previous, ypos_previous;
+bool first_time_entered_the_window = true;
 
 void process_hardware_inputs(GLFWwindow *win)
 {
@@ -22,29 +20,29 @@ void process_hardware_inputs(GLFWwindow *win)
         glfwSetWindowShouldClose(win, true);
 
     if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
-        cam.translate_front(deltaTime);
+        cam.translate_front(delta_time);
     if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
-        cam.translate_back(deltaTime);
+        cam.translate_back(delta_time);
     if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
-        cam.translate_right(deltaTime);
+        cam.translate_right(delta_time);
     if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
-        cam.translate_left(deltaTime);
+        cam.translate_left(delta_time);
 }
 
 void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 {
-    if (firstTimeEnteredTheWindow)
+    if (first_time_entered_the_window)
     {
-        xposPrevious = xpos;
-        yposPrevious = ypos;
-        firstTimeEnteredTheWindow = false;
+        xpos_previous = xpos;
+        ypos_previous = ypos;
+        first_time_entered_the_window = false;
     }
 
-    float xoffset = xpos - xposPrevious;
-    float yoffset = ypos - yposPrevious;
+    float xoffset = xpos - xpos_previous;
+    float yoffset = ypos - ypos_previous;
 
-    xposPrevious = xpos;
-    yposPrevious = ypos;
+    xpos_previous = xpos;
+    ypos_previous = ypos;
 
     cam.rotate(xoffset, yoffset);
 }
@@ -76,34 +74,33 @@ int main()
     glfwSetCursorPosCallback(window, cursor_pos_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    int winWidth, winHeight;
-    glfwGetWindowSize(window, &winWidth, &winHeight);
-    cout << "Window size (in screen coordinates) = " << winWidth << ", " << winHeight << endl;
-    xposPrevious = winWidth/2.0f;
-    yposPrevious = winHeight/2.0f;
+    int win_width, win_height;
+    glfwGetWindowSize(window, &win_width, &win_height);
+    printf("Window size in screen coordinates = (%d, %d)\n",win_width, win_height);
+    xpos_previous = win_width/2.0f;
+    ypos_previous = win_height/2.0f;
 
     //validate glew
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
-    mesh suzanne("../models/smooth/suzanne.obj", 1,1,1);
-    mesh tree("../models/flat/low_poly_tree.obj", 1,1,1);
-    mesh man("../models/smooth/man.obj",1,1,1);
-    shader shad("../shaders/trans_mvpn.vert","../shaders/point_light_ad.frag");
+    mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
+    mesh ak47("../obj/vert_face_fnorm/ak47.obj", 1,1,1);
+    shader shad("../shader/trans_mvpn.vert","../shader/point_light_ad.frag");
     shad.use();
 
-    glm::vec3 lightPos = glm::vec3(0.0f,0.0f,60.0f); //light position in world coordinates
-    glm::vec3 lightCol = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
-    glm::vec3 modelCol = glm::vec3(0.1f,0.5f,0.9f); //color of the object
-    shad.set_vec3_uniform("lightPos", lightPos);
-    shad.set_vec3_uniform("lightCol", lightCol);
-    shad.set_vec3_uniform("modelCol", modelCol);
+    glm::vec3 light_pos = glm::vec3(0.0f,-5.0f,60.0f); //light position in world coordinates
+    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
+    glm::vec3 model_col = glm::vec3(0.1f,0.5f,0.9f); //color of the object
+    shad.set_vec3_uniform("light_pos", light_pos);
+    shad.set_vec3_uniform("light_col", light_col);
+    shad.set_vec3_uniform("model_col", model_col);
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)winWidth/(float)winHeight, 0.01f,100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/(float)win_height, 0.01f,100.0f);
     shad.set_mat4_uniform("projection", projection);
     glm::mat4 view, model;
 
@@ -112,7 +109,7 @@ int main()
     while (!glfwWindowShouldClose(window)) //game loop
     {
         t2 = glfwGetTime(); //elased time [sec] since glfwInit()
-        deltaTime = t2 - t1;
+        delta_time = t2 - t1;
         t1 = t2;
 
         process_hardware_inputs(window);
@@ -123,17 +120,12 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         shad.set_mat4_uniform("view", view);
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("camPos", cam.pos);
-        tree.draw_triangles(); //draw the tree at the default model position (model matrix = 1)
+        shad.set_vec3_uniform("cam_pos", cam.pos);
+        ak47.draw_triangles();
 
-        model = glm::translate(model,glm::vec3(4.0f,0.0f,0.0f)); //update the model matrix
-        shad.set_mat4_uniform("model", model); //inform the shader
-        suzanne.draw_triangles(); //draw suzanne at the new position
-
-        model = glm::mat4(1.0f); //set matrix = 1 so that the next operation begins from identity matrix
-        model = glm::translate(model, glm::vec3(-4.0f,0.0f,0.0f)); //update the model matrix
-        shad.set_mat4_uniform("model", model); //draw the man at the new position.
-        man.draw_triangles();
+        model = glm::translate(model,glm::vec3(0.0f,6.0f,0.0f));
+        shad.set_mat4_uniform("model", model);
+        suzanne.draw_triangles(); 
 
         glfwSwapBuffers(window);
         glfwPollEvents();

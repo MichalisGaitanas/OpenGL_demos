@@ -3,13 +3,11 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-#include<iostream>
-#include"../headers/shader.h"
-
-using namespace std;
+#include<cstdio>
+#include"../include/shader.hpp"
 
 int width = 800, height = 800;
-const char * label = "Rotating square";
+const char *label = "Rotating square";
 
 void process_hardware_inputs(GLFWwindow *win)
 {
@@ -35,7 +33,7 @@ int main()
     GLFWwindow *win = glfwCreateWindow(width, height, label, NULL, NULL);
     if (win == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -51,7 +49,7 @@ int main()
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
@@ -73,8 +71,8 @@ int main()
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
     glEnableVertexAttribArray(0);
 
-    shader shad("../shaders/trans_m.vert","../shaders/monochromatic.frag"); //shader objects
-    glm::vec3 modelCol = glm::vec3(1.0f,0.1f,0.1f);
+    shader shad("../shader/trans_m.vert","../shader/monochromatic.frag"); //shader objects
+    glm::vec3 model_col = glm::vec3(1.0f,0.1f,0.1f);
 
     glClearColor(1.0f,1.0f,1.0f,1.0f); //background color
     while (!glfwWindowShouldClose(win)) //rendering loop
@@ -88,7 +86,7 @@ int main()
 
         shad.use(); //activate the "shad" shader object
         shad.set_mat4_uniform("model", model); //pass the model variable to the shaders
-        shad.set_vec3_uniform("modelCol",modelCol);
+        shad.set_vec3_uniform("model_col",model_col);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

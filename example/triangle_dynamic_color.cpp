@@ -1,15 +1,13 @@
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
-#include<iostream>
+#include<cstdio>
 #include<cmath>
 
-using namespace std;
-
-const int winWidth = 900, winHeight = 750;
-const char *winLabel = "Triangle dynamic intensity";
+const int win_width = 900, win_height = 750;
+const char *win_label = "Triangle dynamic intensity";
 
 //vertex shader source code
-const char *vSource = "#version 330 core\n"
+const char *vsource = "#version 330 core\n"
                       "layout (location = 0) in vec3 pos;\n"
                       "void main()\n"
                       "{\n"
@@ -17,12 +15,12 @@ const char *vSource = "#version 330 core\n"
                       "}";
 
 //fragment shader source code
-const char *fSource = "#version 330 core\n"
-                      "out vec4 fragColor;\n"
+const char *fsource = "#version 330 core\n"
+                      "out vec4 frag_color;\n"
                       "uniform float intensity;\n"
                       "void main()\n"
                       "{\n"
-                      "   fragColor = intensity*vec4(1.0f,0.0f,0.0f,1.0f);\n"
+                      "   frag_color = intensity*vec4(1.0f,0.0f,0.0f,1.0f);\n"
                       "}";
 
 void process_hardware_inputs(GLFWwindow *win)
@@ -47,10 +45,10 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     //create a window object
-    GLFWwindow *win = glfwCreateWindow(winWidth, winHeight, winLabel, NULL, NULL);
+    GLFWwindow *win = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
     if (win == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -61,7 +59,7 @@ int main()
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
     
@@ -80,42 +78,42 @@ int main()
     glEnableVertexAttribArray(0);
     
     //vertex shader stuff
-    unsigned int vShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vShader, 1, &vSource, NULL);
-    glCompileShader(vShader);
+    unsigned int vshader = glCreateShader(GL_VERTEX_SHADER);
+    glShaderSource(vshader, 1, &vsource, NULL);
+    glCompileShader(vshader);
     int success;
-    char infoLog[512];
-    glGetShaderiv(vShader, GL_COMPILE_STATUS, &success);
+    char infolog[512];
+    glGetShaderiv(vshader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(vShader, 512, NULL, infoLog);
-        cout << "Error while compiling vertex shader.\n";
-        cout << infoLog << "\n";
+        glGetShaderInfoLog(vshader, 512, NULL, infolog);
+        printf("Error while compiling 'vertex' shader.\n");
+        printf("%s\n",infolog);
     }
     
     //fragment shader stuff
-    unsigned int fShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fShader, 1, &fSource, NULL);
-    glCompileShader(fShader);
-    glGetShaderiv(fShader, GL_COMPILE_STATUS, &success);
+    unsigned int fshader = glCreateShader(GL_FRAGMENT_SHADER);
+    glShaderSource(fshader, 1, &fsource, NULL);
+    glCompileShader(fshader);
+    glGetShaderiv(fshader, GL_COMPILE_STATUS, &success);
     if (!success)
     {
-        glGetShaderInfoLog(fShader, 512, NULL, infoLog);
-        cout << "Error while compiling fragment shader.\n";
-        cout << infoLog << "\n";
+        glGetShaderInfoLog(fshader, 512, NULL, infolog);
+        printf("Error while compiling 'fragment' shader.\n");
+        printf("%s\n",infolog);
     }
     
     //linking stuff
-    unsigned int shaderProg = glCreateProgram();
-    glAttachShader(shaderProg, vShader);
-    glAttachShader(shaderProg, fShader);
-    glLinkProgram(shaderProg);
-    glGetProgramiv(shaderProg, GL_LINK_STATUS, &success);
+    unsigned int shader_prog = glCreateProgram();
+    glAttachShader(shader_prog, vshader);
+    glAttachShader(shader_prog, fshader);
+    glLinkProgram(shader_prog);
+    glGetProgramiv(shader_prog, GL_LINK_STATUS, &success);
     if (!success)
     {
-        glGetProgramInfoLog(shaderProg, 512, NULL, infoLog);
-        cout << "Error while linking shader program.\n";
-        cout << infoLog << "\n";
+        glGetProgramInfoLog(shader_prog, 512, NULL, infolog);
+        printf("Error while linking shader program.\n");
+        printf("%s\n",infolog);
     }
     
     glClearColor(0.1f,0.1f,0.1f,1.0f); //background color
@@ -123,13 +121,12 @@ int main()
     {
         process_hardware_inputs(win);
         glClear(GL_COLOR_BUFFER_BIT);
-        glUseProgram(shaderProg);
+        glUseProgram(shader_prog);
             float t = glfwGetTime(); //elapsed time in seconds since glfwInit() was called
-            cout << "\r" << int(t) << " sec"; //print time in the terminal
-            cout.flush();
-            float intensity = abs(cos(t)); //let the intensity of the triangle be dynamic (changing) based on f(t) = |sin(t)|
-            int intensityLocation = glGetUniformLocation(shaderProg, "intensity"); //intensity variable location so that the shaders know about it
-            glUniform1f(intensityLocation, intensity);
+            printf("\r %d [sec]", (int)t); fflush(stdout); //print time in the terminal
+            float intensity = (float)fabs(cos(t)); //let the intensity of the triangle be dynamic (changing) based on f(t) = |sin(t)|
+            int intensity_location = glGetUniformLocation(shader_prog, "intensity"); //intensity variable location so that the shaders know about it
+            glUniform1f(intensity_location, intensity);
             glBindVertexArray(vao);
             glDrawArrays(GL_TRIANGLES, 0, 3);
         glfwSwapBuffers(win);
@@ -139,9 +136,9 @@ int main()
     //free resources
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
-    glDeleteProgram(shaderProg);
-    glDeleteShader(vShader);
-    glDeleteShader(fShader);
+    glDeleteProgram(shader_prog);
+    glDeleteShader(vshader);
+    glDeleteShader(fshader);
     
     glfwTerminate();
     return 0;

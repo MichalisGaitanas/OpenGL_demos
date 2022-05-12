@@ -10,7 +10,12 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
-camera cam(glm::vec3(0.0f,-10.0f,0.0f)); //global camera object
+camera cam(glm::vec3(0.0f,-4.0f,2.0f),
+           glm::vec3(0.0f,0.0f,1.0f),
+           90.0f,
+           -15.0f,
+           20.0f,
+           0.1f);
 
 float t1 = 0.0f, t2, delta_time;
 float xpos_previous, ypos_previous;
@@ -90,7 +95,7 @@ int main()
     }
 
     mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
-    mesh flashlight("../obj/vert_face_fnorm/flashlight.obj", 1,1,1);
+    mesh terrain("../obj/vert_face_snorm/terrain20x20.obj", 1,1,1);
     shader shad("../shader/trans_mvpn.vert","../shader/flashlight_ad.frag"); //create shader
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/win_height, 0.01f,1000.0f);
@@ -98,13 +103,13 @@ int main()
 
     glm::vec3 light_pos; //light position in world coordinates
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
-    glm::vec3 model_col = glm::vec3(0.5f,0.5f,0.5f); //color of the cuboids
+    glm::vec3 terrain_col = glm::vec3(0.0f,0.5f,0.0f);
+    glm::vec3 suzanne_col = glm::vec3(0.75f,0.0f,0.0f);
     float cos_cuttoff = cos(glm::radians(10.0f));
 
     shad.use();
     shad.set_mat4_uniform("projection", projection);
     shad.set_vec3_uniform("light_col", light_col);
-    shad.set_vec3_uniform("model_col", model_col);
     shad.set_float_uniform("cos_cuttoff", cos_cuttoff);
 
     glEnable(GL_DEPTH_TEST); //enable depth - testing
@@ -121,22 +126,31 @@ int main()
 
         model = glm::mat4(1.0f);
         view = cam.view();
-        light_pos = cam.pos;
+        light_pos = cam.pos + glm::vec3(0.1f,0.15f,0.0f);
         shad.set_mat4_uniform("model", model);
         shad.set_mat4_uniform("view", view);
         shad.set_vec3_uniform("cam_pos", cam.pos);
         shad.set_vec3_uniform("cam_front", cam.front);
         shad.set_vec3_uniform("light_pos",light_pos);
-        tree.draw_triangles(); //draw the tree at the default model position (model matrix = 1)
+        shad.set_vec3_uniform("model_col", terrain_col);
 
-        model = glm::translate(model,glm::vec3(4.0f,0.0f,0.0f)); //update the model matrix
-        shad.set_mat4_uniform("model", model); //inform the shader
-        suzanne.draw_triangles(); //draw suzanne at the new (translated) position
+        terrain.draw_triangles();
 
-        model = glm::mat4(1.0f); //set matrix = 1 so that the next operation begins from identity matrix
-        model = glm::translate(model,glm::vec3(-4.0f,0.0f,0.0f)); //update the model matrix
-        shad.set_mat4_uniform("model", model); //draw the man at the new (translated) position.
-        man.draw_triangles();
+        shad.set_vec3_uniform("model_col", suzanne_col);
+
+        model = glm::translate(model, glm::vec3(4.0f,0.0f,1.0f));
+        shad.set_mat4_uniform("model", model); 
+        suzanne.draw_triangles(); 
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,glm::vec3(-4.0f,0.0f,1.0f));
+        shad.set_mat4_uniform("model", model);
+        suzanne.draw_triangles();
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model,glm::vec3(0.0f,0.0f,1.0f));
+        shad.set_mat4_uniform("model", model);
+        suzanne.draw_triangles();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

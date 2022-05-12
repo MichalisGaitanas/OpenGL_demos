@@ -1,12 +1,10 @@
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
-#include<iostream>
-#include"../headers/shader.h" //inlcude the custom shader header
+#include<cstdio>
+#include"../include/shader.hpp" //inlcude the custom shader header
 
-using namespace std;
-
-const int winWidth = 800, winHeight = 700;
-const char *winLabel = "Triangle shader class";
+const int win_width = 800, win_height = 700;
+const char *win_label = "Triangle shader class";
 
 void process_hardware_inputs(GLFWwindow *win)
 {
@@ -30,10 +28,10 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     //create a window object
-    GLFWwindow *win = glfwCreateWindow(winWidth, winHeight, winLabel, NULL, NULL);
+    GLFWwindow *win = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
     if (win == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -44,7 +42,7 @@ int main()
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
     
@@ -64,8 +62,8 @@ int main()
     glEnableVertexAttribArray(0);
     
     //creating a shader object
-    shader shad("../shaders/trans_nothing.vert","../shaders/monochromatic.frag");
-    glm::vec3 triangleCol = glm::vec3(1.0f,0.5f,0.2f);
+    shader shad("../shader/trans_nothing.vert","../shader/monochromatic.frag");
+    glm::vec3 triangle_col = glm::vec3(1.0f,0.5f,0.2f);
     
     glClearColor(0.1f,0.5f,0.2f,1.0f); //background color
     while (!glfwWindowShouldClose(win))
@@ -74,7 +72,7 @@ int main()
         
         glClear(GL_COLOR_BUFFER_BIT);
         shad.use(); //use the "shad" shader object ( same as glUseProgram(shad_ID) )
-        shad.set_vec3_uniform("modelCol",triangleCol);
+        shad.set_vec3_uniform("model_col",triangle_col);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 3);
         

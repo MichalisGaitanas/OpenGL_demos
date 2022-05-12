@@ -3,11 +3,9 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-#include<iostream>
+#include<cstdio>
 #include<cmath>
-#include"../headers/shader.h"
-
-using namespace std;
+#include"../include/shader.hpp"
 
 int width = 800, height = 800;
 const char *label = "Rotating cube";
@@ -36,7 +34,7 @@ int main()
     GLFWwindow *window = glfwCreateWindow(width, height, label, NULL, NULL);
     if (window == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -52,7 +50,7 @@ int main()
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
@@ -108,7 +106,7 @@ int main()
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
     glEnableVertexAttribArray(0);
 
-    shader shad("../shaders/trans_mp.vert","../shaders/monochromatic.frag");
+    shader shad("../shader/trans_mp.vert","../shader/monochromatic.frag");
     shad.use();
 
     glEnable(GL_DEPTH_TEST); //enable depth - testing to correctly render 3D stuff
@@ -118,8 +116,8 @@ int main()
         process_hardware_inputs(window);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 modelColor = glm::vec3(1.0f,0.1f,0.1f);
-        shad.set_vec3_uniform("modelCol",modelColor);
+        glm::vec3 model_col = glm::vec3(1.0f,0.1f,0.1f);
+        shad.set_vec3_uniform("model_col",model_col);
 
         //width, height are never updated because there's no corresponding "update code" in framebuffer_size_callback()
         glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)width/height, 0.01f,100.0f);

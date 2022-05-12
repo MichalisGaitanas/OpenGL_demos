@@ -19,7 +19,7 @@ public:
         fp.open(path);
         if (!fp.is_open())
         {
-            printf("%s not found. Exiting...\n");
+            printf("'%s' not found. Exiting...\n", path);
             exit(EXIT_FAILURE);
         }
 

@@ -3,12 +3,10 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-#include<iostream>
+#include<cstdio>
 #include<cmath>
-#include"../headers/shader.h"
-#include"../headers/mesh.h"
-
-using namespace std;
+#include"../include/shader.hpp"
+#include"../include/mesh.hpp"
 
 void process_hardware_inputs(GLFWwindow *win)
 {
@@ -35,7 +33,7 @@ int main()
     GLFWwindow *window = glfwCreateWindow(500, 500, "Point light with attenuation", NULL, NULL);
     if (window == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -43,24 +41,24 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); //set framebuffer size callback function
 
     //calculate window dimensions
-    int winWidth, winHeight;
-    glfwGetWindowSize(window, &winWidth, &winHeight);
+    int win_width, win_height;
+    glfwGetWindowSize(window, &win_width, &win_height);
 
     //validate glew
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        cout << "Failed to initialize glew. Exiting...\n";
+        printf("Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
     //create meshes
-    mesh suzanne("../models/smooth/suzanne.obj", 1,1,1);
-    mesh lamp("../models/smooth/sphere.obj", 1,1,0);
+    mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
+    mesh lamp("../obj/vert_face_snorm/sphere_rad1.obj", 1,1,0);
 
     //create shaders
-    shader suzanneShad("../shaders/trans_mvpn.vert","../shaders/point_light_atten_ads.frag");
-    shader lampShad("../shaders/trans_mvp.vert","../shaders/monochromatic.frag");
+    shader suzanne_shad("../shader/trans_mvpn.vert","../shader/point_light_atten_ads.frag");
+    shader lamp_shad("../shader/trans_mvp.vert","../shader/monochromatic.frag");
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.05f,0.05f,0.05f,1.0f);
@@ -70,34 +68,34 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glm::vec3 lightPos = glm::vec3(0.0f, -5.0f + 3.0f*sin(glfwGetTime()), 0.0f); //light position in world coordinates
-        glm::vec3 lightCol = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
-        glm::vec3 modelCol = glm::vec3(0.8f,0.4f,0.0f); //suzanne color
-        glm::vec3 lampCol = glm::vec3(1.0f,1.0f,1.0f); //lamp color
-        glm::vec3 camPos = glm::vec3(0.0f,-15.0f,7.5f); //camera position in world coordinates
+        glm::vec3 light_pos = glm::vec3(0.0f, -5.0f + 3.0f*sin(glfwGetTime()), 0.0f); //light position in world coordinates
+        glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
+        glm::vec3 model_col = glm::vec3(0.8f,0.4f,0.0f); //suzanne color
+        glm::vec3 lamp_col = glm::vec3(1.0f,1.0f,1.0f); //lamp color
+        glm::vec3 cam_pos = glm::vec3(0.0f,-15.0f,7.5f); //camera position in world coordinates
 
-        glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)winWidth/(float)winHeight, 0.01f,100.0f);
-        glm::mat4 view = glm::lookAt(camPos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,1.0f));
+        glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/(float)win_height, 0.01f,100.0f);
+        glm::mat4 view = glm::lookAt(cam_pos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,1.0f));
         glm::mat4 model = glm::mat4(1.0f);
 
-        suzanneShad.use();
-        suzanneShad.set_mat4_uniform("projection", projection);
-        suzanneShad.set_mat4_uniform("view", view);
-        suzanneShad.set_mat4_uniform("model", model);
-        suzanneShad.set_vec3_uniform("lightPos", lightPos);
-        suzanneShad.set_vec3_uniform("camPos", camPos);
-        suzanneShad.set_vec3_uniform("lightCol", lightCol);
-        suzanneShad.set_vec3_uniform("modelCol", modelCol);
+        suzanne_shad.use();
+        suzanne_shad.set_mat4_uniform("projection", projection);
+        suzanne_shad.set_mat4_uniform("view", view);
+        suzanne_shad.set_mat4_uniform("model", model);
+        suzanne_shad.set_vec3_uniform("light_pos", light_pos);
+        suzanne_shad.set_vec3_uniform("cam_pos", cam_pos);
+        suzanne_shad.set_vec3_uniform("light_col", light_col);
+        suzanne_shad.set_vec3_uniform("model_col", model_col);
         suzanne.draw_triangles();
 
-        lampShad.use();
+        lamp_shad.use();
         model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPos);
+        model = glm::translate(model, light_pos);
         model = glm::scale(model, glm::vec3(0.25f,0.25f,0.25f));
-        lampShad.set_mat4_uniform("projection", projection);
-        lampShad.set_mat4_uniform("view", view);
-        lampShad.set_mat4_uniform("model", model);
-        lampShad.set_vec3_uniform("modelCol", lampCol);
+        lamp_shad.set_mat4_uniform("projection", projection);
+        lamp_shad.set_mat4_uniform("view", view);
+        lamp_shad.set_mat4_uniform("model", model);
+        lamp_shad.set_vec3_uniform("model_col", lamp_col);
         lamp.draw_triangles();
 
         glfwSwapBuffers(window);
