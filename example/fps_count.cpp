@@ -21,7 +21,7 @@ int draw_didymain = 1; string didymain_onoff;
 int draw_bennu = 1; string bennu_onoff;
 int draw_itokawa = 1; string itokawa_onoff;
 int draw_churyumov = 1; string churyumov_onoff;
-int draw_eros = 1; string erosOnOff;
+int draw_eros = 1; string eros_οnοff;
 int draw_kleopatra = 1; string kleopatra_onoff;
 
 camera cam; //default camera constructor
@@ -197,11 +197,11 @@ int main()
         model = glm::rotate(model, (float)tglfw/10.0f, glm::vec3(0.0f,0.0f,1.0f));
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_mat4_uniform("model", model);
-        erosOnOff = "off";
+        eros_οnοff = "off";
         if (draw_eros)
         {
             eros.draw_triangles();
-            erosOnOff = "on";
+            eros_οnοff = "on";
         }
 
         //kleopatra
@@ -244,7 +244,7 @@ int main()
         ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
         sprintf(text, "Churyumov :  4  (%s)", churyumov_onoff.c_str());
         ttf.draw(text, 20.0f, win_height - 140.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
-        sprintf(text, "Eros : 5  (%s)", erosOnOff.c_str());
+        sprintf(text, "Eros : 5  (%s)", eros_οnοff.c_str());
         ttf.draw(text, 20.0f, win_height - 160.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
         sprintf(text, "Kleopatra : 6  (%s)", kleopatra_onoff.c_str());
         ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
