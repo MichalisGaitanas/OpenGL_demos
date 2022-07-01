@@ -3,6 +3,7 @@
 
 #include<GL/glew.h>
 #include<iostream>
+#include<string>
 #include<fstream>
 #include<vector>
 
@@ -71,7 +72,7 @@ public:
             std::vector<std::vector<unsigned int>> inds;
             unsigned int i11,i12, i21,i22, i31,i32;
 
-            std:string line;
+            std::string line;
 
             while (getline(fp, line))
             {

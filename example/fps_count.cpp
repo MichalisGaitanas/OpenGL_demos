@@ -17,12 +17,12 @@ double tglfw, tprev, ms_per_frame;
 int frames = 0;
 
 //objs to draw
-int draw_didymain = 1; string didymain_onoff;
-int draw_bennu = 1; string bennu_onoff;
-int draw_itokawa = 1; string itokawa_onoff;
-int draw_churyumov = 1; string churyumov_onoff;
-int draw_eros = 1; string eros_οnοff;
-int draw_kleopatra = 1; string kleopatra_onoff;
+int draw_didymain = 1; std::string didymain_onoff;
+int draw_bennu = 1; std::string bennu_onoff;
+int draw_itokawa = 1; std::string itokawa_onoff;
+int draw_churyumov = 1; std::string churyumov_onoff;
+int draw_eros = 1; std::string eros_οnοff;
+int draw_kleopatra = 1; std::string kleopatra_onoff;
 
 camera cam; //default camera constructor
 

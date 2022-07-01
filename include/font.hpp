@@ -23,7 +23,7 @@ public:
 class font
 {
 public:
-    map<GLchar, character> characters;
+    std::map<GLchar, character> characters;
     unsigned int vao,vbo;
     glm::mat4 projection; //orthographic projection matrix for the text
 
@@ -77,7 +77,7 @@ public:
                               glm::ivec2(face->glyph->bitmap.width, face->glyph->bitmap.rows),
                               glm::ivec2(face->glyph->bitmap_left, face->glyph->bitmap_top),
                               face->glyph->advance.x };
-            characters.insert(pair<GLchar, character>(c, chr));
+            characters.insert(std::pair<GLchar, character>(c, chr));
         }
         glBindTexture(GL_TEXTURE_2D, 0);
         //destroy FreeType once we're finished
@@ -102,7 +102,7 @@ public:
         glDeleteBuffers(1, &vbo);
     }
 
-    void draw(string text, float x, float y, int win_width, int win_height, float scale, glm::vec3 color, shader &shad)
+    void draw(std::string text, float x, float y, int win_width, int win_height, float scale, glm::vec3 color, shader &shad)
     {
         //set the text's coordinate system
         projection = glm::ortho(0.0f, (float)win_width, 0.0f, (float)win_height);
@@ -113,7 +113,7 @@ public:
         glBindVertexArray(vao);
 
         //iterate through all characters
-        string::const_iterator c;
+        std::string::const_iterator c;
         for (c = text.begin(); c != text.end(); c++)
         {
             character ch = characters[*c];
