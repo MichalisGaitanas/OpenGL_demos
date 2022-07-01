@@ -11,8 +11,6 @@
 #include<ft2build.h>
 #include FT_FREETYPE_H
 
-using namespace std;
-
 class character
 {
 public:

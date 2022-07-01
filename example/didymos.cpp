@@ -13,6 +13,7 @@
 #include"../include/camera.hpp"
 #include"../include/font.hpp"
 
+typedef std::array<double, 2> vec2;
 typedef std::array<double, 3> vec3;
 typedef std::array<double, 4> vec4;
 typedef std::array<double, 20> vec20;
@@ -32,7 +33,7 @@ camera cam(glm::vec3(0.0f,-5.0f,2.0f));
 
 double G,M1,M2;
 mat3 I1,I2;
-double t0,dt;
+double duration,dt;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -349,7 +350,7 @@ vec3 torque2(double M1, const mat3 &I2, const vec3 &r, const mat3 &A2)
     return tau2;
 }
 
-double ener_mom(const vec20 &state)
+vec2 ener_mom(const vec20 &state)
 {
     vec3 r   = { state[0], state[1], state[2] };
     vec3 v   = { state[3], state[4], state[5] };
@@ -357,10 +358,14 @@ double ener_mom(const vec20 &state)
     vec3 w1b = { state[10], state[11], state[12] };
     vec4 q2  = { state[13], state[14], state[15], state[16] };
     vec3 w2b = { state[17], state[18], state[19] };
+
     mat3 A1 = quat2mat(quat2unit(q1));
     mat3 A2 = quat2mat(quat2unit(q2));
 
-    return 0.5*((M1*M2/(M1+M2))*dot(v,v) + dot(dot(w1b,I1), w1b) + dot(dot(w2b,I2), w2b)) + potential(M1,M2, I1,I2, r, A1,A2);
+    double E = 0.5*((M1*M2/(M1+M2))*dot(v,v) + dot(dot(w1b,I1), w1b) + dot(dot(w2b,I2), w2b)) + potential(M1,M2, I1,I2, r, A1,A2);
+    vec3 L = (M1*M2/(M1+M2))*cross(r,v) + dot(A1, dot(I1,w1b)) + dot(A2, dot(I2,w2b));
+
+    return {E, sqrt(L[0]*L[0] + L[1]*L[1] + L[2]*L[2])};
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -529,7 +534,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
-    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE); //windowed full screen
+    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
     GLFWwindow *win = glfwCreateWindow(800, 600, "65803 Didymos", NULL, NULL);
     if (win == NULL)
     {
@@ -545,6 +550,9 @@ int main()
         glfwTerminate();
         return 0;
     }
+
+    const unsigned char *gpu_vendor = glGetString(GL_VENDOR);
+
     glfwSetWindowSizeLimits(win, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
     glfwSetCursorPosCallback(win, cursor_pos_callback);
@@ -589,8 +597,8 @@ int main()
     vec3 w1i = {0.0, 0.0, 0.000772269580528465};
     vec4 q2  = {1.0, 0.0, 0.0, 0.0};
     vec3 w2i = {0.0, 0.0, 0.000146399360157891};
-    t0 = 0.0;
-    dt = 0.5*60.0;
+    duration = 0.0;
+    dt = 30.0;
     I1 = ellipsoid_inertia(semiaxes1, M1);
     I2 = ellipsoid_inertia(semiaxes2, M2);
     vec3 w1b = iner2body(w1i, quat2mat(quat2unit(q1)));
@@ -602,10 +610,11 @@ int main()
                     w1b[0],w1b[1],w1b[2],
                     q2[0],q2[1],q2[2],q2[3],
                     w2b[0],w2b[1],w2b[2] };
+    vec2 ener0_mom0 = ener_mom(state);
 
     /////////////////////////////////////////////////
 
-    glm::mat4 projection, view, model; //glm matrices
+    glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -615,10 +624,10 @@ int main()
     tprev = glfwGetTime();
     while (!glfwWindowShouldClose(win))
     {
-        t2 = glfwGetTime(); //elapsed time [sec] since glfwInit()
+        t2 = glfwGetTime(); 
         delta_time = t2 - t1;
         t1 = t2;
-        tglfw = glfwGetTime(); //elapsed time in [sec] since glfwInit()
+        tglfw = glfwGetTime();
         frames++;
         if (tglfw - tprev >= 1.0)
         {
@@ -644,17 +653,16 @@ int main()
         mvpn_plight_ad.set_vec3_uniform("light_col", light_col);
         mvpn_plight_ad.set_vec3_uniform("model_col", aster_col);
 
-        //aster1
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3((float)(-M2/(M1 + M2))*state[0],(float)(-M2/(M1 + M2))*state[1],(float)(-M2/(M1 + M2))*state[2]));
         vec3 rpy1 = quat2ang({state[6], state[7], state[8], state[9]});
-        model = glm::rotate(model, (float)glm::radians(rpy1[2]), glm::vec3(0.0f,0.0f,1.0f));
-        model = glm::rotate(model, (float)glm::radians(rpy1[1]), glm::vec3(0.0f,1.0f,0.0f));
-        model = glm::rotate(model, (float)glm::radians(rpy1[0]), glm::vec3(1.0f,0.0f,0.0f));
+        model = glm::rotate(model, (float)rpy1[2], glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, (float)rpy1[1], glm::vec3(0.0f,1.0f,0.0f));
+        model = glm::rotate(model, (float)rpy1[0], glm::vec3(1.0f,0.0f,0.0f));
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_mat4_uniform("model", model);
         aster1.draw_triangles();
-        //aster1's semiaxes
+
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_x_col);
         aster1_axis_x.draw_triangles();
@@ -663,18 +671,17 @@ int main()
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_z_col);
         aster1_axis_z.draw_triangles();
 
-        //aster2
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3((M1/(M1 + M2))*state[0],(M1/(M1 + M2))*state[1],(M1/(M1 + M2))*state[2]));
         vec3 rpy2 = quat2ang({state[13], state[14], state[15], state[16]});
-        model = glm::rotate(model, (float)glm::radians(rpy2[2]), glm::vec3(0.0f,0.0f,1.0f));
-        model = glm::rotate(model, (float)glm::radians(rpy2[1]), glm::vec3(0.0f,1.0f,0.0f));
-        model = glm::rotate(model, (float)glm::radians(rpy2[0]), glm::vec3(1.0f,0.0f,0.0f));
+        model = glm::rotate(model, (float)rpy2[2], glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, (float)rpy2[1], glm::vec3(0.0f,1.0f,0.0f));
+        model = glm::rotate(model, (float)rpy2[0], glm::vec3(1.0f,0.0f,0.0f));
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_mat4_uniform("model", model);
         mvpn_plight_ad.set_vec3_uniform("model_col", aster_col);
         aster2.draw_triangles();
-        //aster2's semiaxes
+
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_x_col);
         aster2_axis_x.draw_triangles();
@@ -682,18 +689,25 @@ int main()
         aster2_axis_y.draw_triangles();
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_z_col);
         aster2_axis_z.draw_triangles();
-
-        //text
+        
         char text[100];
-        sprintf(text, "fps : %d", (int)(1000.0/ms_per_frame));
-        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.5f, glm::vec3(0.75f,0.0f,0.0f), text_shad);
+        sprintf(text, "fps : %d [ %s ]", (int)(1000.0/ms_per_frame), gpu_vendor);
+        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        vec2 energy_momentum = ener_mom(state);
+        sprintf(text, "energy error : %.0e", fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
+        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        sprintf(text, "momentum error : %.0e", fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
+        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        sprintf(text, "time : %.2f [ days ]", duration);
+        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
         
         glfwSwapBuffers(win);
         glfwPollEvents();
 
-        printf("E = %.15lf\n",ener_mom(state));
         rk4_step(state);
+        duration += dt/86400.0;
     }
+
     glfwTerminate();
     return 0;
 }

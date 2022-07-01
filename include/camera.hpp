@@ -11,7 +11,7 @@ public:
     glm::vec3 pos; //position vector
     glm::vec3 right, front, up; //coordinate system
     glm::vec3 world_up; //world-global up direction
-    float yaw, pitch; // yaw, pitch angles (roll = 0)
+    float yaw, pitch; // yaw, pitch angles (roll = 0 always for the camera)
     float vel; //velocity magnitude
     float mouse_sensitivity;
 

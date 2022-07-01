@@ -1,0 +1,25 @@
+1)
+////////////////////////////////////////////////////////////////////////////////
+
+#include <GL/glew.h> //first include GL/glew.h before any other OpenGL header
+#include <GLFW/glfw3.h>
+
+////////////////////////////////////////////////////////////////////////////////
+
+//do not forget this piece of code
+glewExperimental = GL_TRUE;
+if (glewInit() != GLEW_OK)
+{
+    std::cout << "Failed to initialize GLEW..." << std::endl;
+    return -1;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+on windows :
+Compile : g++ program.cpp -o program.exe -lopengl32 -lglfw3 -lglew32
+Compile : g++ program.cpp -o program.exe -lopengl32 -lglfw3 -lglew32 -lfreetype (if freetype is utilized)
+
+Note : In case of font rendering, the ft2build.h must be in the default c++ include directory.
+Also only 1 freetype/ directory should exist. So if freetype is installed like freetype2/freetype/headers.h,
+remove the freetype2/.
