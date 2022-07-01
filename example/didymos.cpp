@@ -577,7 +577,7 @@ int main()
     shader mvpn_plight_ad("../shader/trans_mvpn.vert","../shader/point_light_ad.frag");
     shader text_shad("../shader/text.vert","../shader/text.frag");
 
-    glm::vec3 light_pos = glm::vec3(0.0f,-100.0f,10.0f);
+    glm::vec3 light_pos = glm::vec3(0.0f,-100.0f,0.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 aster_col = glm::vec3(0.5f,0.5f,0.5f);
     glm::vec3 axis_x_col = glm::vec3(1.0f,0.0f,0.0f);
@@ -689,16 +689,6 @@ int main()
         aster2_axis_y.draw_triangles();
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_z_col);
         aster2_axis_z.draw_triangles();
-
-
-
-
-
-
-
-
-
-
         
         char text[100];
 
