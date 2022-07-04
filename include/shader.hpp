@@ -18,7 +18,7 @@ public:
         std::ifstream fpvertex(vpath);
         if (!fpvertex.is_open())
         {
-            printf("Vertex shader source file not found. Exiting...\n");
+            printf("'%s' vertex shader source file not found. Exiting...\n",vpath);
             exit(EXIT_FAILURE);
         }
         std::string vtemp;
@@ -45,7 +45,7 @@ public:
         std::ifstream fpfragment(fpath);
         if (!fpfragment.is_open())
         {
-            printf("Fragment shader source file not found. Exiting...\n");
+            printf("'%s' fragment shader source file not found. Exiting...\n",fpath);
             exit(EXIT_FAILURE);
         }
         std::string ftemp;

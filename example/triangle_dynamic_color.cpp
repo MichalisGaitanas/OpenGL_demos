@@ -23,7 +23,7 @@ const char *fsource = "#version 330 core\n"
                       "   frag_color = intensity*vec4(1.0f,0.0f,0.0f,1.0f);\n"
                       "}";
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -119,7 +119,7 @@ int main()
     glClearColor(0.1f,0.1f,0.1f,1.0f); //background color
     while (!glfwWindowShouldClose(win)) //game loop
     {
-        process_hardware_inputs(win);
+        raw_hardware_input(win);
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(shader_prog);
             float t = glfwGetTime(); //elapsed time in seconds since glfwInit() was called

@@ -10,7 +10,7 @@
 int width = 800, height = 800;
 const char *label = "Rotating cube";
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -106,14 +106,14 @@ int main()
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
     glEnableVertexAttribArray(0);
 
-    shader shad("../shader/trans_mp.vert","../shader/monochromatic.frag");
+    shader shad("../shader/vertex/trans_mp.vert","../shader/fragment/monochromatic.frag");
     shad.use();
 
     glEnable(GL_DEPTH_TEST); //enable depth - testing to correctly render 3D stuff
     glClearColor(0.0f,0.0f,0.0f,1.0f); //background color
     while (!glfwWindowShouldClose(window)) //game loop
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::vec3 model_col = glm::vec3(1.0f,0.1f,0.1f);

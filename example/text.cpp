@@ -10,7 +10,7 @@
 int win_width = 1000, win_height = 700;
 const char *win_label = "Text rendering";
 
-void process_hardware_inputs(GLFWwindow *window)
+void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -55,7 +55,7 @@ int main()
     }
 
     font ttf("../font/NotoSansRegular.ttf"); //instantiate font object
-    shader shad("../shader/text.vert","../shader/text.frag"); //instatiate shader object for the text
+    shader shad("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag"); //instatiate shader object for the text
     shad.use();
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(win_width), 0.0f, static_cast<float>(win_height)); //setup text coordinate system
     shad.set_mat4_uniform("projection", projection);
@@ -66,7 +66,7 @@ int main()
     glClearColor(0.05f,0.05f,0.05f,1.0f);
     while (!glfwWindowShouldClose(window))
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT);
 
         ttf.draw("Hello", 100.0f, 100.0f, win_width, win_height, 1.0f, glm::vec3(0.0f,1.0f,0.5f), shad);

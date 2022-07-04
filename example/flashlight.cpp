@@ -3,6 +3,7 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
+
 #include<cstdio>
 #include<cmath>
 
@@ -21,7 +22,7 @@ float t1 = 0.0f, t2, delta_time;
 float xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(win, true);
@@ -96,7 +97,7 @@ int main()
 
     mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
     mesh terrain("../obj/vert_face_snorm/terrain20x20.obj", 1,1,1);
-    shader shad("../shader/trans_mvpn.vert","../shader/flashlight_ad.frag"); //create shader
+    shader shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/flashlight_ad.frag"); //create shader
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/win_height, 0.01f,1000.0f);
     glm::mat4 view, model;
@@ -120,7 +121,7 @@ int main()
         delta_time = t2 - t1;
         t1 = t2;
 
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //color buffer and z-buffer
 

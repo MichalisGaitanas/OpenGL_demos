@@ -6,7 +6,7 @@
 const int win_width = 800, win_height = 700;
 const char *win_label = "Triangle shader class";
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -62,13 +62,13 @@ int main()
     glEnableVertexAttribArray(0);
     
     //creating a shader object
-    shader shad("../shader/trans_nothing.vert","../shader/monochromatic.frag");
+    shader shad("../shader/vertex/trans_nothing.vert","../shader/fragment/monochromatic.frag");
     glm::vec3 triangle_col = glm::vec3(1.0f,0.5f,0.2f);
     
     glClearColor(0.1f,0.5f,0.2f,1.0f); //background color
     while (!glfwWindowShouldClose(win))
     {
-        process_hardware_inputs(win);
+        raw_hardware_input(win);
         
         glClear(GL_COLOR_BUFFER_BIT);
         shad.use(); //use the "shad" shader object ( same as glUseProgram(shad_ID) )

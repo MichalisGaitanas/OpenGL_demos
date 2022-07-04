@@ -11,7 +11,7 @@
 int win_width = 900, win_height = 900;
 const char *win_label = "Directional light calculations";
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -60,7 +60,7 @@ int main()
     ////////////////////////////////////////////////////////////////////////////
 
     mesh sphere("../obj/vert_face_snorm/sphere_rad1.obj", 1,1,1);
-    shader shad("../shader/trans_mvpn.vert", "../shader/dir_light_ads.frag");
+    shader shad("../shader/vertex/trans_mvpn.vert", "../shader/fragment/dir_light_ads.frag");
     shad.use();
 
     glm::vec3 light_dir; //light direction in world coordinates
@@ -88,7 +88,7 @@ int main()
     glClearColor(0.0f,0.0f,0.0f,1.0f); //background color
     while (!glfwWindowShouldClose(window)) //game loop
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //color buffer and z-buffer
 

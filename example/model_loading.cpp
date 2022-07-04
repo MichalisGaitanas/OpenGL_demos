@@ -10,7 +10,7 @@
 int win_width = 900, win_height = 900;
 const char *label = "Model loading";
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -60,8 +60,8 @@ int main()
     mesh lamp("../obj/vert_face_fnorm/cube2x2x2.obj", 1,1,0);
 
     //create shaders
-    shader suzanne_shad("../shader/trans_mvpn.vert","../shader/point_light_ads.frag");
-    shader lamp_shad("../shader/trans_mvp.vert","../shader/monochromatic.frag");
+    shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads.frag");
+    shader lamp_shad("../shader/vertex/trans_mvp.vert","../shader/fragment/monochromatic.frag");
 
     glm::vec3 light_pos = glm::vec3(0.0f,-2.5f,1.0f); //light position in world coordinates
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color
@@ -79,7 +79,7 @@ int main()
     glClearColor(0.0f,0.0f,0.0f,1.0f);
     while (!glfwWindowShouldClose(window)) //render loop
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

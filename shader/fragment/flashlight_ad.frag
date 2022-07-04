@@ -33,8 +33,3 @@ void main()
     vec3 frag_col = (ambient + diffuse)*model_col*light_col;
     final_col = vec4(frag_col, 1.0f);
 }
-
-
-
-
-

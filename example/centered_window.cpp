@@ -5,7 +5,7 @@
 int win_width = 1000, win_height = 700;
 const char *win_label = "Centered window";
 
-void process_hardware_inputs(GLFWwindow *window)
+void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -59,7 +59,7 @@ int main()
     glClearColor(0.1f,0.4f,0.8f,1.0f); //set background - clear color for every new frame
     while (!glfwWindowShouldClose(window))
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT); //actually clear the buffer using the predefined clear color
         glfwSwapBuffers(window);
         glfwPollEvents();

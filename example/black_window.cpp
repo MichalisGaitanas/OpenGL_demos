@@ -3,7 +3,7 @@
 #include<cstdio>
 
 //keyborad, mouse, etc...
-void process_hardware_inputs(GLFWwindow *window)
+void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -44,7 +44,7 @@ int main()
     //render loop
     while (!glfwWindowShouldClose(window))
     {
-        process_hardware_inputs(window); //keyboard, mouse, etc...
+        raw_hardware_input(window); //keyboard, mouse, etc...
         glfwSwapBuffers(window); //double buffering
         glfwPollEvents(); //poll events
     }

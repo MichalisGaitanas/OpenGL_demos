@@ -6,7 +6,7 @@ const int x_top_left = 300, y_top_left = 100; //coordinates of the top left corn
 const int win_width = 900, win_height = 600;
 const char *win_label = "Colored window";
 
-void process_hardware_inputs(GLFWwindow *window)
+void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -49,7 +49,7 @@ int main()
     glClearColor(0.1f,0.4f,0.2f,1.0f); //the background (clear) color for every new frame
     while (!glfwWindowShouldClose(window))
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT); //actual clearance of the color buffer
         glfwSwapBuffers(window);
         glfwPollEvents();

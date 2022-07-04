@@ -99,8 +99,8 @@ int main()
 
     font ttf("../font/NotoSansRegular.ttf");
 
-    shader mvpn_plight_ad("../shader/trans_mvpn.vert","../shader/point_light_ad.frag");
-    shader text_shad("../shader/text.vert","../shader/text.frag");
+    shader mvpn_plight_ad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ad.frag");
+    shader text_shad("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag");
 
     glm::vec3 light_pos = glm::vec3(0.0f,-100.0f,0.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);

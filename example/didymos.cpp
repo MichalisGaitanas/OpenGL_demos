@@ -29,7 +29,7 @@ float aspect_ratio;
 double tglfw, tprev, ms_per_frame = 1000.0;
 int frames = 0;
 
-camera cam(glm::vec3(0.0f,-5.0f,2.0f));
+camera cam(glm::vec3(0.0f,-5.0f,0.5f));
 
 double G,M1,M2;
 mat3 I1,I2;
@@ -484,7 +484,7 @@ void rk4_step(vec20 &state)
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(win, true);
@@ -572,10 +572,13 @@ int main()
     mesh aster2_axis_y("../obj/vert_face_fnorm/didymos_binary/dimorphos_positive_axis_y.obj",1,1,1);
     mesh aster2_axis_z("../obj/vert_face_fnorm/didymos_binary/dimorphos_positive_axis_z.obj",1,1,1);
 
+    mesh sun("../obj/vert_face_snorm/sphere_rad1.obj",1,1,0);
+
     font ttf("../font/NotoSansRegular.ttf");
 
-    shader mvpn_plight_ad("../shader/trans_mvpn.vert","../shader/point_light_ad.frag");
-    shader text_shad("../shader/text.vert","../shader/text.frag");
+    shader mvpn_plight_ad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ad.frag");
+    shader mvp_monochrom("../shader/vertex/trans_mvp.vert","../shader/fragment/monochromatic.frag");
+    shader text_shad("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag");
 
     glm::vec3 light_pos = glm::vec3(0.0f,-100.0f,0.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
@@ -636,7 +639,7 @@ int main()
             tprev += 1.0;
         }
 
-        process_hardware_inputs(win);
+        raw_hardware_input(win);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -689,6 +692,16 @@ int main()
         aster2_axis_y.draw_triangles();
         mvpn_plight_ad.set_vec3_uniform("model_col", axis_z_col);
         aster2_axis_z.draw_triangles();
+
+        mvp_monochrom.use();
+        mvp_monochrom.set_mat4_uniform("projection", projection);
+        mvp_monochrom.set_mat4_uniform("view", view);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, light_pos);
+        model = glm::scale(model, glm::vec3(7.0f,7.0f,7.0f));
+        mvp_monochrom.set_mat4_uniform("model", model);
+        mvp_monochrom.set_vec3_uniform("model_col", light_col);
+        sun.draw_triangles();
         
         char text[100];
 

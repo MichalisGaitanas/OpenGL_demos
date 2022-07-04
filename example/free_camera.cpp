@@ -14,7 +14,7 @@ float t1 = 0.0f, t2, delta_time;
 float xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(win, true);
@@ -64,7 +64,7 @@ int main()
     GLFWwindow *window = glfwCreateWindow(900, 900, "First person camera", NULL, NULL);
     if (window == NULL)
     {
-        cout << "Failed to create glfw window. Exiting...\n";
+        printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -90,7 +90,7 @@ int main()
 
     mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
     mesh ak47("../obj/vert_face_fnorm/ak47.obj", 1,1,1);
-    shader shad("../shader/trans_mvpn.vert","../shader/point_light_ad.frag");
+    shader shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ad.frag");
     shad.use();
 
     glm::vec3 light_pos = glm::vec3(0.0f,-5.0f,60.0f); //light position in world coordinates
@@ -112,7 +112,7 @@ int main()
         delta_time = t2 - t1;
         t1 = t2;
 
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

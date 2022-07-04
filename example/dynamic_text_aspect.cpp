@@ -11,7 +11,7 @@
 int win_width, win_height;
 float aspect_ratio;
 
-void process_hardware_inputs(GLFWwindow *win)
+void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
     {
@@ -65,10 +65,10 @@ int main()
 
     //create mesh and corresponding shader
     mesh suzanne("../obj/vert_face_snorm/suzanne.obj",1,1,1);
-    shader suzanne_shader("../shader/trans_mvpn.vert","../shader/dir_light_ads.frag");
+    shader suzanne_shader("../shader/vertex/trans_mvpn.vert","../shader/fragment/dir_light_ads.frag");
     //create font and corresponding shader
     font ttf("../font/NotoSansRegular.ttf");
-    shader text_shader("../shader/text.vert","../shader/text.frag");
+    shader text_shader("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag");
 
     glm::vec3 light_dir = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
@@ -94,7 +94,7 @@ int main()
     glClearColor(0.1f,0.1f,0.1f,1.0f);
     while (!glfwWindowShouldClose(window))
     {
-        process_hardware_inputs(window);
+        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //draw suzanne
