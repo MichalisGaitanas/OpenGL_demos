@@ -22,6 +22,7 @@ typedef std::array<vec3, 3> mat3;
 float t1 = 0.0f, t2, delta_time;
 float xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
+float fov = 45.0f;
 
 int win_width, win_height;
 float aspect_ratio;
@@ -517,6 +518,19 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
     cam.rotate(xoffset, yoffset);
 }
 
+void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+{
+    fov -= 2.0f*(float)yoffset;
+    if (fov <= 1.0f)
+    {
+        fov = 1.0f;
+    }
+    else if (fov >= 45.0f)
+    {
+        fov = 45.0f;
+    }
+}
+
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 {
     if (w == 0) w = 1;
@@ -556,6 +570,7 @@ int main()
     glfwSetWindowSizeLimits(win, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
     glfwSetCursorPosCallback(win, cursor_pos_callback);
+    glfwSetScrollCallback(win, scroll_callback);
     glfwSetInputMode(win, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwGetWindowSize(win, &win_width, &win_height);
     aspect_ratio = (float)win_width/win_height;
@@ -643,7 +658,7 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 5000.0f);
+        projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.01f, 5000.0f);
         view = cam.view();
         model = glm::mat4(1.0f);
 
