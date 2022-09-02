@@ -53,8 +53,8 @@ int main()
     }
 
     //create meshes
-    mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
-    mesh lamp("../obj/vert_face_snorm/sphere_rad1.obj", 1,1,0);
+    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
+    meshvf lamp("../obj/vf/sphere_rad1.obj");
 
     //create shaders
     shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads_atten.frag");

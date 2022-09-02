@@ -59,7 +59,7 @@ int main()
 
     ////////////////////////////////////////////////////////////////////////////
 
-    mesh sphere("../obj/vert_face_snorm/sphere_rad1.obj", 1,1,1);
+    meshvfn sphere("../obj/vfn/smooth/sphere_rad1.obj");
     shader shad("../shader/vertex/trans_mvpn.vert", "../shader/fragment/dir_light_ads.frag");
     shad.use();
 

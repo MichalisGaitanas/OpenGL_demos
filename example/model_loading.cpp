@@ -56,8 +56,8 @@ int main()
         return 0;
     }
 
-    mesh suzanne("../obj/vert_face_snorm/suzanne.obj", 1,1,1);
-    mesh lamp("../obj/vert_face_fnorm/cube2x2x2.obj", 1,1,0);
+    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
+    meshvf lamp("../obj/vf/cube1x1x1.obj");
 
     //create shaders
     shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads.frag");
@@ -98,7 +98,7 @@ int main()
         lamp_shad.use();
         model = glm::mat4(1.0f);
         model = glm::translate(model, light_pos);
-        model = glm::scale(model, glm::vec3(0.25f,0.25f,0.25f));
+        model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f));
         lamp_shad.set_mat4_uniform("projection", projection);
         lamp_shad.set_mat4_uniform("view", view);
         lamp_shad.set_mat4_uniform("model", model);

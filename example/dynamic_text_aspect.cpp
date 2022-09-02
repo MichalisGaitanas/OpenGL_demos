@@ -64,7 +64,7 @@ int main()
     }
 
     //create mesh and corresponding shader
-    mesh suzanne("../obj/vert_face_snorm/suzanne.obj",1,1,1);
+    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
     shader suzanne_shader("../shader/vertex/trans_mvpn.vert","../shader/fragment/dir_light_ads.frag");
     //create font and corresponding shader
     font ttf("../font/NotoSansRegular.ttf");

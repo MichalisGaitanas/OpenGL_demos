@@ -577,17 +577,17 @@ int main()
     xpos_previous = win_width/2.0f;
     ypos_previous = win_height/2.0f;
 
-    mesh aster1("../obj/vert_face_fnorm/didymos_binary/didymain2019.obj",1,1,1);
-    mesh aster1_axis_x("../obj/vert_face_fnorm/didymos_binary/didymain_positive_axis_x.obj",1,1,1);
-    mesh aster1_axis_y("../obj/vert_face_fnorm/didymos_binary/didymain_positive_axis_y.obj",1,1,1);
-    mesh aster1_axis_z("../obj/vert_face_fnorm/didymos_binary/didymain_positive_axis_z.obj",1,1,1);
+    meshvfn aster1("../obj/vfn/flat/didymos_binary/didymain2019.obj");
+    meshvfn aster1_axis_x("../obj/vfn/flat/didymos_binary/didymain_positive_axis_x.obj");
+    meshvfn aster1_axis_y("../obj/vfn/flat/didymos_binary/didymain_positive_axis_y.obj");
+    meshvfn aster1_axis_z("../obj/vfn/flat/didymos_binary/didymain_positive_axis_z.obj");
 
-    mesh aster2("../obj/vert_face_fnorm/didymos_binary/dimorphos_ellipsoid.obj",1,1,1);
-    mesh aster2_axis_x("../obj/vert_face_fnorm/didymos_binary/dimorphos_positive_axis_x.obj",1,1,1);
-    mesh aster2_axis_y("../obj/vert_face_fnorm/didymos_binary/dimorphos_positive_axis_y.obj",1,1,1);
-    mesh aster2_axis_z("../obj/vert_face_fnorm/didymos_binary/dimorphos_positive_axis_z.obj",1,1,1);
+    meshvfn aster2("../obj/vfn/flat/didymos_binary/dimorphos_ellipsoid.obj");
+    meshvfn aster2_axis_x("../obj/vfn/flat/didymos_binary/dimorphos_positive_axis_x.obj");
+    meshvfn aster2_axis_y("../obj/vfn/flat/didymos_binary/dimorphos_positive_axis_y.obj");
+    meshvfn aster2_axis_z("../obj/vfn/flat/didymos_binary/dimorphos_positive_axis_z.obj");
 
-    mesh sun("../obj/vert_face_snorm/sphere_rad1.obj",1,1,0);
+    meshvf sun("../obj/vf/sphere_rad1.obj");
 
     font ttf("../font/NotoSansRegular.ttf");
 
