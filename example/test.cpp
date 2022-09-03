@@ -92,6 +92,9 @@ int main()
     meshvft texsun("../obj/vft/uvsphere_rad1.obj", "../image/texture/sun1024x574.jpg");
     meshvft texground("../obj/vft/terrain20x20.obj", "../image/texture/grass800x800.jpg");
     meshvft texearth("../obj/vft/uvsphere_rad1.obj", "../image/texture/earth720x360.jpg");
+    meshvft texdidy1("../obj/vft/didy1.obj", "../image/texture/asteroid.jpg");
+    meshvft texdidy2("../obj/vft/didy2.obj", "../image/texture/asteroid.jpg");
+    meshvft texdidy3("../obj/vft/didy3.obj", "../image/texture/asteroid.jpg");
 
     shader texshad("../shader/vertex/trans_mvp_tex.vert","../shader/fragment/tex.frag");
     texshad.use();
@@ -137,6 +140,24 @@ int main()
         model = glm::rotate(model, 10.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
         texshad.set_mat4_uniform("model", model);
         texearth.draw_triangles();
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f,0.0f,3.0f));
+        model = glm::rotate(model, 1.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        texshad.set_mat4_uniform("model", model);
+        texdidy1.draw_triangles();
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f,0.0f,4.0f));
+        model = glm::rotate(model, 1.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        texshad.set_mat4_uniform("model", model);
+        texdidy2.draw_triangles();
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f,0.0f,5.0f));
+        model = glm::rotate(model, 1.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        texshad.set_mat4_uniform("model", model);
+        texdidy3.draw_triangles();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
