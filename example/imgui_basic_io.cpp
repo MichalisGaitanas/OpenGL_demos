@@ -63,19 +63,56 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Basic io");
-        ImGui::Text("Text printing");  
+        ImGui::Begin("Basic io"); //imgui window title
+        ImGui::Text("Text printing");
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+
+        char buf[] = "              ";
+        ImGui::InputText("Input text", buf, sizeof(buf));
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+
+        ImGui::Separator();
 
         static float x = 0.12345f;
-        ImGui::Text("Enter x"); ImGui::SameLine(); ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f");
+        ImGui::PushID(0);
+        ImGui::Text("Enter float"); ImGui::SameLine(); ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f");
+        ImGui::PopID();
+        ImGui::Separator();
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
 
         static bool action = true;
         ImGui::Checkbox("Action", &action);
         ImGui::SameLine();
-        if (action)
-            ImGui::Text("(tick)");
-        else
-            ImGui::Text("(not tick)");
+        if (action) ImGui::Text("(checked)");
+        else ImGui::Text("(unchecked)");
+
+        if (ImGui::Button("Button 1")) { /* do stuff */ }
+        ImGui::SameLine();
+        if (ImGui::Button("Button 2")) { /* do stuff */ }
+        ImGui::SameLine();
+        if (ImGui::Button("Button 3")) { /* do stuff */ }
+
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
+        ImGui::Text("Let's create a huge button");
+        ImGui::PopStyleColor();
+        ImGui::Button("X", ImVec2(150,70));
+
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+        ImGui::Text("Drop-down menu (combo)");
+        static const char *items[] = {"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"};
+        static int selected = 0;
+        ImGui::PushItemWidth(100.0f);
+        ImGui::Combo("Planet", &selected, items, IM_ARRAYSIZE(items));
+        ImGui::PopItemWidth();
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+
+        static int y = 0;
+        ImGui::PushID(1);
+        ImGui::PushItemWidth(100.0f);
+        ImGui::Text("Enter int"); ImGui::SameLine(); ImGui::InputInt(" ", &y, 0,0);
+        ImGui::PopID();
+        ImGui::PopItemWidth();
 
         ImGui::End();
         ImGui::Render();
