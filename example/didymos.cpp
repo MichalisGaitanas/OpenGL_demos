@@ -721,25 +721,25 @@ int main()
         char text[100];
 
         sprintf(text, "time :  %.2f [ days ]", duration);
-        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
 
         sprintf(text, "( x, y, z ) :  ( %.2f, %.2f, %.2f ) [ km ]", state[0], state[1], state[2]);
-        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
 
         sprintf(text, "( roll 1, pitch 1, yaw 1 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy1[0]*180.0/M_PI, rpy1[1]*180.0/M_PI, rpy1[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
 
         sprintf(text, "( roll 2, pitch 2, yaw 2 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy2[0]*180.0/M_PI, rpy2[1]*180.0/M_PI, rpy2[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
 
         vec2 energy_momentum = ener_mom(state);
         sprintf(text, "energy error :  %.0e", fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
-        ttf.draw(text, 20.0f, win_height - 150.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 150.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
         sprintf(text, "momentum error :  %.0e", fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
-        ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
 
         sprintf(text, "fps :  %d [ %s ]", (int)(1000.0/ms_per_frame), gpu_vendor);
-        ttf.draw(text, 20.0f, win_height - 210.0f, win_width, win_height, 0.4f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 210.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
         
         glfwSwapBuffers(win);
         glfwPollEvents();
