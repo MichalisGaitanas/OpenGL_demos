@@ -67,8 +67,8 @@ int main()
         ImGui::Text("Text printing");
         ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
 
-        char buf[] = "              ";
-        ImGui::InputText("Input text", buf, sizeof(buf));
+        static char buf[30] = "";
+        ImGui::InputText("Input text", buf, IM_ARRAYSIZE(buf));
         ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
 
         ImGui::Separator();
