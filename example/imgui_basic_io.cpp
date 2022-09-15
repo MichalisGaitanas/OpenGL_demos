@@ -63,58 +63,65 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Basic io"); //imgui window title
-        ImGui::Text("Text printing");
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+        ImGui::Begin("Basic io");
+
+        ImGui::Text("Text printing"); //raw text printing on the gui
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space (dx,dy)
 
         static char buf[30] = "";
-        ImGui::InputText("Input text", buf, IM_ARRAYSIZE(buf));
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+        ImGui::InputText("Input text", buf, IM_ARRAYSIZE(buf)); //input section
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space space (dx,dy)
 
-        ImGui::Separator();
+        ImGui::Separator(); //decoration-seperation line
 
         static float x = 0.12345f;
-        ImGui::PushID(0);
-        ImGui::Text("Enter float"); ImGui::SameLine(); ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f");
+        ImGui::PushID(0); //define a new ID for the upcoming float, so it does not confilct with next inputs
+        ImGui::Text("Enter float"); ImGui::SameLine(); ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f"); //float value input
         ImGui::PopID();
-        ImGui::Separator();
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+        ImGui::Separator(); //decoration-seperation line
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
         static bool action = true;
-        ImGui::Checkbox("Action", &action);
+        ImGui::Checkbox("Action", &action); //checkbox
         ImGui::SameLine();
         if (action) ImGui::Text("(checked)");
         else ImGui::Text("(unchecked)");
 
+        //classical buttons
         if (ImGui::Button("Button 1")) { /* do stuff */ }
         ImGui::SameLine();
         if (ImGui::Button("Button 2")) { /* do stuff */ }
         ImGui::SameLine();
         if (ImGui::Button("Button 3")) { /* do stuff */ }
-
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
-        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255));
-        ImGui::Text("Let's create a huge button");
-        ImGui::PopStyleColor();
-        ImGui::Button("X", ImVec2(150,70));
-
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255)); //change color from default to custom RGBA
+        ImGui::Text("Let's create a huge button");
+        ImGui::PopStyleColor(); //set color back to default
+        ImGui::Button("X", ImVec2(150,70)); //classical button + its size (dx,dy)
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
         ImGui::Text("Drop-down menu (combo)");
         static const char *items[] = {"Mercury", "Venus", "Earth", "Mars", "Jupiter", "Saturn", "Uranus", "Neptune"};
         static int selected = 0;
-        ImGui::PushItemWidth(100.0f);
-        ImGui::Combo("Planet", &selected, items, IM_ARRAYSIZE(items));
-        ImGui::PopItemWidth();
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space
+        ImGui::PushItemWidth(100.0f); //change item-widget width from default to a fixed one (w)
+        ImGui::Combo("Planet", &selected, items, IM_ARRAYSIZE(items)); //drop down menu
+        ImGui::PopItemWidth(); //set item width back to default
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
         static int y = 0;
-        ImGui::PushID(1);
+        ImGui::PushID(1); //define a new ID for the upcoming int, so it does not confilct with the previous float
         ImGui::PushItemWidth(100.0f);
-        ImGui::Text("Enter int"); ImGui::SameLine(); ImGui::InputInt(" ", &y, 0,0);
+        ImGui::Text("Enter int"); ImGui::SameLine(); ImGui::InputInt(" ", &y, 0,0); //int value input
         ImGui::PopID();
         ImGui::PopItemWidth();
 
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+        ImGui::BulletText("Bullet text demo");
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
         ImGui::End();
+
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
