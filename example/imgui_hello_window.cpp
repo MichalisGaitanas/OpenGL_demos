@@ -1,5 +1,5 @@
 
-//always include first
+//always include imgui stuff first
 #include"imgui.h"
 #include"imgui_impl_glfw.h"
 #include"imgui_impl_opengl3.h"
@@ -48,7 +48,7 @@ int main()
     }
 
 
-    //initialize imgui (glfw)
+    //initialize imgui assuming glfw will be used
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
@@ -59,7 +59,7 @@ int main()
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     while (!glfwWindowShouldClose(window))
-    {
+    {   
 		glClear(GL_COLOR_BUFFER_BIT);
 
         //create a new imgui frame
@@ -69,7 +69,7 @@ int main()
 
         //what to do draw in the imgui frame
         ImGui::Begin("imgui window"); //title
-        ImGui::Text("Hello there!"); //raw text
+        ImGui::Text("Hello world!"); //raw text
         ImGui::End();
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());

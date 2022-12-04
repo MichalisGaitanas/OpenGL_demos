@@ -69,7 +69,9 @@ int main()
         ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space (dx,dy)
 
         static char buf[30] = "";
+        ImGui::PushItemWidth(100.0f); //change item-widget width from default to a fixed one (w)
         ImGui::InputText("Input text", buf, IM_ARRAYSIZE(buf)); //input section
+        ImGui::PopItemWidth(); //change item-widget width from default to a fixed one (w)
         ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space space (dx,dy)
 
         ImGui::Separator(); //decoration-seperation line

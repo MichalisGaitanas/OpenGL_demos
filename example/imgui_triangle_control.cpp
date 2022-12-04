@@ -13,9 +13,6 @@
 
 #include"../include/shader.hpp"
 
-const int win_width = 800, win_height = 700;
-const char *win_label = "Triangle";
-
 void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -38,7 +35,8 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     
     //create a window object
-    GLFWwindow *win = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
+    const int win_width = 800, win_height = 700;
+    GLFWwindow *win = glfwCreateWindow(win_width, win_height, "Triangle", NULL, NULL);
     if (win == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
