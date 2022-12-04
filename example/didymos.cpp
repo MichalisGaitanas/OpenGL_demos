@@ -34,7 +34,7 @@ camera cam(glm::vec3(0.0f,-5.0f,0.5f));
 
 double G,M1,M2;
 mat3 I1,I2;
-double duration,dt;
+double duration, dt;
 
 ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -587,7 +587,7 @@ int main()
     meshvfn aster2_axis_y("../obj/vfn/flat/didymos_binary/dimorphos_positive_axis_y.obj");
     meshvfn aster2_axis_z("../obj/vfn/flat/didymos_binary/dimorphos_positive_axis_z.obj");
 
-    meshvf sun("../obj/vf/sphere_rad1.obj");
+    meshvf sun("../obj/vf/uv_sphere_rad1_20x20.obj");
 
     font ttf("../font/NotoSansRegular.ttf");
 
@@ -721,26 +721,45 @@ int main()
         char text[100];
 
         sprintf(text, "time :  %.2f [ days ]", duration);
-        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
 
         sprintf(text, "( x, y, z ) :  ( %.2f, %.2f, %.2f ) [ km ]", state[0], state[1], state[2]);
-        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
 
         sprintf(text, "( roll 1, pitch 1, yaw 1 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy1[0]*180.0/M_PI, rpy1[1]*180.0/M_PI, rpy1[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+        sprintf(text, "( quaternion 1 ) :  ( %.2f, %.2f, %.2f, %.2f ) [  ]", state[6], state[7], state[8], state[9]);
+        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
 
         sprintf(text, "( roll 2, pitch 2, yaw 2 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy2[0]*180.0/M_PI, rpy2[1]*180.0/M_PI, rpy2[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 150.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+        sprintf(text, "( quaternion 2 ) :  ( %.2f, %.2f, %.2f, %.2f ) [  ]", state[13], state[14], state[15], state[16]);
+        ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
 
         vec2 energy_momentum = ener_mom(state);
         sprintf(text, "energy error :  %.0e", fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
-        ttf.draw(text, 20.0f, win_height - 150.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 210.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
         sprintf(text, "momentum error :  %.0e", fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
-        ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
+        ttf.draw(text, 20.0f, win_height - 230.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
 
         sprintf(text, "fps :  %d [ %s ]", (int)(1000.0/ms_per_frame), gpu_vendor);
-        ttf.draw(text, 20.0f, win_height - 210.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.4f,1.0f), text_shad);
-        
+        ttf.draw(text, 20.0f, win_height - 260.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+
+        sprintf(text, "camera : ");
+        ttf.draw(text, 20.0f, win_height - 900.0f, win_width, win_height, 0.4f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+        sprintf(text, "( x, y, z ) :  ( %.2f, %.2f, %.2f ) [ km ]", cam.pos[0], cam.pos[1], cam.pos[2]);
+        ttf.draw(text, 20.0f, win_height - 930.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+        sprintf(text, "( roll, pitch, yaw ) :  ( 0.00, %.2f, %.2f ) [ deg ]", cam.pitch, cam.yaw);
+        ttf.draw(text, 20.0f, win_height - 960.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
+        sprintf(text, "( fov (zoom) ) :  ( %.2f ) [ deg ]", fov);
+        ttf.draw(text, 20.0f, win_height - 990.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
+
         glfwSwapBuffers(win);
         glfwPollEvents();
 

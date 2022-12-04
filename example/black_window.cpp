@@ -33,6 +33,7 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback); //register the callback
+    
     //glew validation stuff...
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)

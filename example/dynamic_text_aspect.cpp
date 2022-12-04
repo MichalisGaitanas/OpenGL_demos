@@ -107,7 +107,7 @@ int main()
 
         //draw text
         char text[50];
-        sprintf(text, "Time info : t = %.2f [sec]",(float)glfwGetTime());
+        sprintf(text, "t = %.2f [sec]",(float)glfwGetTime());
         ttf.draw(text, 20.0f, 50.0f, win_width, win_height, 0.4f, glm::vec3(1.0f,1.0f,1.0f), text_shader);
 
         glfwSwapBuffers(window);

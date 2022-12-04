@@ -2,10 +2,6 @@
 #include<GLFW/glfw3.h>
 #include<cstdio>
 
-const int x_top_left = 300, y_top_left = 100; //coordinates of the top left corner of the window (y starts from top)
-const int win_width = 900, win_height = 600;
-const char *win_label = "Colored window";
-
 void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -27,7 +23,8 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     //create window object
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
+    const int win_width = 900, win_height = 600;
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Colored window", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -35,6 +32,7 @@ int main()
         return 0;
     }
     glfwMakeContextCurrent(window);
+    const int x_top_left = 300, y_top_left = 100; //coordinates of the top left corner of the window (y starts from top)
     glfwSetWindowPos(window, x_top_left,y_top_left); //control the initial position of the window
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 

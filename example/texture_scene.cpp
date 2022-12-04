@@ -89,9 +89,9 @@ int main()
     }
 
     meshvft texcube("../obj/vft/cube1x1x1_correct_uv.obj", "../image/texture/wooden_container512x512.jpg");
-    meshvft texsun("../obj/vft/uvsphere_rad1.obj", "../image/texture/sun1024x574.jpg");
+    meshvft texsun("../obj/vft/uv_sphere_rad1_40x40.obj", "../image/texture/sun1024x574.jpg");
     meshvft texground("../obj/vft/terrain20x20.obj", "../image/texture/grass800x800.jpg");
-    meshvft texearth("../obj/vft/uvsphere_rad1.obj", "../image/texture/earth720x360.jpg");
+    meshvft texearth("../obj/vft/uv_sphere_rad1_40x40.obj", "../image/texture/earth720x360.jpg");
     meshvft texdidymain("../obj/vft/didymain2019.obj", "../image/texture/asteroid700x700.jpg");
 
     shader texshad("../shader/vertex/trans_mvp_tex.vert","../shader/fragment/tex.frag");

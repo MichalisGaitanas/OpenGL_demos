@@ -54,7 +54,7 @@ int main()
 
     //create meshes
     meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
-    meshvf lamp("../obj/vf/sphere_rad1.obj");
+    meshvf lamp("../obj/vf/uv_sphere_rad1_20x20.obj");
 
     //create shaders
     shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads_atten.frag");

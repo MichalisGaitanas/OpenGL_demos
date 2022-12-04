@@ -2,9 +2,6 @@
 #include<GLFW/glfw3.h>
 #include<cstdio>
 
-int win_width = 1000, win_height = 700;
-const char *win_label = "Centered window";
-
 void raw_hardware_input(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -27,7 +24,8 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     //create the window object
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
+    int win_width = 1000, win_height = 700;
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Centered window", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");

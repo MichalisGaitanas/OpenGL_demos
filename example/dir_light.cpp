@@ -8,8 +8,6 @@
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
 
-int win_width = 900, win_height = 900;
-const char *win_label = "Directional light calculations";
 
 void raw_hardware_input(GLFWwindow *win)
 {
@@ -32,7 +30,8 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     //create the window object
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, win_label, NULL, NULL);
+    int win_width = 900, win_height = 900;
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Directional light calculations", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -59,7 +58,7 @@ int main()
 
     ////////////////////////////////////////////////////////////////////////////
 
-    meshvfn sphere("../obj/vfn/smooth/sphere_rad1.obj");
+    meshvfn sphere("../obj/vfn/smooth/uv_sphere_rad1_40x30.obj");
     shader shad("../shader/vertex/trans_mvpn.vert", "../shader/fragment/dir_light_ads.frag");
     shad.use();
 

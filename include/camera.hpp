@@ -15,6 +15,7 @@ public:
     float vel; //velocity magnitude
     float mouse_sensitivity;
 
+    //constructor
     camera(glm::vec3 init_pos = glm::vec3(0.0f,0.0f,0.0f),
            glm::vec3 init_world_up = glm::vec3(0.0f,0.0f,1.0f),
            float init_yaw = 90.0f,
