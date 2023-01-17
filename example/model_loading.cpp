@@ -56,7 +56,7 @@ int main()
         return 0;
     }
 
-    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
+    meshvfn suzanne("../obj/vfn/suzanne.obj");
     meshvf lamp("../obj/vf/cube1x1x1.obj");
 
     //create shaders

@@ -90,12 +90,12 @@ int main()
 {
     GLFWwindow *win = window();
 
-    meshvfn didymain("../obj/vfn/flat/didymos_binary/didymain2019.obj");
-    meshvfn bennu("../obj/vfn/flat/bennu.obj");
-    meshvfn itokawa("../obj/vfn/flat/itokawa.obj");
-    meshvfn churyumov("../obj/vfn/flat/churyumov.obj");
-    meshvfn eros("../obj/vfn/flat/eros.obj");
-    meshvfn kleopatra("../obj/vfn/flat/kleopatra.obj");
+    meshvfn didymain("../obj/vfn/didymos/didymain2019.obj");
+    meshvfn bennu("../obj/vfn/bennu.obj");
+    meshvfn itokawa("../obj/vfn/itokawa.obj");
+    meshvfn churyumov("../obj/vfn/churyumov.obj");
+    meshvfn eros("../obj/vfn/eros.obj");
+    meshvfn kleopatra("../obj/vfn/kleopatra.obj");
 
     font ttf("../font/NotoSansRegular.ttf");
 

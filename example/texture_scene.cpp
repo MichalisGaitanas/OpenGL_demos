@@ -135,7 +135,7 @@ int main()
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f,0.0f,1.0f));
         model = glm::scale(model, glm::vec3(0.25f,0.25f,0.25f));
-        model = glm::rotate(model, 10.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, 1.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
         texshad.set_mat4_uniform("model", model);
         texearth.draw_triangles();
 

@@ -88,8 +88,8 @@ int main()
         return 0;
     }
 
-    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
-    meshvfn ak47("../obj/vfn/flat/ak47.obj");
+    meshvfn suzanne("../obj/vfn/suzanne.obj");
+    meshvfn ak47("../obj/vfn/ak47.obj");
 
     shader shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ad.frag");
     shad.use();

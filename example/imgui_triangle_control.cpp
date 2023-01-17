@@ -71,11 +71,12 @@ int main()
     
     //creating a shader object
     shader shad("../shader/vertex/trans_nothing.vert","../shader/fragment/monochromatic.frag");
-	shad.use(); //use the "shad" shader object ( same as glUseProgram(shad_ID) )
+	shad.use(); //activate the "shad" shader object ( same as glUseProgram(shad_ID) )
 
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
 	ImGuiIO& io = ImGui::GetIO();
+    io.IniFilename = NULL;
 	(void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(win, true);
@@ -92,7 +93,6 @@ int main()
         
         glClear(GL_COLOR_BUFFER_BIT);
         
-		//shad.use(); //use the "shad" shader object ( same as glUseProgram(shad_ID) )
         shad.set_vec3_uniform("model_col",triangle_col);
         glBindVertexArray(vao);
 		//only draw the triangle if the imgui checkbox is checked
@@ -104,13 +104,15 @@ int main()
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 
+        ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver); 
 		ImGui::Begin("Triangle");
+
 		ImGui::Text("Navigate");
 		ImGui::Checkbox("Draw triangle", &draw_triangle);
 		ImGui::ColorEdit3("Color", glm::value_ptr(triangle_col)); //color editor that appears in the window
 		ImGui::End();
 
-		// Renders the ImGUI elements
+		//Renders the imgui elements
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 

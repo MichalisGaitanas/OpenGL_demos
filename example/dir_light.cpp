@@ -58,7 +58,7 @@ int main()
 
     ////////////////////////////////////////////////////////////////////////////
 
-    meshvfn sphere("../obj/vfn/smooth/uv_sphere_rad1_40x30.obj");
+    meshvfn sphere("../obj/vfn/uv_sphere_rad1_40x30.obj");
     shader shad("../shader/vertex/trans_mvpn.vert", "../shader/fragment/dir_light_ads.frag");
     shad.use();
 

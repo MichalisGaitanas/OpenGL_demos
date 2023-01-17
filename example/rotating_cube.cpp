@@ -10,12 +10,15 @@
 int width = 800, height = 800;
 const char *label = "Rotating cube";
 
-void raw_hardware_input(GLFWwindow *win)
+bool motion = false;
+float last_time = 0.0f;
+
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
-        glfwSetWindowShouldClose(win, true);
-    }
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, true);
+    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+        motion = !motion;
 }
 
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
@@ -30,6 +33,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_SAMPLES, 4);
 
     GLFWwindow *window = glfwCreateWindow(width, height, label, NULL, NULL);
     if (window == NULL)
@@ -45,6 +49,7 @@ int main()
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
     glfwSetWindowPos( window, (monitx + mode->width - width)/2, (monity + mode->height - height)/2 );
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
 
     //validate glew
     glewExperimental = GL_TRUE;
@@ -113,7 +118,6 @@ int main()
     glClearColor(0.0f,0.0f,0.0f,1.0f); //background color
     while (!glfwWindowShouldClose(window)) //game loop
     {
-        raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glm::vec3 model_col = glm::vec3(1.0f,0.1f,0.1f);
@@ -125,8 +129,18 @@ int main()
 
         //render 1st cube
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(sin((float)glfwGetTime()),0.0f,-5.0f));
-        model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(1.0f,1.0f,1.0f));
+        if (motion)
+        {
+            last_time = (float)glfwGetTime();
+            model = glm::translate(model, glm::vec3(sin(last_time),0.0f,-5.0f));
+            model = glm::rotate(model, last_time, glm::vec3(1.0f,1.0f,1.0f));
+        }
+        else //freeze
+        {
+            glfwSetTime(last_time);
+            model = glm::translate(model, glm::vec3(sin(last_time),0.0f,-5.0f));
+            model = glm::rotate(model, last_time, glm::vec3(1.0f,1.0f,1.0f));
+        }
         shad.set_mat4_uniform("model",model);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);

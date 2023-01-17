@@ -68,7 +68,7 @@ int main()
                        0.5f, -0.5f, 0.0f,
                        0.0f,  0.5f, 0.0f };
 
-    //tell the computer how to store and read the previously defined geometry - data in order to be able to process/render it
+    //tell the gpu how to store/read the previously defined geometry data in order to be able to process/render it
     unsigned int vao,vbo;
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -104,7 +104,7 @@ int main()
         printf("%s\n",infolog);
     }
 
-    //create and link a "chained" shader program(s)
+    //create and link a "chained" shader program
     unsigned int shader_prog = glCreateProgram();
     glAttachShader(shader_prog, vshader);
     glAttachShader(shader_prog, fshader);

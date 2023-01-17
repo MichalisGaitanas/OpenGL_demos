@@ -53,7 +53,7 @@ int main()
     }
 
     //create meshes
-    meshvfn suzanne("../obj/vfn/smooth/suzanne.obj");
+    meshvfn suzanne("../obj/vfn/suzanne.obj");
     meshvf lamp("../obj/vf/uv_sphere_rad1_20x20.obj");
 
     //create shaders
