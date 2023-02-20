@@ -1,7 +1,7 @@
 # OpenGL_demos
 
-# This project contains some examples-tutorials-demos of the OpenGL C API. The codes however, are written in C++.
-# In order to be able to run all the example codes, the following dependencies must be installed : OpenGL kernel, glfw, glew, glm, freetype and a C++ compiler.
+# This project contains some examples-tutorials-demos of OpenGL. The codes are written in C++. In order to be able to run all the example codes, the
+# following dependencies must be installed : OpenGL kernel (usually preinstalled), glfw, glew, glm, freetype and a C++ compiler.
 
 
 
@@ -76,4 +76,4 @@ The images/ folder contains images that can be used as skyboxes (cubemaps), text
 
 The fonts/ folder contains only .ttf files that are used in case of font rendering.
 
-The examples/ folder assembles all the aforementioned to create graphics in ours screen.
+The examples/ folder contains .cpp files that assemble all the aforementioned to render graphics on the screen.
