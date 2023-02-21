@@ -1,6 +1,6 @@
-#include"imgui.h"
-#include"imgui_impl_glfw.h"
-#include"imgui_impl_opengl3.h"
+#include"../imgui/imgui.h"
+#include"../imgui/imgui_impl_glfw.h"
+#include"../imgui/imgui_impl_opengl3.h"
 
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
@@ -20,7 +20,7 @@ void func1()
 void func2()
 {
     for (double z = 0.0; z < 20000.0; z += 0.001)
-        double y = exp(sin(sqrt(z*fabs(z)+ cos(z))));
+        double y = exp(sin(sqrt(z*fabs(z)+ cos(z)))); //do not optimize
     return;
 }
 

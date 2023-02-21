@@ -91,7 +91,7 @@ int main()
     meshvfn suzanne("../obj/vfn/suzanne.obj");
     meshvfn ak47("../obj/vfn/ak47.obj");
 
-    shader shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ad.frag");
+    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ad.frag");
     shad.use();
 
     glm::vec3 light_pos = glm::vec3(0.0f,-5.0f,60.0f); //light position in world coordinates

@@ -59,7 +59,7 @@ int main()
     ////////////////////////////////////////////////////////////////////////////
 
     meshvfn sphere("../obj/vfn/uv_sphere_rad1_40x30.obj");
-    shader shad("../shader/vertex/trans_mvpn.vert", "../shader/fragment/dir_light_ads.frag");
+    shader shad("../shaders/vertex/trans_mvpn.vert", "../shaders/fragment/dir_light_ads.frag");
     shad.use();
 
     glm::vec3 light_dir; //light direction in world coordinates

@@ -60,8 +60,8 @@ int main()
     meshvf lamp("../obj/vf/cube1x1x1.obj");
 
     //create shaders
-    shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads.frag");
-    shader lamp_shad("../shader/vertex/trans_mvp.vert","../shader/fragment/monochromatic.frag");
+    shader suzanne_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ads.frag");
+    shader lamp_shad("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
 
     glm::vec3 light_pos = glm::vec3(0.0f,-2.5f,1.0f); //light position in world coordinates
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //lighting calculations color

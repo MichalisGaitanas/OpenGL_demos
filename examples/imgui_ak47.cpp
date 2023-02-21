@@ -80,7 +80,7 @@ int main()
     }
 
     meshvfn ak47_mesh("../obj/vfn/ak47.obj");
-    shader ak47_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/dir_light_ads.frag");
+    shader ak47_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ads.frag");
     ak47_shad.use();
 
     glm::vec3 light_dir = glm::vec3(1.0f,0.0f,0.0f);

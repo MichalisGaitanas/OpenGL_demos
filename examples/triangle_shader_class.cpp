@@ -62,7 +62,7 @@ int main()
     glEnableVertexAttribArray(0);
     
     //creating a shader object
-    shader shad("../shader/vertex/trans_nothing.vert","../shader/fragment/monochromatic.frag");
+    shader shad("../shaders/vertex/trans_nothing.vert","../shaders/fragment/monochromatic.frag");
     glm::vec3 triangle_col = glm::vec3(1.0f,0.5f,0.2f);
     
     glClearColor(0.1f,0.5f,0.2f,1.0f); //background color

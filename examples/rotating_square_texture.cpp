@@ -81,7 +81,7 @@ int main()
 
     //load the image-texture
     int imgwidth, imgheight, imgchannels;
-    const char *imgpath = "../image/texture/ground900x900.jpg";
+    const char *imgpath = "../images/texture/ground900x900.jpg";
     unsigned char *imgdata = stbi_load(imgpath, &imgwidth, &imgheight, &imgchannels, 0);
     if (!imgdata)
     {
@@ -101,7 +101,7 @@ int main()
     stbi_image_free(imgdata); //free image resources
 
     //texture shader
-    shader texshad("../shader/vertex/trans_m_tex.vert","../shader/fragment/tex.frag");
+    shader texshad("../shaders/vertex/trans_m_texture.vert","../shaders/fragment/texture.frag");
     texshad.use();
 
     glClearColor(0.0f,0.0f,0.0f,1.0f);

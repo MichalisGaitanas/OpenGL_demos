@@ -1,8 +1,8 @@
 
 //always include imgui stuff first
-#include"imgui.h"
-#include"imgui_impl_glfw.h"
-#include"imgui_impl_opengl3.h"
+#include"../imgui/imgui.h"
+#include"../imgui/imgui_impl_glfw.h"
+#include"../imgui/imgui_impl_opengl3.h"
 
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
@@ -54,7 +54,7 @@ int main()
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
     (void)io;
-    ImGui::StyleColorsDark(); //set background color for imgui window
+    ImGui::StyleColorsLight(); //set background color for imgui window
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");    
 

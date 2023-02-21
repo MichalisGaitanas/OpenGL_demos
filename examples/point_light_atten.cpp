@@ -57,8 +57,8 @@ int main()
     meshvf lamp("../obj/vf/uv_sphere_rad1_20x20.obj");
 
     //create shaders
-    shader suzanne_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads_atten.frag");
-    shader lamp_shad("../shader/vertex/trans_mvp.vert","../shader/fragment/monochromatic.frag");
+    shader suzanne_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ads_atten.frag");
+    shader lamp_shad("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.05f,0.05f,0.05f,1.0f);

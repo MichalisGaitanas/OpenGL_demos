@@ -1,6 +1,6 @@
-#include"imgui.h"
-#include"imgui_impl_glfw.h"
-#include"imgui_impl_opengl3.h"
+#include"../imgui/imgui.h"
+#include"../imgui/imgui_impl_glfw.h"
+#include"../imgui/imgui_impl_opengl3.h"
 
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
@@ -51,7 +51,7 @@ int main()
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
-    io.Fonts->AddFontFromFileTTF("../font/arial.ttf", 15.0f);
+    io.Fonts->AddFontFromFileTTF("../fonts/arial.ttf", 15.0f);
     io.IniFilename = NULL;
     (void)io;
     ImGui::StyleColorsDark();

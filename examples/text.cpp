@@ -54,8 +54,8 @@ int main()
         return 0;
     }
 
-    font ttf("../font/NotoSansRegular.ttf"); //instantiate font object
-    shader shad("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag"); //instatiate shader object for the text
+    font ttf("../fonts/NotoSansRegular.ttf"); //instantiate font object
+    shader shad("../shaders/vertex/trans_nothing_text.vert","../shaders/fragment/text.frag"); //instatiate shader object for the text
     shad.use();
     glm::mat4 projection = glm::ortho(0.0f, static_cast<float>(win_width), 0.0f, static_cast<float>(win_height)); //setup text coordinate system
     shad.set_mat4_uniform("projection", projection);

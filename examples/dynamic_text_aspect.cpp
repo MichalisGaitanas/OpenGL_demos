@@ -65,10 +65,10 @@ int main()
 
     //create mesh and corresponding shader
     meshvfn suzanne("../obj/vfn/suzanne.obj");
-    shader suzanne_shader("../shader/vertex/trans_mvpn.vert","../shader/fragment/dir_light_ads.frag");
+    shader suzanne_shader("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ads.frag");
     //create font and corresponding shader
-    font ttf("../font/NotoSansRegular.ttf");
-    shader text_shader("../shader/vertex/trans_nothing_text.vert","../shader/fragment/text.frag");
+    font ttf("../fonts/NotoSansRegular.ttf");
+    shader text_shader("../shaders/vertex/trans_nothing_text.vert","../shaders/fragment/text.frag");
 
     glm::vec3 light_dir = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);

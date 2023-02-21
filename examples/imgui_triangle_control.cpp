@@ -70,7 +70,7 @@ int main()
     glEnableVertexAttribArray(0);
     
     //creating a shader object
-    shader shad("../shader/vertex/trans_nothing.vert","../shader/fragment/monochromatic.frag");
+    shader shad("../shaders/vertex/trans_nothing.vert","../shaders/fragment/monochromatic.frag");
 	shad.use(); //activate the "shad" shader object ( same as glUseProgram(shad_ID) )
 
 	IMGUI_CHECKVERSION();

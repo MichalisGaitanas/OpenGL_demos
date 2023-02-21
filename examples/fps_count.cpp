@@ -20,9 +20,10 @@ int frames = 0;
 int draw_didymain = 1; std::string didymain_onoff;
 int draw_bennu = 1; std::string bennu_onoff;
 int draw_itokawa = 1; std::string itokawa_onoff;
-int draw_churyumov = 1; std::string churyumov_onoff;
+int draw_gerasimenko = 1; std::string gerasimenko_onoff;
 int draw_eros = 1; std::string eros_οnοff;
 int draw_kleopatra = 1; std::string kleopatra_onoff;
+int draw_vesta = 1; std::string vesta_onoff;
 
 camera cam; //default camera constructor
 
@@ -37,11 +38,13 @@ void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
     if (key == GLFW_KEY_3 && action == GLFW_PRESS)
         draw_itokawa = !draw_itokawa;
     if (key == GLFW_KEY_4 && action == GLFW_PRESS)
-        draw_churyumov = !draw_churyumov;
+        draw_gerasimenko = !draw_gerasimenko;
     if (key == GLFW_KEY_5 && action == GLFW_PRESS)
         draw_eros = !draw_eros;
     if (key == GLFW_KEY_6 && action == GLFW_PRESS)
         draw_kleopatra = !draw_kleopatra;
+    if (key == GLFW_KEY_7 && action == GLFW_PRESS)
+        draw_vesta = !draw_vesta;
 }
 
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
@@ -91,11 +94,12 @@ int main()
     GLFWwindow *win = window();
 
     meshvfn didymain("../obj/vfn/didymos/didymain2019.obj");
-    meshvfn bennu("../obj/vfn/bennu.obj");
-    meshvfn itokawa("../obj/vfn/itokawa.obj");
-    meshvfn churyumov("../obj/vfn/churyumov.obj");
-    meshvfn eros("../obj/vfn/eros.obj");
-    meshvfn kleopatra("../obj/vfn/kleopatra.obj");
+    meshvfn bennu("../obj/vfn/bennu196k.obj");
+    meshvfn itokawa("../obj/vfn/itokawa196k.obj");
+    meshvfn gerasimenko("../obj/vfn/gerasimenko256k.obj");
+    meshvfn eros("../obj/vfn/eros196k.obj");
+    meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");
+    meshvfn vesta("../obj/vfn/vesta256k.obj");
 
     font ttf("../fonts/NotoSansRegular.ttf");
 
@@ -104,7 +108,7 @@ int main()
 
     glm::vec3 light_pos = glm::vec3(0.0f,-100.0f,0.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 aster_col = glm::vec3(0.5f,0.5f,0.5f);
+    glm::vec3 aster_col = glm::vec3(0.5f,0.2f,0.0f);
 
     glm::mat4 projection, view, model; //glm matrices
 
@@ -127,7 +131,7 @@ int main()
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 5000.0f);
+        projection = glm::perspective(glm::radians(45.0f), aspect_ratio, 0.01f, 50000.0f);
         view = cam.view();
         model = glm::mat4(1.0f);
 
@@ -178,17 +182,17 @@ int main()
             itokawa_onoff = "on";
         }
 
-        //churyumov
+        //gerasimenko
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(3.0f,10.0f,-1.0));
         model = glm::rotate(model, (float)tglfw/10.0f, glm::vec3(0.0f,0.0f,1.0f));
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_mat4_uniform("model", model);
-        churyumov_onoff = "off";
-        if (draw_churyumov)
+        gerasimenko_onoff = "off";
+        if (draw_gerasimenko)
         {
-            churyumov.draw_triangles();
-            churyumov_onoff = "on";
+            gerasimenko.draw_triangles();
+            gerasimenko_onoff = "on";
         }
 
         //eros
@@ -219,7 +223,7 @@ int main()
 
         //itokawa
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.75f,3.0f,0.0));
+        model = glm::translate(model, glm::vec3(0.75f,3.0f,0.0f));
         model = glm::rotate(model, (float)tglfw/10.0f, glm::vec3(0.0f,0.0f,1.0f));
         mvpn_plight_ad.use();
         mvpn_plight_ad.set_mat4_uniform("model", model);
@@ -228,6 +232,19 @@ int main()
         {
             itokawa.draw_triangles();
             itokawa_onoff = "on";
+        }
+
+        //vesta
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f,650.0f,0.0f));
+        model = glm::rotate(model, (float)tglfw/20.0f, glm::vec3(0.0f,0.0f,1.0f));
+        mvpn_plight_ad.use();
+        mvpn_plight_ad.set_mat4_uniform("model", model);
+        vesta_onoff = "off";
+        if (draw_vesta)
+        {
+            vesta.draw_triangles();
+            vesta_onoff = "on";
         }
 
         //text
@@ -242,12 +259,14 @@ int main()
         ttf.draw(text, 20.0f, win_height - 100.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
         sprintf(text, "Itokawa :  3  (%s)", itokawa_onoff.c_str());
         ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
-        sprintf(text, "Churyumov :  4  (%s)", churyumov_onoff.c_str());
+        sprintf(text, "Churyumov :  4  (%s)", gerasimenko_onoff.c_str());
         ttf.draw(text, 20.0f, win_height - 140.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
         sprintf(text, "Eros : 5  (%s)", eros_οnοff.c_str());
         ttf.draw(text, 20.0f, win_height - 160.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
         sprintf(text, "Kleopatra : 6  (%s)", kleopatra_onoff.c_str());
         ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
+        sprintf(text, "Vesta : 7  (%s)", vesta_onoff.c_str());
+        ttf.draw(text, 20.0f, win_height - 200.0f, win_width, win_height, 0.3f, glm::vec3(0.0f,0.75f,0.0f), text_shad);
 
         sprintf(text, "ms/frame : %f", (float)ms_per_frame);
         ttf.draw(text, 20.0f, win_height - 240.0f, win_width, win_height, 0.3f, glm::vec3(0.75f,0.0f,0.0f), text_shad);

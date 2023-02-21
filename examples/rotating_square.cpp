@@ -72,7 +72,7 @@ int main()
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
     glEnableVertexAttribArray(0);
 
-    shader shad("../shader/vertex/trans_m.vert","../shader/fragment/monochromatic.frag"); //shader objects
+    shader shad("../shaders/vertex/trans_m.vert","../shaders/fragment/monochromatic.frag"); //shader objects
     glm::vec3 model_col = glm::vec3(1.0f,0.1f,0.1f);
 
     glClearColor(1.0f,1.0f,1.0f,1.0f); //background color

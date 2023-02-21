@@ -126,8 +126,8 @@ int main()
     glEnableVertexAttribArray(0);
 
     //create shaders
-    shader cube_shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/point_light_ads.frag");
-    shader lamp_shad("../shader/vertex/trans_mvp.vert","../shader/fragment/monochromatic.frag");
+    shader cube_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ads.frag");
+    shader lamp_shad("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
 
     glEnable(GL_DEPTH_TEST); //enable depth - testing
     glClearColor(0.0f,0.0f,0.0f,1.0f); //background color

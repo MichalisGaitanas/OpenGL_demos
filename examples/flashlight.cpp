@@ -96,8 +96,8 @@ int main()
     }
 
     meshvfn suzanne("../obj/vfn/suzanne.obj");
-    meshvfn terrain("../obj/vfn/rough_terrain20x20.obj");
-    shader shad("../shader/vertex/trans_mvpn.vert","../shader/fragment/flashlight_ad.frag"); //create shader
+    meshvfn terrain("../obj/vfn/rough_terrain40x40.obj");
+    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/flashlight_ad.frag"); //create shader
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/win_height, 0.01f,1000.0f);
     glm::mat4 view, model;

@@ -88,13 +88,13 @@ int main()
         return 0;
     }
 
-    meshvft texcube("../obj/vft/cube1x1x1_correct_uv.obj", "../image/texture/wooden_container512x512.jpg");
-    meshvft texsun("../obj/vft/uv_sphere_rad1_40x40.obj", "../image/texture/sun1024x574.jpg");
-    meshvft texground("../obj/vft/terrain20x20.obj", "../image/texture/grass800x800.jpg");
-    meshvft texearth("../obj/vft/uv_sphere_rad1_40x40.obj", "../image/texture/earth720x360.jpg");
-    meshvft texdidymain("../obj/vft/didymain2019.obj", "../image/texture/asteroid700x700.jpg");
+    meshvft texcube("../obj/vft/cube1x1x1_correct_uv.obj", "../images/texture/wooden_container512x512.jpg");
+    meshvft texsun("../obj/vft/uv_sphere_rad1_40x40.obj", "../images/texture/sun1024x574.jpg");
+    meshvft texground("../obj/vft/rough_terrain10x10.obj", "../images/texture/grass800x800.jpg");
+    meshvft texearth("../obj/vft/uv_sphere_rad1_40x40.obj", "../images/texture/earth720x360.jpg");
+    meshvft texdidymain("../obj/vft/didymain2019.obj", "../images/texture/asteroid700x700.jpg");
 
-    shader texshad("../shader/vertex/trans_mvp_tex.vert","../shader/fragment/tex.frag");
+    shader texshad("../shaders/vertex/trans_mvp_texture.vert","../shaders/fragment/texture.frag");
     texshad.use();
 
     glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/(float)win_height, 0.01f,1000.0f);
