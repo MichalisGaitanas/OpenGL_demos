@@ -77,3 +77,20 @@ The images/ folder contains images that can be used as skyboxes (cubemaps), text
 The fonts/ folder contains only .ttf files that are used in case of font rendering.
 
 The examples/ folder contains .cpp files that assemble all the aforementioned to render graphics on the screen.
+
+
+
+# Blender issue :
+
+When exporting an .obj model from Blender 3.2.0, additional similar normals appear (probably due to float truncation).
+Example :
+    v x y z
+    v x y z
+    ...
+    vn 0.2672 0.5345 0.8017
+    vn 0.2673 0.5345 0.8017
+    ...
+    f i j k
+    f i j k
+    ...
+
