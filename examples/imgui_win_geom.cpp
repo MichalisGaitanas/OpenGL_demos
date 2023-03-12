@@ -54,7 +54,7 @@ int main()
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
     (void)io;
-    ImGui::StyleColorsLight(); //set background color for imgui window
+    ImGui::StyleColorsDark(); //set background color for imgui window
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");    
 

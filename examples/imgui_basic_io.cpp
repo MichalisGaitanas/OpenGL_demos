@@ -29,7 +29,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(800,600, "Basic imgui io", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(800,700, "Basic imgui io", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to open a glfw window. Exiting...\n");
@@ -130,6 +130,18 @@ int main()
 
         ImGui::BulletText("Bullet text demo");
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+        static double M1 = 1e-13;
+        ImGui::Text("Mass");
+        ImGui::Text("M1 ");
+        ImGui::SameLine();
+        ImGui::PushItemWidth(100.0f);
+            ImGui::PushID(2);
+                ImGui::InputDouble("", &M1, 0.0, 0.0, "%g");
+            ImGui::PopID();
+        ImGui::PopItemWidth();
+        ImGui::SameLine();
+        ImGui::Text("[kg]");
 
         ImGui::End();
 
