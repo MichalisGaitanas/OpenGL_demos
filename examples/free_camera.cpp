@@ -121,7 +121,7 @@ int main()
         glm::mat4 model = glm::mat4(1.0f);
         shad.set_mat4_uniform("view", view);
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("cam_pos", cam.pos);
+        //shad.set_vec3_uniform("cam_pos", cam.pos);
         ak47.draw_triangles();
 
         model = glm::translate(model,glm::vec3(0.0f,6.0f,0.0f));
