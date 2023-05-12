@@ -7,127 +7,6 @@
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
-//#define STB_IMAGE_IMPLEMENTATION
-//#include"../include/stb_image.h"
-
-class skybox
-{
-
-public:
-
-    unsigned int vao, vbo, ebo, tao;
-    std::vector<float> main_buffer;
-    unsigned int draw_size;
-
-    skybox()
-    {
-        float verts[] = { -1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f,  1.0f,
-                           1.0f, -1.0f, -1.0f,
-                          -1.0f, -1.0f, -1.0f,
-                          -1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f,  1.0f,
-                           1.0f,  1.0f, -1.0f,
-                          -1.0f,  1.0f, -1.0f };
-
-        unsigned int inds[] = { //right
-                                1, 2, 6,
-                                6, 5, 1,
-                                //left
-                                0, 4, 7,
-                                7, 3, 0,
-                                //top
-                                4, 5, 6,
-                                6, 7, 4,
-                                //bottom
-                                0, 3, 2,
-                                2, 1, 0,
-                                //back
-                                0, 1, 5,
-                                5, 4, 0,
-                                //front
-                                3, 7, 6,
-                                6, 2, 3  };
-
-        glGenVertexArrays(1, &vao);
-        glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
-        glBindVertexArray(vao);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(verts), &verts, GL_STATIC_DRAW);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(inds), &inds, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
-        glBindVertexArray(0);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
-
-        //All the faces of the cubemap (make sure they are in this exact order)
-        std::string facesCubemap[6] =
-        {
-            "../images/skybox/starfield1/right.jpg",
-            "../images/skybox/starfield1/left.jpg",
-            "../images/skybox/starfield1/top.jpg",
-            "../images/skybox/starfield1/bottom.jpg",
-            "../images/skybox/starfield1/front.jpg",
-            "../images/skybox/starfield1/back.jpg"
-        };
-
-        // Creates the cubemap texture object
-        unsigned int tao;
-        glGenTextures(1, &tao);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        // These are very important to prevent seams
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        // This might help with seams on some systems
-        //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
-
-        // Cycles through all the textures and attaches them to the cubemap object
-        for (unsigned int i = 0; i < 6; i++)
-        {
-            int width, height, nrChannels;
-            unsigned char* data = stbi_load(facesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
-            if (data)
-            {
-                stbi_set_flip_vertically_on_load(false);
-                glTexImage2D
-                (
-                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0,
-                    GL_RGB,
-                    width,
-                    height,
-                    0,
-                    GL_RGB,
-                    GL_UNSIGNED_BYTE,
-                    data
-                );
-                stbi_image_free(data);
-            }
-            else
-            {
-                std::cout << "Failed to load texture: " << facesCubemap[i] << std::endl;
-                stbi_image_free(data);
-            }
-        }
-    }
-
-    //draw the mesh (triangles)
-    void draw()
-    {
-        glBindVertexArray(vao);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-    }
-};
 
 camera cam(glm::vec3(0.0f,-10.0f,2.0f));
 
@@ -175,7 +54,6 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 
 int main()
 {
-
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -195,7 +73,6 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     int win_width, win_height;
     glfwGetWindowSize(window, &win_width, &win_height);
-    printf("Window size in screen coordinates = (%d, %d)\n",win_width, win_height);
     xpos_previous = win_width/2.0f;
     ypos_previous = win_height/2.0f;
     glewExperimental = GL_TRUE;
@@ -219,9 +96,6 @@ int main()
     skybox sb;
     shader shadsb("../shaders/vertex/skybox.vert","../shaders/fragment/skybox.frag");
 
-    //glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/(float)win_height, 0.01f,100.0f);
-    //glm::mat4 view, model;
-
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f,0.1f,0.1f,1.0f);
     while (!glfwWindowShouldClose(window))
@@ -244,16 +118,14 @@ int main()
         suzanne.draw_triangles();
 
         glDepthFunc(GL_LEQUAL);
-
-        shadsb.use();
-        projection = glm::mat4(1.0f);
-        view = glm::mat4(1.0f);
-        projection = glm::perspective(glm::radians(45.0f), (float)win_width / win_height, 0.01f, 100.0f);
-        view = glm::mat4(glm::mat3(glm::lookAt(cam.pos, cam.pos+cam.front, cam.up)));
-        shadsb.set_mat4_uniform("projection", projection);
-        shadsb.set_mat4_uniform("view", view);
-        sb.draw();
-
+            shadsb.use();
+            projection = glm::mat4(1.0f);
+            view = glm::mat4(1.0f);
+            projection = glm::perspective(glm::radians(45.0f), (float)win_width / win_height, 0.01f, 100.0f);
+            view = glm::mat4(glm::mat3(glm::lookAt(cam.pos, cam.pos+cam.front, cam.up)));
+            shadsb.set_mat4_uniform("projection", projection);
+            shadsb.set_mat4_uniform("view", view);
+            sb.draw();
         glDepthFunc(GL_LESS);
 
         glfwSwapBuffers(window);
