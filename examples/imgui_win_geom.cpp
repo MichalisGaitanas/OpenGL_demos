@@ -119,8 +119,8 @@ public:
             ImGui::Text("Graphics controls");
             ImGui::End();
 
-            ImGui::SetNextWindowPos(ImVec2(dispx/7.0f, dispy - dispy/9.0f), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(dispx - 2*dispx/7.0f, dispy/9.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowPos(ImVec2(dispx/7.0f, dispy - dispy/11.0f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(dispx - 2*dispx/7.0f, dispy/11.0f), ImGuiCond_FirstUseEver);
             ImGui::Begin("Bottom window", NULL);
             ImGui::Text("Messages, commands, etc...");
             ImGui::End();

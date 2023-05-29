@@ -184,7 +184,7 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-        draw_size = (int)(main_buffer.size()/6); //to draw faces and normals
+        //draw_size = (int)(main_buffer.size()/6); //to draw faces and normals
     }
 
     //delete the mesh
@@ -198,7 +198,7 @@ public:
     void draw_triangles()
     {
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, draw_size);
+        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/6));
         glBindVertexArray(0);
     }
 };
@@ -337,7 +337,6 @@ class skybox
 public:
 
     unsigned int vao, vbo, ebo, tao;
-    
 
     skybox()
     {
@@ -384,16 +383,13 @@ public:
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
 
-        //All the faces of the cubemap (make sure they are in this exact order)
-        std::string facesCubemap[6] =
-        {
-            "../images/skybox/starfield_4k/right.jpg",
-            "../images/skybox/starfield_4k/left.jpg",
-            "../images/skybox/starfield_4k/top.jpg",
-            "../images/skybox/starfield_4k/bottom.jpg",
-            "../images/skybox/starfield_4k/front.jpg",
-            "../images/skybox/starfield_4k/back.jpg"
-        };
+        //skybox faces (make sure they are in this exact order)
+        std::string path[6] = { "../images/skybox/starfield_4k/right.jpg",
+                                "../images/skybox/starfield_4k/left.jpg",
+                                "../images/skybox/starfield_4k/top.jpg",
+                                "../images/skybox/starfield_4k/bottom.jpg",
+                                "../images/skybox/starfield_4k/front.jpg",
+                                "../images/skybox/starfield_4k/back.jpg" };
 
         // Creates the cubemap texture object
         unsigned int tao;
@@ -401,44 +397,48 @@ public:
         glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        // These are very important to prevent seams
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         // This might help with seams on some systems
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-        // Cycles through all the textures and attaches them to the cubemap object
+        //loop through all the textures and attach them to the tao object
         for (int i = 0; i < 6; i++)
         {
-            int width, height, nrChannels;
-            unsigned char* data = stbi_load(facesCubemap[i].c_str(), &width, &height, &nrChannels, 0);
+            int width, height, nchannels;
+            unsigned char *data = stbi_load(path[i].c_str(), &width, &height, &nchannels, 0);
             if (data)
             {
                 stbi_set_flip_vertically_on_load(false);
-                glTexImage2D
-                (
-                    GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0,
-                    GL_RGB,
-                    width,
-                    height,
-                    0,
-                    GL_RGB,
-                    GL_UNSIGNED_BYTE,
-                    data
-                );
+                glTexImage2D ( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                               0,
+                               GL_RGB,
+                               width,
+                               height,
+                               0,
+                               GL_RGB,
+                               GL_UNSIGNED_BYTE,
+                               data );
                 stbi_image_free(data);
             }
             else
             {
-                std::cout << "Failed to load texture: " << facesCubemap[i] << std::endl;
+                printf("Failed to load texture '%s'\n", path[i]);
                 stbi_image_free(data);
             }
         }
     }
 
-    //draw the mesh (triangles)
+    //delete the skybox
+    ~skybox()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &ebo);
+        glDeleteBuffers(1, &vbo);
+    }
+
+    //draw the mesh (elements this time)
     void draw()
     {
         glBindVertexArray(vao);
