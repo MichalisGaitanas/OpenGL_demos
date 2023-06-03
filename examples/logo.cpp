@@ -32,6 +32,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
 
     GLFWwindow *window = glfwCreateWindow(width, height, label, NULL, NULL);
     if (window == NULL)
@@ -81,7 +82,9 @@ int main()
 
     //load the image-texture
     int imgwidth, imgheight, imgchannels;
-    const char *imgpath = "../images/texture/ground900x900.jpg";
+    const char *imgpath = "../images/texture/test_kimin.jpg";
+    //const char *imgpath = "../images/texture/ground900x900.jpg";
+    //const char *imgpath = "../images/texture/asteroid700x700.jpg";
     unsigned char *imgdata = stbi_load(imgpath, &imgwidth, &imgheight, &imgchannels, 0);
     if (!imgdata)
     {
@@ -98,7 +101,7 @@ int main()
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgwidth, imgheight, 0, GL_RGB, GL_UNSIGNED_BYTE, imgdata);
     glGenerateMipmap(GL_TEXTURE_2D);
     stbi_image_free(imgdata); //free image resources
@@ -107,14 +110,14 @@ int main()
     shader texshad("../shaders/vertex/trans_m_texture.vert","../shaders/fragment/texture.frag");
     texshad.use();
 
-    glClearColor(0.0f,0.0f,0.0f,1.0f);
+    glClearColor(0.0f,0.0f,0.0f,0.0f);
     while (!glfwWindowShouldClose(window))
     {
         raw_hardware_input(window);
         glClear(GL_COLOR_BUFFER_BIT);
 
         glm::mat4 model = glm::mat4(1.0f);
-        model = glm::rotate(model, (float)sin(glfwGetTime()), glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f,0.0f,0.0f));
         texshad.set_mat4_uniform("model",model);
 
         glDrawArrays(GL_TRIANGLES, 0, 6);
