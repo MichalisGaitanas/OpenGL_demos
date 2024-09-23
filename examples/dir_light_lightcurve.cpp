@@ -8,7 +8,6 @@
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
 
-
 void raw_hardware_input(GLFWwindow *win)
 {
     if (glfwGetKey(win, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -22,8 +21,7 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
     glViewport(0,0,w,h);
 }
 
-int main()
-{
+int main() {
     //initialize glfw and some hints
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -48,16 +46,14 @@ int main()
                               (monity + mode->height - win_height)/2 );
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-    //validate glew
+    // Validate GLEW
     glewExperimental = GL_TRUE;
-    if (glewInit() != GLEW_OK)
-    {
-        printf("Failed to initialize glew. Exiting...");
+    if (glewInit() != GLEW_OK) {
+        printf("Failed to initialize GLEW. Exiting...\n");
         return 0;
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-
+    // Create shader and mesh
     meshvfn sphere("../obj/vfn/uv_sphere_rad1_40x30.obj");
     shader shad("../shaders/vertex/trans_mvpn.vert", "../shaders/fragment/dir_light_ds.frag");
     shad.use();
@@ -69,8 +65,7 @@ int main()
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f); //camera aim (eye) direction
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f); //camera up direction
 
-    //projection, view and model matrix
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f),(float)win_width/win_height, 0.01f,100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)win_width / win_height, 0.01f, 100.0f);
     glm::mat4 view = glm::lookAt(cam_pos, cam_aim, cam_up);
     glm::mat4 model = glm::mat4(1.0f);
 
@@ -81,21 +76,35 @@ int main()
     shad.set_vec3_uniform("light_col", light_col);
     shad.set_vec3_uniform("model_col", sphere_col);
 
-    ////////////////////////////////////////////////////////////////////////////
+    // Enable depth testing and set clear color
+    glEnable(GL_DEPTH_TEST);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-    glEnable(GL_DEPTH_TEST); //enable depth - testing
-    glClearColor(0.0f,0.0f,0.0f,1.0f); //background color
+    // For storing total brightness over time
+    float time_step = 0.01f;
+    std::vector<float> lightcurve;
+
     while (!glfwWindowShouldClose(window)) //game loop
     {
         raw_hardware_input(window);
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //color buffer and z-buffer
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear off-screen buffer
 
-        light_dir = glm::vec3(cos(glfwGetTime()),sin(glfwGetTime()),0.0f); //light direction in world coordinates
-        shad.set_vec3_uniform("light_dir", light_dir);
-        sphere.draw_triangles();
+        light_dir = glm::vec3(cos(glfwGetTime()/3.0), sin(glfwGetTime()/3.0), 0.0f); // Update light direction
+        shad.set_vec3_uniform("light_dir", light_dir); // Send updated light direction to the shader
+        sphere.draw_triangles(); // Render the sphere to the FBO
 
-        glfwSwapBuffers(window);
+        // Step 2: Compute total brightness from the FBO
+        //total_brightness += compute_total_brightness(fbo, brightnessTexture, win_width, win_height);
+        //frame_count++;
+
+        // Step 3: Render normally to the screen (default framebuffer)
+        //glBindFramebuffer(GL_FRAMEBUFFER, 0); // Bind the default framebuffer (the screen)
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // Clear the screen
+
+        sphere.draw_triangles(); // Render the sphere to the screen
+
+        glfwSwapBuffers(window); // Swap the screen buffers
         glfwPollEvents();
     }
 
