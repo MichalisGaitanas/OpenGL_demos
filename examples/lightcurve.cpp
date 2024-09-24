@@ -11,12 +11,65 @@
 
 #include<cstdio>
 #include<cmath>
+#include<vector>
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
 
 int win_width, win_height;
 float aspect_ratio;
+GLuint framebuffer, rendered_texture;
+
+//calculate average brightness from the texture
+float calculate_brightness(GLuint texture_id, int width, int height)
+{
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    std::vector<GLfloat> pixels(width*height*3); //3 components for now (RGB)
+    
+    //read the pixels from the texture
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, pixels.data());
+    
+    float total_brightness = 0.0f;
+    for (int i = 0; i < width*height; i++)
+    {
+        float r = pixels[i*3 + 0];
+        float g = pixels[i*3 + 1];
+        float b = pixels[i*3 + 2];
+        total_brightness += (r + g + b)/3.0f; //average the RGB values
+    }
+    
+    return total_brightness/(width*height); //average brightness
+}
+
+void setup_framebuffer(int width, int height)
+{
+    //create a framebuffer object (FBO)
+    glGenFramebuffers(1, &framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+    //create a texture to render to
+    glGenTextures(1, &rendered_texture);
+    glBindTexture(GL_TEXTURE_2D, rendered_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //attach the texture to the framebuffer
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture, 0);
+    
+    //create a renderbuffer for depth and stencil
+    GLuint rbo;
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        printf("Framebuffer not complete!\n");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); //unbind the framebuffer to render to the default one
+}
 
 void raw_hardware_input(GLFWwindow *win)
 {
@@ -60,17 +113,33 @@ int main()
         return 0;
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImPlot::CreateContext(); //strictly AFTER Imgui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    io.IniFilename = NULL;
+    io.Fonts->AddFontFromFileTTF("../fonts/arial.ttf", 15.0f);
+    (void)io;
+    ImGui::StyleColorsLight();
+    ImGui_ImplGlfw_InitForOpenGL(win, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
+
+    ///////////////////////////////////////////////////////////////////////////////////
+
+    //change the default minimum size of an imgui window
+    ImGuiStyle &imstyle = ImGui::GetStyle();
+    imstyle.WindowMinSize = ImVec2(300.0f,300.0f);
+
     glfwSetWindowSizeLimits(win, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
     
     glfwGetWindowSize(win, &win_width, &win_height);
     aspect_ratio = (float)win_width/win_height;
 
-    meshvfn body("../obj/vfn/gerasimenko256k.obj"); //flat normals
-    //meshvfn body("../obj/vfn/gerasimenko256k_smooth.obj"); //smooth normals
-    //meshvfn body("../obj/vfn/didymos/didymain2019.obj"); //flat normals
-    //meshvfn body("../obj/vfn/didymos/didymain2019_smooth.obj"); //smooth normals
-    //meshvfn body("../obj/vfn/uv_sphere_rad1_40x30.obj"); //smooth normals
+    meshvfn body("../obj/vfn/gerasimenko256k.obj");
+    //meshvfn body("../obj/vfn/uv_sphere_rad1_40x30.obj"); 
 
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/lightcurve.frag");
     shad.use();
@@ -96,23 +165,75 @@ int main()
     shad.set_vec3_uniform("light_col", light_col);
     shad.set_vec3_uniform("body_col", body_col);
 
+    setup_framebuffer(win_width, win_height);
+    std::vector<float> current_time;
+    std::vector<float> lightcurve;
+    bool show_realtime_lightcurve = false;
+
+
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.05f,0.05f,0.05f,1.0f);
+    glClearColor(0.0f,0.0f,0.0f,1.0f);
     while (!glfwWindowShouldClose(win))
     {
         raw_hardware_input(win);
 
-        //refresh the color and z buffer
+        glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-        light_dir = glm::vec3(cos(glfwGetTime()),sin(glfwGetTime()),0.0f); //light direction in world coordinates
+        light_dir = glm::vec3(cos(glfwGetTime()/2.0),sin(glfwGetTime()/2.0), 0.0f); //light direction in world coordinates
         shad.set_vec3_uniform("light_dir", light_dir);
         body.draw_triangles();
+
+        //append new data points
+        current_time.push_back((float)glfwGetTime());
+        float brightness = calculate_brightness(rendered_texture, win_width, win_height);
+        lightcurve.push_back(brightness);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        body.draw_triangles();
+
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Gerasimenko Lightcurve");
+
+        ImGui::Checkbox("Click to plot real-time lightcurve", &show_realtime_lightcurve);
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); //red color for the plot curves
+        
+        if (show_realtime_lightcurve)
+        {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Real-time lightcurve", &show_realtime_lightcurve);
+            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
+            if (ImPlot::BeginPlot("brightness(t)", plot_win_size))
+            {
+                ImPlot::SetupAxes("Time (t) [sec]", "brightness(t) [ ]");
+                //ImPlot::SetupAxisLimits(ImAxis_X1, start_time, current_time, ImGuiCond_Always); // Scroll with time
+                ImPlot::PlotLine("", current_time.data(), lightcurve.data(), current_time.size());
+                ImPlot::EndPlot();
+            }
+            ImGui::End();
+        }
+
+        ImPlot::PopStyleColor();
+        
+        ImGui::End();
+
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+
+
 
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
 
     glfwTerminate();
+
+    //for (float brightness : lightcurve)
+    //    printf("%f\n", brightness);
+
     return 0;
 }

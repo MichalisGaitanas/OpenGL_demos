@@ -16,10 +16,10 @@ void main()
     vec3 light_dir_norm = normalize(light_dir);
     float diffuse = max(dot(norm, light_dir_norm), 0.0f);
     
-    vec3 view_dir = normalize(cam_pos - frag_pos);
-    vec3 reflect_dir = reflect(-light_dir_norm,norm);
-    float specular = 0.5f*pow(max(dot(view_dir, reflect_dir), 0.0f), 128);
+    //vec3 view_dir = normalize(cam_pos - frag_pos);
+    //vec3 reflect_dir = reflect(-light_dir_norm, norm);
+    //float specular = 0.5f*pow(max(dot(view_dir, reflect_dir), 0.0f), 128);
 
-    vec3 frag_col = (diffuse + specular)*body_col*light_col;
+    vec3 frag_col = (diffuse)*body_col*light_col;
     final_col = vec4(frag_col, 1.0f);
 }
