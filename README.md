@@ -46,51 +46,19 @@ imgui and glfw :
 #include<GLFW/glfw3.h>
 
 Assuming there is an 'OpenGL_demos/imgui/' folder,
-g++ program.cpp -o program.exe C:\Users\micha\github\OpenGL_demos\imgui\imgui*.cpp -I C:\Users\micha\github\OpenGL_demos\imgui [... OpenGL libs ...]
+g++ program.cpp -o program.exe (PATH_TO_HERE)\imgui\imgui*.cpp -I (PATH_TO_HERE)\imgui [... OpenGL libs that were mentioned above ...]
+
+If the 'OpenGL_demos/imgui/' contains implot cpp codes, then :
+
+g++ program.cpp -o program.exe (PATH_TO_HERE)\imgui\imgui*.cpp (PATH_TO_HERE)\imgui\implot*.cpp -I (PATH_TO_HERE)\imgui [... OpenGL libs that were mentioned above ...]
+
+Compile as a static library :
+a) g++ -c *.cpp
+b) ar rcs libimgui.a *o
+Library is created. Then : g++ programm.cpp -o program.exe -L path/to/imgui -limgui [... OpenGL libs that were mentioned above ...]
 
 # 5)
 In order to follow the examples, it is essential that you know a bit of C++. We recommend this website [ https://www.learncpp.com ]
 
 # 6)
 More OpenGL tutorials can be found in this website [ https://learnopengl.com ]
-
-
-
-
-
-# Project structure :
-
-The folder shaders/ contains all the vertex and fragment shaders, written in glsl ([g]raphics [l]ibrary [s]hading [s]anguage).
-
-The folder obj/ contains all the .obj files (models), that are loaded and rendered in the examples.
-'/vf/'  means that the .obj files inside contain only [v]ertex coordinates and [f]ace indices.
-'/vfn/' means that the .obj files inside contain [v]ertex coordinates, [f]ace indices and [n]ormal vectors (either per vertex or per face).
-'/vft/' means that the .obj files inside contain [v]ertex coordinates, [f]ace indices and [t]exture coordinates.
-
-The include/ folder contains classes and functions that clarify the code.
-
-The folder imgui/ is basically a bunch of .h and .cpp files that utilizes native OpenGL functions (like those in our examples), in
-order to render [i]mmediate [m]ode [g]raphical [u]ser [i]nterface.
-
-The images/ folder contains images that can be used as skyboxes (cubemaps), textures, etc...
-
-The fonts/ folder contains only .ttf files that are used in case of font rendering.
-
-The examples/ folder contains .cpp files that assemble all the aforementioned to render graphics on the screen.
-
-
-
-# Blender issue :
-
-When exporting an .obj model from Blender 3.2.0, additional similar normals appear (probably due to float truncation).
-Example :
-    v x y z
-    v x y z
-    ...
-    vn 0.2672 0.5345 0.8017
-    vn 0.2673 0.5345 0.8017
-    ...
-    f i j k
-    f i j k
-    ...
-

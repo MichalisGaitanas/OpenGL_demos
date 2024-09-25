@@ -7,7 +7,6 @@ out vec4 final_col; //color of the fragment after lighting calculations
 
 uniform vec3 light_dir;
 uniform vec3 light_col;
-uniform vec3 body_col;
 uniform vec3 cam_pos;
 
 void main()
@@ -20,6 +19,6 @@ void main()
     //vec3 reflect_dir = reflect(-light_dir_norm, norm);
     //float specular = 0.5f*pow(max(dot(view_dir, reflect_dir), 0.0f), 128);
 
-    vec3 frag_col = (diffuse)*body_col*light_col;
+    vec3 frag_col = diffuse*light_col;
     final_col = vec4(frag_col, 1.0f);
 }
