@@ -31,7 +31,7 @@ const double pi = 3.141592653589793238462;
 
 int win_width, win_height;
 float aspect_ratio;
-GLuint framebuffer, rendered_texture;
+GLuint framebuffer, rbo, rendered_texture;
 
 //calculate average brightness from the texture
 float calculate_brightness(GLuint texture_id, int width, int height)
@@ -40,22 +40,27 @@ float calculate_brightness(GLuint texture_id, int width, int height)
     std::vector<GLfloat> pixels(width*height*3); //3 components for now (RGB)
     
     //read the pixels from the texture
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGB, GL_FLOAT, pixels.data());
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
     
+    //Sum up the intensity values (stored in the red channel)
     float total_brightness = 0.0f;
     for (int i = 0; i < width*height; i++)
     {
-        float r = pixels[i*3 + 0];
-        float g = pixels[i*3 + 1];
-        float b = pixels[i*3 + 2];
-        total_brightness += (r + g + b)/3.0f; //average the RGB values
+        total_brightness += pixels[i];
     }
-    
     return total_brightness/(width*height); //average brightness
 }
 
 void setup_framebuffer(int width, int height)
 {
+    //if the framebuffer was already created, delete it first
+    if (framebuffer)
+    {
+        glDeleteFramebuffers(1, &framebuffer);
+        glDeleteTextures(1, &rendered_texture);
+        glDeleteRenderbuffers(1, &rbo);
+    }
+
     //create a framebuffer object (FBO)
     glGenFramebuffers(1, &framebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -63,7 +68,7 @@ void setup_framebuffer(int width, int height)
     //create a texture to render to
     glGenTextures(1, &rendered_texture);
     glBindTexture(GL_TEXTURE_2D, rendered_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, NULL);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -72,7 +77,6 @@ void setup_framebuffer(int width, int height)
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture, 0);
     
     //create a renderbuffer for depth and stencil
-    GLuint rbo;
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
@@ -96,6 +100,8 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
     win_width = w;
     win_height = h;
     aspect_ratio = (float)w/h;
+    //re-setup the framebuffer (re-create the texture and renderbuffer with new size)
+    setup_framebuffer(w,h);
 }
 
 int main()
@@ -135,7 +141,7 @@ int main()
     io.IniFilename = NULL;
     io.Fonts->AddFontFromFileTTF("../fonts/arial.ttf", 15.0f);
     (void)io;
-    ImGui::StyleColorsLight();
+    ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(win, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
@@ -151,8 +157,8 @@ int main()
     glfwGetWindowSize(win, &win_width, &win_height);
     aspect_ratio = (float)win_width/win_height;
 
-    //meshvfn body("../obj/vfn/gerasimenko256k.obj");
-    meshvfn body("../obj/vfn/uv_sphere_rad1_40x30.obj"); 
+    meshvfn body("../obj/vfn/gerasimenko256k.obj");
+    //meshvfn body("../obj/vfn/uv_sphere_rad1_40x30.obj"); 
 
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/lightcurve.frag");
     shad.use();
@@ -180,7 +186,6 @@ int main()
     std::vector<float> current_time;
     std::vector<float> lightcurve;
     bool show_realtime_lightcurve = false;
-
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
