@@ -242,17 +242,11 @@ int main()
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-
-
-
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
 
     glfwTerminate();
-
-    //for (float brightness : lightcurve)
-    //    printf("%f\n", brightness);
 
     return 0;
 }
