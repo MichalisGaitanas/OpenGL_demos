@@ -20,7 +20,7 @@ public:
            glm::vec3 init_world_up = glm::vec3(0.0f,0.0f,1.0f),
            float init_yaw = 90.0f,
            float init_pitch = 0.0f,
-           float init_vel = 10.0f,
+           float init_vel = 5.0f,
            float init_mouse_sensitivity = 0.1f)
     {
         pos = init_pos;

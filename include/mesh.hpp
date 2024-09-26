@@ -384,12 +384,12 @@ public:
 
 
         //skybox faces (make sure they are in this exact order)
-        std::string path[6] = { "../images/skybox/starfield_4k/right.jpg",
-                                "../images/skybox/starfield_4k/left.jpg",
-                                "../images/skybox/starfield_4k/top.jpg",
-                                "../images/skybox/starfield_4k/bottom.jpg",
-                                "../images/skybox/starfield_4k/front.jpg",
-                                "../images/skybox/starfield_4k/back.jpg" };
+        std::string path[6] = { "../images/skybox/landscape_2k/right.jpg",
+                                "../images/skybox/landscape_2k/left.jpg",
+                                "../images/skybox/landscape_2k/top.jpg",
+                                "../images/skybox/landscape_2k/bottom.jpg",
+                                "../images/skybox/landscape_2k/front.jpg",
+                                "../images/skybox/landscape_2k/back.jpg" };
 
         // Creates the cubemap texture object
         unsigned int tao;
@@ -400,6 +400,7 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         // This might help with seams on some systems
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 

@@ -37,7 +37,7 @@ GLuint framebuffer, rbo, rendered_texture;
 float calculate_brightness(GLuint texture_id, int width, int height)
 {
     glBindTexture(GL_TEXTURE_2D, texture_id);
-    std::vector<GLfloat> pixels(width*height*3); //3 components for now (RGB)
+    std::vector<GLfloat> pixels(width*height);
     
     //read the pixels from the texture
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());

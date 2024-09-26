@@ -55,7 +55,7 @@ g++ program.cpp -o program.exe (PATH_TO_HERE)\imgui\imgui*.cpp (PATH_TO_HERE)\im
 Compile as a static library :
 a) g++ -c *.cpp
 b) ar rcs libimgui.a *o
-Library is created. Then : g++ programm.cpp -o program.exe -L path/to/imgui -limgui [... OpenGL libs that were mentioned above ...]
+Library is created. Then : g++ programm.cpp -o program.exe -L C:\Users\Michalis\github\OpenGL_demos\imgui -limgui -lopengl32 -lglew32 -lglfw3
 
 # 5)
 In order to follow the examples, it is essential that you know a bit of C++. We recommend this website [ https://www.learncpp.com ]
