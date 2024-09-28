@@ -154,6 +154,7 @@ int main()
     meshvfn ryugu("../obj/vfn/ryugu196k.obj");                     bool show_ryugu       = false;
     meshvfn toutatis("../obj/vfn/toutatis3k_radar.obj");           bool show_toutatis    = false;
     meshvfn eros("../obj/vfn/eros196k.obj");                       bool show_eros        = false;
+    meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");                  bool show_kleopatra   = false;
     bool show_any_asteroid = false;
 
     //We use only 1 shader throughout the whole app, so we construct it and .use() it here, before the while() loop.
@@ -226,6 +227,8 @@ int main()
                 toutatis.draw_triangles();
             else if (show_eros)
                 eros.draw_triangles();
+            else if (show_kleopatra)
+                kleopatra.draw_triangles();
 
             //The scene is now rendered in the auxiliary (hidden) framebuffer. This will not be displayed on the monitor.
 
@@ -253,6 +256,8 @@ int main()
                 toutatis.draw_triangles();
             else if (show_eros)
                 eros.draw_triangles();
+            else if (show_kleopatra)
+                kleopatra.draw_triangles();
         }
         else
         {
@@ -287,7 +292,7 @@ int main()
         shad.set_vec3_uniform("light_dir", light_dir);
 
         ImGui::Text("Camera distance");
-        ImGui::SliderFloat("[km]", &cam_pos.y, -100.0f,-1.0f);
+        ImGui::SliderFloat("[km]", &cam_pos.y, -250.0f,-1.0f);
         ImGui::Separator();
         shad.set_vec3_uniform("cam_pos", cam_pos);
         view = glm::lookAt(cam_pos, cam_aim, cam_up);
@@ -309,6 +314,7 @@ int main()
             show_ryugu = false;
             show_toutatis = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Bennu", &show_bennu))
         {
@@ -319,6 +325,7 @@ int main()
             show_ryugu = false;
             show_toutatis = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Didymain", &show_didymain))
         {
@@ -329,6 +336,7 @@ int main()
             show_ryugu = false;
             show_toutatis = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Itokawa", &show_itokawa))
         {
@@ -339,6 +347,7 @@ int main()
             show_ryugu = false;
             show_toutatis = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Ryugu", &show_ryugu))
         {
@@ -349,6 +358,7 @@ int main()
             show_itokawa = false;
             show_toutatis = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Toutatis", &show_toutatis))
         {
@@ -359,6 +369,7 @@ int main()
             show_itokawa = false;
             show_ryugu = false;
             show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Eros", &show_eros))
         {
@@ -369,9 +380,21 @@ int main()
             show_itokawa = false;
             show_ryugu = false;
             show_toutatis = false;
+            show_kleopatra = false;
+        }
+        if (ImGui::Checkbox("Kleopatra", &show_kleopatra))
+        {
+            show_any_asteroid = true;
+            show_gerasimenko = false;
+            show_bennu = false;
+            show_didymain = false;
+            show_itokawa = false;
+            show_ryugu = false;
+            show_toutatis = false;
+            show_eros = false;
         }
 
-        if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros)
+        if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros && !show_kleopatra)
         {
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
