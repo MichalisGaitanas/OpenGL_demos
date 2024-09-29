@@ -11,10 +11,12 @@
 class shader
 {
 public:
-    unsigned ID; //shader program ID
-    shader(const char *vpath, const char *fpath) //constructor
+    unsigned ID; //Shader program ID. With this, we recognize which shader to use.
+
+    //Constructor.
+    shader(const char *vpath, const char *fpath)
     {
-        //read the vertex shader source code from its file
+        //Read the vertex shader source code from its file.
         std::ifstream fpvertex(vpath);
         if (!fpvertex.is_open())
         {
@@ -25,7 +27,7 @@ public:
         vtemp.assign( (std::istreambuf_iterator<char>(fpvertex)), (std::istreambuf_iterator<char>()) );
         const char *vsource = vtemp.c_str();
         
-        //compile the vertex shader and check for errors
+        //Compile the vertex shader and check for errors.
         unsigned vshader = glCreateShader(GL_VERTEX_SHADER);
         glShaderSource(vshader, 1, &vsource, NULL);
         glCompileShader(vshader);
@@ -39,9 +41,7 @@ public:
             printf("%s\n",infolog);
         }
         
-        ////////////////////////////////////////////////////////////////////////
-        
-        //read the fragment shader source code from its file
+        //Read the fragment shader source code from its file.
         std::ifstream fpfragment(fpath);
         if (!fpfragment.is_open())
         {
@@ -52,7 +52,7 @@ public:
         ftemp.assign( (std::istreambuf_iterator<char>(fpfragment)), (std::istreambuf_iterator<char>()) );
         const char *fsource = ftemp.c_str();
         
-        //compile the fragment shader and check for errors
+        //Compile the fragment shader and check for errors.
         unsigned fshader = glCreateShader(GL_FRAGMENT_SHADER);
         glShaderSource(fshader, 1, &fsource, NULL);
         glCompileShader(fshader);
@@ -64,9 +64,7 @@ public:
             printf("%s\n",infolog);
         }
         
-        ////////////////////////////////////////////////////////////////////////
-        
-        //handle linking
+        //Handle linking.
         ID = glCreateProgram();
         glAttachShader(ID, vshader);
         glAttachShader(ID, fshader);
@@ -79,87 +77,97 @@ public:
             printf("%s\n",infolog);
         }
         
+        //We no longer need the vshader and fshader, so let's delete them from now.
+        //We DO ned however the ID, which will be kept for deletion in the destructor.
         glDeleteShader(vshader);
         glDeleteShader(fshader);
     }
+
+    //Delete the shader.
+    ~shader()
+    {
+        glDeleteProgram(ID);
+    }
     
-    //activate the current shader
+    //Activate the current shader.
     void use()
     {
         glUseProgram(ID);
     }
+
+    //The following member functions are used to pass uniform variables to the shaders from the main code.
     
-    //pass to the currently active shader 1 int (uniform)
+    //Pass to the currently active shader 1 int (uniform).
     void set_int_uniform(const std::string &name, int value)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform1i(location, value);
     }
     
-    //pass to the currently active shader 1 float (uniform)
+    //Pass to the currently active shader 1 float (uniform).
     void set_float_uniform(const std::string &name, float value)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform1f(location, value);
     }
     
-    //pass to the currently active shader 2 floats (uniform)
+    //Pass to the currently active shader 2 floats (uniform).
     void set_vec2_uniform(const std::string &name, float x, float y)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform2f(location, x,y);
     }
     
-    //pass to the currently active shader 1 vector of 2 floats (uniform)
+    //Pass to the currently active shader 1 vector of 2 floats (uniform).
     void set_vec2_uniform(const std::string &name, glm::vec2 &v)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform2fv(location, 1, &v[0]);
     }
     
-    //pass to the currently active shader 3 floats (uniform)
+    //Pass to the currently active shader 3 floats (uniform).
     void set_vec3_uniform(const std::string &name, float x, float y, float z)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform3f(location, x,y,z);
     }
     
-    //pass to the currently active shader 1 vector of 3 floats (uniform)
+    //Pass to the currently active shader 1 vector of 3 floats (uniform).
     void set_vec3_uniform(const std::string &name, glm::vec3 &v)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform3fv(location, 1, &v[0]);
     }
     
-    //pass to the currently active shader 4 floats (uniform)
+    //Pass to the currently active shader 4 floats (uniform).
     void set_vec4_uniform(const std::string &name, float x, float y, float z, float w)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform4f(location, x,y,z,w);
     }
     
-    //pass to the currently active shader 1 vector of 4 floats (uniform)
+    //Pass to the currently active shader 1 vector of 4 floats (uniform).
     void set_vec4_uniform(const std::string &name, glm::vec4 &v)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniform4fv(location, 1, &v[0]);
     }
     
-    //pass to the currently active shader 1 2x2 float matrix (uniform)
+    //Pass to the currently active shader 1 2x2 float matrix (uniform).
     void set_mat2_uniform(const std::string &name, glm::mat2 &m)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniformMatrix2fv(location, 1, GL_FALSE, &m[0][0]);
     }
     
-    //pass to the currently active shader 1 3x3 float matrix (uniform)
+    //Pass to the currently active shader 1 3x3 float matrix (uniform).
     void set_mat3_uniform(const std::string &name, glm::mat3 &m)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());
         glUniformMatrix3fv(location, 1, GL_FALSE, &m[0][0]);
     }
     
-    //pass to the currently active shader 1 4x4 float matrix (uniform)
+    //Pass to the currently active shader 1 4x4 float matrix (uniform).
     void set_mat4_uniform(const std::string &name, glm::mat4 &m)
     {
         unsigned location = glGetUniformLocation(ID, name.c_str());

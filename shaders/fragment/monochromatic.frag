@@ -2,9 +2,11 @@
 
 out vec4 frag_col;
 
-uniform vec3 model_col;
+
+
+uniform vec3 mesh_col; //Mesh color.
 
 void main()
 {
-    frag_col = vec4(model_col, 1.0f); //same color for all fragments
+    frag_col = vec4(mesh_col, 1.0f); //Same color for all fragments.
 }

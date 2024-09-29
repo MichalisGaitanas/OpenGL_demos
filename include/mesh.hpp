@@ -99,8 +99,8 @@ public:
 class meshvfn
 {
 public:
-    unsigned int vao, vbo; //vertex array and buffer object
-    std::vector<float> main_buffer; //final form of the geometry data to draw
+    unsigned int vao, vbo; //Vertex array and buffer object.
+    std::vector<float> main_buffer; //Final form of the geometry data to draw.
     unsigned int draw_size;
 
     meshvfn(const char *objpath)
@@ -113,34 +113,34 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        //vertices (format : v x y z)
+        //Vertices (format : v x y z).
         std::vector<std::vector<float>> verts;
         float x,y,z;
 
-        //normals (format : vn nx ny nz)
+        //Normals (format : vn nx ny nz).
         std::vector<std::vector<float>> norms;
         float nx,ny,nz;
 
-        //indices (format : f i11//i12 i21//i22 i31//i32)
+        //Indices (format : f i11//i12 i21//i22 i31//i32).
         std::vector<std::vector<unsigned int>> inds;
         unsigned int i11,i12, i21,i22, i31,i32;
 
         std::string line;
         while (getline(fp, line))
         {
-            if (line[0] == 'v' && line[1] == ' ') //then we have a vertex line
+            if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "v %f %f %f", &x,&y,&z);
                 verts.push_back({x,y,z});
             }
-            else if (line[0] == 'v' && line[1] == 'n') //then we have a normal line
+            else if (line[0] == 'v' && line[1] == 'n') //Then we have a normal line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "vn %f %f %f", &nx,&ny,&nz);
                 norms.push_back({nx,ny,nz});
             }
-            else if (line[0] == 'f') //then we have an indices line
+            else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "f %d//%d %d//%d %d//%d", &i11,&i12, &i21,&i22, &i31,&i32);
@@ -148,8 +148,8 @@ public:
             }
         }
 
-        //Now combine verts[][], norms[][] and inds[][] to construct the main buffer main_buffer[]
-        //which will have all the main_buffer needed for drawing.
+        //Now combine verts[][], norms[][] and inds[][] to construct the main buffer main_buffer[],
+        //which will have everything needed in the correct order for rendering.
         for (int i = 0; i < inds.size(); ++i)
         {
             main_buffer.push_back( verts[ inds[i][0] ][0] );
@@ -173,7 +173,7 @@ public:
             main_buffer.push_back( norms[ inds[i][5] ][1] );
             main_buffer.push_back( norms[ inds[i][5] ][2] );
         }
-        //main_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }
+        //main_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }.
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
@@ -187,14 +187,14 @@ public:
         //draw_size = (int)(main_buffer.size()/6); //to draw faces and normals
     }
 
-    //delete the mesh
+    //Delete the mesh.
     ~meshvfn()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
     }
 
-    //draw the mesh (triangles)
+    //Draw the mesh (triangles).
     void draw_triangles()
     {
         glBindVertexArray(vao);
