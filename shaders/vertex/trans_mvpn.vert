@@ -15,5 +15,5 @@ void main()
     frag_pos = vec3(model*vec4(pos,1.0f)); //Fragment's position in world coordinates.
     normal = mat3(transpose(inverse(model)))*norm; //Avoiding non uniform scaling issues.
 
-    gl_Position = projection*view*model*vec4(pos,1.0f); //Final vertex position.
+    gl_Position = projection*view*model*vec4(pos, 1.0f); //Final vertex position.
 }

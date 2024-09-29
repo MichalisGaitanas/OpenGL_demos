@@ -15,6 +15,7 @@ int win_width = 800, win_height = 800;
 
 bool motion = false;
 
+//When a keyboard key is pressed :
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -23,6 +24,7 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
         motion = !motion;
 }
 
+//When the framebuffer is resized :
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 {
     win_width = w;

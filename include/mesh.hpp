@@ -12,9 +12,8 @@
 class meshvf
 {
 public:
-    unsigned int vao, vbo; //vertex array and buffer object
-    std::vector<float> main_buffer; //final form of the geometry data to draw
-    unsigned int draw_size;
+    unsigned int vao, vbo; //Vertex array and buffer object.
+    std::vector<float> main_buffer; //Final form of the geometry data to draw.
 
     meshvf(const char *objpath)
     {
@@ -26,28 +25,28 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        //vertices (format : v x y z)
+        //Vertices (format : v x y z).
         std::vector<std::vector<float>> verts;
         float x,y,z;
 
-        //indices (format : f i1 i2 i3)
+        //Indices (format : f i1 i2 i3).
         std::vector<std::vector<unsigned int>> inds;
         unsigned int i1,i2,i3;
 
         std::string line;
         while (getline(fp, line))
         {
-            if (line[0] == 'v' && line[1] == ' ') //then we have a vertex line
+            if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "v %f %f %f", &x,&y,&z);
                 verts.push_back({x,y,z});
             }
-            else if (line[0] == 'f') //then we have an indices line
+            else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "f %d %d %d", &i1,&i2,&i3);
-                inds.push_back({i1-1, i2-1, i3-1});
+                inds.push_back({i1-1, i2-1, i3-1}); //Subtract 1 to convert to 0-based indexing.
             }
         }
 
@@ -68,7 +67,7 @@ public:
             main_buffer.push_back( verts[ inds[i][2] ][2] );
         }
         //Now main_buffer[] has the form : {x1,y1,z1, x2,y2,z2, x3,y3,z3, ... }, where
-        //consecutive triads of vertices form triangles-faces of the object to be rendered
+        //consecutive triads of vertices form triangles-faces of the object to be rendered.
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
@@ -77,22 +76,22 @@ public:
         glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        draw_size = (int)(main_buffer.size()/3); //to draw only faces
+        glBindVertexArray(0); //Unbind the vao.
     }
 
-    //delete the mesh
+    //Delete the mesh.
     ~meshvf()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
     }
 
-    //draw the mesh (triangles)
+    //Draw the mesh (triangles).
     void draw_triangles()
     {
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, draw_size);
-        glBindVertexArray(0);
+        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/3));
+        glBindVertexArray(0); //Unbind the vao.
     }
 };
 
@@ -101,7 +100,6 @@ class meshvfn
 public:
     unsigned int vao, vbo; //Vertex array and buffer object.
     std::vector<float> main_buffer; //Final form of the geometry data to draw.
-    unsigned int draw_size;
 
     meshvfn(const char *objpath)
     {
@@ -184,7 +182,7 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-        //draw_size = (int)(main_buffer.size()/6); //to draw faces and normals
+        glBindVertexArray(0); //Unbind the vao.
     }
 
     //Delete the mesh.
@@ -199,16 +197,15 @@ public:
     {
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/6));
-        glBindVertexArray(0);
+        glBindVertexArray(0); //Unbind the vao.
     }
 };
 
 class meshvft
 {
 public:
-    unsigned int vao, vbo, tao; //vertex array, buffer and texture object
-    std::vector<float> main_buffer; //final form of the geometry data to draw
-    unsigned int draw_size;
+    unsigned int vao, vbo, tao; //Vertex array, buffer and texture 'array object' (there's no tao officialy, but the name merges well with vao and vbo).
+    std::vector<float> main_buffer; //Final form of the geometry data to draw.
 
     meshvft(const char *objpath, const char *imgpath)
     {
@@ -220,34 +217,34 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        //vertices (format : v x y z)
+        //Vertices (format : v x y z)
         std::vector<std::vector<float>> verts;
         float x,y,z;
 
-        //texture (format : vt tx ty)
-        std::vector<std::vector<float>> texs;
-        float tx,ty;
+        //Texture (format : vt u v).
+        std::vector<std::vector<float>> uvs;
+        float u,v;
 
-        //indices (format : f i11/i12 i21/i22 i31/i32
+        //Indices (format : f i11/i12 i21/i22 i31/i32.
         std::vector<std::vector<unsigned int>> inds;
         unsigned int i11,i12, i21,i22, i31,i32;
 
         std::string line;
         while (getline(fp, line))
         {
-            if (line[0] == 'v' && line[1] == ' ') //then we have a vertex line
+            if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "v %f %f %f", &x,&y,&z);
                 verts.push_back({x,y,z});
             }
-            else if (line[0] == 'v' && line[1] == 't') //then we have a texture line
+            else if (line[0] == 'v' && line[1] == 't') //Then we have a texture coordinate (uv) line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "vt %f %f", &tx,&ty);
-                texs.push_back({tx,ty});
+                sscanf(tmp_line, "vt %f %f", &u,&v);
+                uvs.push_back({u,v});
             }
-            else if (line[0] == 'f') //then we have a indices line
+            else if (line[0] == 'f') //Then we have a index line.
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "f %d/%d %d/%d %d/%d", &i11,&i12, &i21,&i22, &i31,&i32);
@@ -255,29 +252,29 @@ public:
             }
         }
 
-        //Now combine verts[][], texs[][] and inds[][] to construct the main buffer main_buffer[]
+        //Now combine verts[][], uvs[][] and inds[][] to construct the main buffer main_buffer[]
         //which will have all the main_buffer needed for drawing.
         for (int i = 0; i < inds.size(); ++i)
         {
             main_buffer.push_back( verts[ inds[i][0] ][0] );
             main_buffer.push_back( verts[ inds[i][0] ][1] );
             main_buffer.push_back( verts[ inds[i][0] ][2] );
-            main_buffer.push_back(  texs[ inds[i][1] ][0] );
-            main_buffer.push_back(  texs[ inds[i][1] ][1] );
+            main_buffer.push_back(   uvs[ inds[i][1] ][0] );
+            main_buffer.push_back(   uvs[ inds[i][1] ][1] );
 
             main_buffer.push_back( verts[ inds[i][2] ][0] );
             main_buffer.push_back( verts[ inds[i][2] ][1] );
             main_buffer.push_back( verts[ inds[i][2] ][2] );
-            main_buffer.push_back(  texs[ inds[i][3] ][0] );
-            main_buffer.push_back(  texs[ inds[i][3] ][1] );
+            main_buffer.push_back(   uvs[ inds[i][3] ][0] );
+            main_buffer.push_back(   uvs[ inds[i][3] ][1] );
 
             main_buffer.push_back( verts[ inds[i][4] ][0] );
             main_buffer.push_back( verts[ inds[i][4] ][1] );
             main_buffer.push_back( verts[ inds[i][4] ][2] );
-            main_buffer.push_back(  texs[ inds[i][5] ][0] );
-            main_buffer.push_back(  texs[ inds[i][5] ][1] );
+            main_buffer.push_back(   uvs[ inds[i][5] ][0] );
+            main_buffer.push_back(   uvs[ inds[i][5] ][1] );
         }
-        //main_buffer[] has now the form : {x1,y1,z1, tx1,ty1, x2,y2,z2, tx2,ty2 ... }
+        //main_buffer[] has now the form : {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2 ... }
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
@@ -288,9 +285,9 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-        draw_size = (int)(main_buffer.size()/5); //to draw faces and textures
+        glBindVertexArray(0); //Unbind the vao.
 
-        //load the image-texture
+        //Load the image texture.
         int imgwidth, imgheight, imgchannels;
         stbi_set_flip_vertically_on_load(true);
         unsigned char *imgdata = stbi_load(imgpath, &imgwidth, &imgheight, &imgchannels, 0);
@@ -300,37 +297,49 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        //tell OpenGL how to apply the texture on the mesh
+        //Tell OpenGL how to apply the texture on the mesh.
         glGenTextures(1, &tao);
         glBindTexture(GL_TEXTURE_2D, tao);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, imgwidth, imgheight, 0, GL_RGB, GL_UNSIGNED_BYTE, imgdata);
+
+        //Determine the correct format for glTexImage2D based on the number of channels (imgchannels).
+        GLenum format;
+        if (imgchannels == 1)
+            format = GL_RED; //Single-channel grayscale image.
+        else if (imgchannels == 3)
+            format = GL_RGB; //Classical 3-channel image (e.g. jpg).
+        else if (imgchannels == 4)
+            format = GL_RGBA; //4-channel image, i.e. RGB + alpha channel for opacity (e.g. png).
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, imgwidth, imgheight, 0, format, GL_UNSIGNED_BYTE, imgdata);
         glGenerateMipmap(GL_TEXTURE_2D);
-        stbi_image_free(imgdata); //free image resources
+        stbi_image_free(imgdata); //Free image resources.
     }
 
-    //delete the mesh
+    //Delete the mesh.
     ~meshvft()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
+        glDeleteTextures(1, &tao);
     }
 
-    //draw the mesh (triangles)
+    //Draw the mesh (triangles).
     void draw_triangles()
     {
         glBindVertexArray(vao);
         glBindTexture(GL_TEXTURE_2D, tao);
-        glDrawArrays(GL_TRIANGLES, 0, draw_size);
-        glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/5));
+        glBindVertexArray(0); //Unbind the vao.
+        glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
     }
 
 };
 
+/*
 class skybox
 {
 
@@ -449,5 +458,6 @@ public:
 		glBindVertexArray(0);
     }
 };
+*/
 
 #endif
