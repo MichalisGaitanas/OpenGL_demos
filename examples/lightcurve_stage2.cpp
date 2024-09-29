@@ -153,32 +153,33 @@ int main()
     meshvfn itokawa("../obj/vfn/itokawa196k.obj");                 bool show_itokawa     = false;
     meshvfn ryugu("../obj/vfn/ryugu196k.obj");                     bool show_ryugu       = false;
     meshvfn toutatis("../obj/vfn/toutatis3k_radar.obj");           bool show_toutatis    = false;
-    //meshvfn eros("../obj/vfn/eros196k.obj");                       bool show_eros        = false;
-    //meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");               bool show_kleopatra   = false;
-    //meshvfn vesta("../obj/vfn/vesta256k.obj");                     bool show_vesta       = false;
+    meshvfn eros("../obj/vfn/eros196k.obj");                       bool show_eros        = false;
+    meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");                  bool show_kleopatra   = false;
     bool show_any_asteroid = false;
 
     //We use only 1 shader throughout the whole app, so we construct it and .use() it here, before the while() loop.
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/lightcurve.frag");
     shad.use();
 
-    //Light calculation parameters (constant).
-    glm::vec3 light_dir = glm::vec3(-1.0f,0.0f,0.0f); //Light direction in world coordinates.
-    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //light color (white always).
-    //Camera parameters (constant).
-    glm::vec3 cam_pos = glm::vec3(0.0f,-7.0f,2.0f);
+    //Light calculation parameters.
+    float angle = 180.0f;
+    glm::vec3 light_dir = glm::vec3(cos(angle*pi/180.0f),0.0f,sin(angle*pi/180.0f)); //Light direction in world coordinates.
+    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //light color (grayscale, constant).
+    //Camera parameters.
+    glm::vec3 cam_pos = glm::vec3(0.0f,-10.0f,0.0f);
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f);
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f);
     //projection, view and model matrices.
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,1000.0f);
+    float fov = 45.0f;
+    glm::mat4 projection = glm::perspective(glm::radians(fov), (float)win_width/win_height, 0.01f,3000.0f);
     glm::mat4 view = glm::lookAt(cam_pos, cam_aim, cam_up);
     glm::mat4 model = glm::mat4(1.0f);
     //Now inform the shader about the constants. Since they are constant, we do it only once, here, before the while() loop.
     shad.set_vec3_uniform("light_dir", light_dir);
     shad.set_vec3_uniform("light_col", light_col);
-    shad.set_vec3_uniform("cam_pos", cam_pos);
     shad.set_mat4_uniform("projection", projection);
     shad.set_mat4_uniform("view", view);
+    shad.set_mat4_uniform("model", model);
 
     //Create the auxiliary framebuffer.
     setup_framebuffer(win_width, win_height);
@@ -189,6 +190,7 @@ int main()
     //Actual lightcure data.
     std::vector<float> time_vector;
     std::vector<float> brightness_vector;
+    const size_t max_size = 4000; //Set the maximum number of lightcurve points to retain.
     bool show_realtime_lightcurve = false;
 
     float t_delay_due_to_initializations = (float)glfwGetTime();
@@ -209,7 +211,7 @@ int main()
             //Bind the hidden framebuffer and render the scene there.
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            model = glm::rotate(glm::mat4(1.0f), (float)(30*t_now*pi/180.0f), glm::vec3(0.0f,0.0f,1.0f));
+            model = glm::rotate(glm::mat4(1.0f), (float)(20.0f*t_now*pi/180.0f), glm::vec3(0.0f,0.0f,1.0f));
             shad.set_mat4_uniform("model", model);
             if (show_gerasimenko)
                 gerasimenko.draw_triangles();
@@ -223,6 +225,10 @@ int main()
                 ryugu.draw_triangles();
             else if (show_toutatis)
                 toutatis.draw_triangles();
+            else if (show_eros)
+                eros.draw_triangles();
+            else if (show_kleopatra)
+                kleopatra.draw_triangles();
 
             //The scene is now rendered in the auxiliary (hidden) framebuffer. This will not be displayed on the monitor.
 
@@ -248,11 +254,21 @@ int main()
                 ryugu.draw_triangles();
             else if (show_toutatis)
                 toutatis.draw_triangles();
+            else if (show_eros)
+                eros.draw_triangles();
+            else if (show_kleopatra)
+                kleopatra.draw_triangles();
         }
         else
         {
             time_vector.push_back(t_now);
             brightness_vector.push_back(0.0f);
+        }
+
+        if (time_vector.size() > max_size)
+        {
+            time_vector.erase(time_vector.begin());
+            brightness_vector.erase(brightness_vector.begin());
         }
 
         //Done.
@@ -265,8 +281,28 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::SetNextWindowPos(ImVec2(0.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always, ImVec2(0.0f, 1.0f));
+        ImGui::SetNextWindowPos(ImVec2(0.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_FirstUseEver, ImVec2(0.0f, 1.0f));
         ImGui::Begin("Menu");
+
+        ImGui::Text("Light direction");
+        ImGui::SliderFloat("[deg]##angle", &angle, 0.0f, 360.0f);
+        ImGui::Separator();
+        light_dir.x = cos(angle*pi/180.0f);
+        light_dir.z = sin(angle*pi/180.0f);
+        shad.set_vec3_uniform("light_dir", light_dir);
+
+        ImGui::Text("Camera distance");
+        ImGui::SliderFloat("[km]", &cam_pos.y, -250.0f,-1.0f);
+        ImGui::Separator();
+        shad.set_vec3_uniform("cam_pos", cam_pos);
+        view = glm::lookAt(cam_pos, cam_aim, cam_up);
+        shad.set_mat4_uniform("view", view);
+
+        ImGui::Text("Camera f.o.v.");
+        ImGui::SliderFloat("[deg]##fov", &fov, 1.0f, 45.0f);
+        ImGui::Separator();
+        projection = glm::perspective(glm::radians(fov), aspect_ratio, 0.01f, 3000.0f);
+        shad.set_mat4_uniform("projection", projection);
 
         //Which asteroid
         if (ImGui::Checkbox("Gerasimenko", &show_gerasimenko))
@@ -277,6 +313,8 @@ int main()
             show_itokawa = false;
             show_ryugu = false;
             show_toutatis = false;
+            show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Bennu", &show_bennu))
         {
@@ -286,6 +324,8 @@ int main()
             show_itokawa = false;
             show_ryugu = false;
             show_toutatis = false;
+            show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Didymain", &show_didymain))
         {
@@ -295,6 +335,8 @@ int main()
             show_itokawa = false;
             show_ryugu = false;
             show_toutatis = false;
+            show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Itokawa", &show_itokawa))
         {
@@ -304,6 +346,8 @@ int main()
             show_didymain = false;
             show_ryugu = false;
             show_toutatis = false;
+            show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Ryugu", &show_ryugu))
         {
@@ -313,6 +357,8 @@ int main()
             show_didymain = false;
             show_itokawa = false;
             show_toutatis = false;
+            show_eros = false;
+            show_kleopatra = false;
         }
         if (ImGui::Checkbox("Toutatis", &show_toutatis))
         {
@@ -322,9 +368,33 @@ int main()
             show_didymain = false;
             show_itokawa = false;
             show_ryugu = false;
+            show_eros = false;
+            show_kleopatra = false;
+        }
+        if (ImGui::Checkbox("Eros", &show_eros))
+        {
+            show_any_asteroid = true;
+            show_gerasimenko = false;
+            show_bennu = false;
+            show_didymain = false;
+            show_itokawa = false;
+            show_ryugu = false;
+            show_toutatis = false;
+            show_kleopatra = false;
+        }
+        if (ImGui::Checkbox("Kleopatra", &show_kleopatra))
+        {
+            show_any_asteroid = true;
+            show_gerasimenko = false;
+            show_bennu = false;
+            show_didymain = false;
+            show_itokawa = false;
+            show_ryugu = false;
+            show_toutatis = false;
+            show_eros = false;
         }
 
-        if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis)
+        if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros && !show_kleopatra)
         {
             glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -334,6 +404,7 @@ int main()
         }
 
         ImGui::Dummy(ImVec2(0.0f,15.0f));
+
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.0f, 0.0f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
