@@ -8,64 +8,91 @@
 class camera
 {
 public:
-    glm::vec3 pos; //position vector
-    glm::vec3 right, front, up; //coordinate system
-    glm::vec3 world_up; //world-global up direction
-    float yaw, pitch; // yaw, pitch angles (roll = 0 always for the camera)
-    float vel; //velocity magnitude
+    glm::vec3 pos; //Camera's position in world coordinates.
+    glm::vec3 right, front, up; //Camera's local direction vectors.
+    glm::vec3 world_up; //World up direction. In general this can be different from the local 'up' of the camera.
+    
+    float yaw, pitch; //Camera's yaw, pitch angles. Basically these are the right-left (yaw) and up-down (pitch) of the camera.
+    
+    float velocity, max_velocity; //Camera's current and max velocity.
+    float acceleration; //Camera's acceleration.
+    glm::vec3 last_direction; //Camera's last velocity direction, i.e. right before the corresponding motion action (e.g. keyboard key) is released.
+    bool is_moving; //Camera's current motion state.
+
     float mouse_sensitivity;
 
-    //constructor
+    //Constructor :
     camera(glm::vec3 init_pos = glm::vec3(0.0f,0.0f,0.0f),
            glm::vec3 init_world_up = glm::vec3(0.0f,0.0f,1.0f),
            float init_yaw = 90.0f,
            float init_pitch = 0.0f,
-           float init_vel = 5.0f,
+           float init_max_velocity = 5.0f,
+           float init_acceleration = 10.0f,
            float init_mouse_sensitivity = 0.1f)
     {
         pos = init_pos;
         world_up = init_world_up;
         yaw = init_yaw;
         pitch = init_pitch;
-        vel = init_vel;
+        velocity = 0.0f;
+        max_velocity = init_max_velocity;
+        acceleration = init_acceleration;
+        last_direction = glm::vec3(0.0f,0.0f,0.0f);
+        is_moving = false;
         mouse_sensitivity = init_mouse_sensitivity;
-        update_vectors();
+
+        update_local_vectors();
     }
 
-    void translate_front(float delta_time)
+    //Update the camera's position.
+    void move(float delta_time)
     {
-        pos += vel*delta_time*front;
+        if (is_moving)
+            pos += velocity*delta_time*last_direction;
     }
 
-    void translate_back(float delta_time)
+    void accelerate(float delta_time, glm::vec3 direction)
     {
-        pos -= vel*delta_time*front;
+        velocity += 2.0f*acceleration*delta_time;
+        if (velocity > max_velocity)
+            velocity = max_velocity;
+
+        pos += velocity*delta_time*direction;
+        last_direction = direction;
+        is_moving = true;
     }
 
-    void translate_right(float delta_time)
+    void decelerate(float delta_time)
     {
-        pos += vel*delta_time*right;
-    }
-
-    void translate_left(float delta_time)
-    {
-        pos -= vel*delta_time*right;
+        if (velocity > 0.0f)
+        {
+            velocity -= 1.5f*acceleration*delta_time;
+            if (velocity < 0.0f)
+            {
+                velocity = 0.0f;
+                is_moving = false;
+            }
+            pos += velocity*delta_time*last_direction;
+        }
     }
 
     void rotate(float xoffset, float yoffset)
     {
-        if (pitch > 88.9f) pitch = 88.9f;
-        else if (pitch <= -88.9f) pitch = -88.9f;
+        if (pitch > 88.9f)
+            pitch = 88.9f;
+        else if (pitch <= -88.9f)
+            pitch = -88.9f;
 
-        if (abs(yaw) > 360.0f) yaw = 0.0f;
+        if (abs(yaw) > 360.0f)
+            yaw = 0.0f;
 
         yaw -= xoffset*mouse_sensitivity;
         pitch -= yoffset*mouse_sensitivity;
 
-        update_vectors();
+        update_local_vectors();
     }
 
-    void update_vectors()
+    void update_local_vectors()
     {
         front.x = cos(glm::radians(pitch))*cos(glm::radians(yaw));
         front.y = cos(glm::radians(pitch))*sin(glm::radians(yaw));

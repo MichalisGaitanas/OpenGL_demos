@@ -105,7 +105,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
-    GLFWwindow *win = glfwCreateWindow(800, 600, "Demo app", NULL, NULL);
+    GLFWwindow *win = glfwCreateWindow(800, 600, "Lightcurve generation", NULL, NULL);
     if (win == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
