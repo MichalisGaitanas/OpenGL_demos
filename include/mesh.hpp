@@ -316,6 +316,7 @@ public:
 
         glTexImage2D(GL_TEXTURE_2D, 0, format, imgwidth, imgheight, 0, format, GL_UNSIGNED_BYTE, imgdata);
         glGenerateMipmap(GL_TEXTURE_2D);
+        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         stbi_image_free(imgdata); //Free image resources.
     }
 
