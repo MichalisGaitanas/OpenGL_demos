@@ -128,7 +128,7 @@ int main()
     ImPlot::CreateContext(); //strictly AFTER Imgui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
-    io.Fonts->AddFontFromFileTTF("../fonts/arial.ttf", 15.0f);
+    io.Fonts->AddFontFromFileTTF("../fonts/Arial.ttf", 15.0f);
     (void)io;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(win, true);
@@ -158,7 +158,7 @@ int main()
     bool show_any_asteroid = false;
 
     //We use only 1 shader throughout the whole app, so we construct it and .use() it here, before the while() loop.
-    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/lightcurve.frag");
+    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
 
     //Light calculation parameters.
@@ -175,8 +175,10 @@ int main()
     glm::mat4 view = glm::lookAt(cam_pos, cam_aim, cam_up);
     glm::mat4 model = glm::mat4(1.0f);
     //Now inform the shader about the constants. Since they are constant, we do it only once, here, before the while() loop.
+    glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f);
     shad.set_vec3_uniform("light_dir", light_dir);
     shad.set_vec3_uniform("light_col", light_col);
+    shad.set_vec3_uniform("mesh_col", mesh_col);
     shad.set_mat4_uniform("projection", projection);
     shad.set_mat4_uniform("view", view);
     shad.set_mat4_uniform("model", model);

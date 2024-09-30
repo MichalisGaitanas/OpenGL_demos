@@ -51,7 +51,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Transform cube", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "3D or 2D?", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");

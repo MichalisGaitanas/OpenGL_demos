@@ -330,8 +330,8 @@ public:
     //Draw the mesh (triangles).
     void draw_triangles()
     {
-        glBindVertexArray(vao);
         glBindTexture(GL_TEXTURE_2D, tao);
+        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/5));
         glBindVertexArray(0); //Unbind the vao.
         glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
