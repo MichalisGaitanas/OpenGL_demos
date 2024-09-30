@@ -154,7 +154,7 @@ int main()
     meshvfn ryugu("../obj/vfn/ryugu196k.obj");                     bool show_ryugu       = false;
     meshvfn toutatis("../obj/vfn/toutatis3k_radar.obj");           bool show_toutatis    = false;
     meshvfn eros("../obj/vfn/eros196k.obj");                       bool show_eros        = false;
-    meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");                  bool show_kleopatra   = false;
+    meshvfn kleopatra("../obj/vfn/kleopatra4k.obj");               bool show_kleopatra   = false;
     bool show_any_asteroid = false;
 
     //We use only 1 shader throughout the whole app, so we construct it and .use() it here, before the while() loop.
