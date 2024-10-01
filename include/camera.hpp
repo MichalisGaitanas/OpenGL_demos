@@ -53,7 +53,7 @@ public:
 
     void accelerate(float delta_time, glm::vec3 direction)
     {
-        velocity += 2.0f*acceleration*delta_time;
+        velocity += 1.5f*acceleration*delta_time;
         if (velocity > max_velocity)
             velocity = max_velocity;
 
@@ -66,7 +66,7 @@ public:
     {
         if (velocity > 0.0f)
         {
-            velocity -= 1.5f*acceleration*delta_time;
+            velocity -= 1.0f*acceleration*delta_time;
             if (velocity < 0.0f)
             {
                 velocity = 0.0f;
@@ -75,10 +75,13 @@ public:
             pos += velocity*delta_time*last_direction;
         }
     }
-
+  
     void rotate(float xoffset, float yoffset)
     {
-        if (pitch > 88.9f)
+        yaw -= xoffset*mouse_sensitivity;
+        pitch -= yoffset*mouse_sensitivity;
+
+        if (pitch >= 88.9f)
             pitch = 88.9f;
         else if (pitch <= -88.9f)
             pitch = -88.9f;
@@ -86,9 +89,7 @@ public:
         if (abs(yaw) > 360.0f)
             yaw = 0.0f;
 
-        yaw -= xoffset*mouse_sensitivity;
-        pitch -= yoffset*mouse_sensitivity;
-
+        //Recalculate the camera direction vectors.
         update_local_vectors();
     }
 

@@ -74,7 +74,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         if (mouse_visible)
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         else
+        {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            first_time_entered_the_window = true;
+        }
     }
 }
 
@@ -185,14 +188,14 @@ int main()
         shad.set_mat4_uniform("view", view);
         
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,6.0f,0.0f));
+        model = glm::translate(model, glm::vec3(0.0f,5.0f,0.0f));
         model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f,0.0f,1.0f));
         shad.set_mat4_uniform("model", model);
         shad.set_vec3_uniform("mesh_col", ak47_col);
         ak47.draw_triangles();
 
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,-6.0f,0.0f));
+        model = glm::translate(model, glm::vec3(0.0f,-5.0f,0.0f));
         shad.set_mat4_uniform("model", model);
         shad.set_vec3_uniform("mesh_col", suzanne_col);
         suzanne.draw_triangles(); 
