@@ -1,9 +1,8 @@
 
-//Include imgui headers first.
 #include"../imgui/imgui.h"
 #include"../imgui/imgui_impl_glfw.h"
 #include"../imgui/imgui_impl_opengl3.h"
-//The anything that is related to OpenGL.
+
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
 
@@ -36,8 +35,8 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -56,6 +55,10 @@ int main()
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    ImGuiStyle &imstyle = ImGui::GetStyle();
+    imstyle.WindowMinSize = ImVec2(100.0f,100.0f);
+    imstyle.FrameRounding = 5.0f;
+    imstyle.WindowRounding = 5.0f;
 
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     while (!glfwWindowShouldClose(window))
@@ -66,11 +69,11 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Basic io");
+        ImGui::Begin("Basic io"); //Imgui window with title.
 
         ImGui::Text("Text printing"); //Raw text printing on the gui.
         
-        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //vertical space (dx,dy).
+        ImGui::Dummy(ImVec2(0.0f, 20.0f)); //Vertical space (dx,dy).
 
         static char buf[30] = "";
         ImGui::PushItemWidth(100.0f); //Change item's width from default to a fixed one.
@@ -79,15 +82,18 @@ int main()
         
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
-        ImGui::Separator(); //Horizontal decoration-seperation line.
+        //ImGui::Separator(); //Horizontal decoration-seperation line.
 
         static float x = 0.12345f;
         ImGui::Text("Enter a float");
         ImGui::SameLine();
-        ImGui::PushID(0); //Define a new ID for the upcoming float, so it does not confilct with next inputs,
-            ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f"); //Float value input.
+        ImGui::PushItemWidth(100.0f);
+            ImGui::PushID(0); //Define a new ID for the upcoming float, so it does not confilct with next inputs,
+                ImGui::InputFloat(" ", &x, 0.0f, 0.0f,"%.3f"); //Float value input.
+            ImGui::PopItemWidth();
         ImGui::PopID();
-        ImGui::Separator();
+        
+        //ImGui::Separator();
 
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
@@ -108,10 +114,15 @@ int main()
         
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
-        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 0, 0, 255)); //Change color from default to custom RGBA.
-            ImGui::Text("Let's create a huge button");
-        ImGui::PopStyleColor(); //Set color back to default.
-        ImGui::Button("X", ImVec2(150,70)); //Classical button + its size (dx,dy)
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255)); //Change color from default to custom RGBA.
+        ImGui::Text("Let's create a huge button");
+        ImGui::PopStyleColor(); //Reset the last style color that was altered.
+
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.3f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0.6f, 0.0f, 0.0f, 1.0f));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
+        ImGui::Button("XXX", ImVec2(150,70)); //Classical button and its size (dx,dy).
+        ImGui::PopStyleColor(3); //Reset the last 3 style colors that were altered.
         
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
 

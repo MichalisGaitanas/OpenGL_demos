@@ -45,34 +45,34 @@ public:
     }
 
     //Update the camera's position.
-    void move(float delta_time)
+    void move(float time_tick)
     {
         if (is_moving)
-            pos += velocity*delta_time*last_direction;
+            pos += velocity*time_tick*last_direction;
     }
 
-    void accelerate(float delta_time, glm::vec3 direction)
+    void accelerate(float time_tick, glm::vec3 direction)
     {
-        velocity += 1.5f*acceleration*delta_time;
+        velocity += 1.5f*acceleration*time_tick;
         if (velocity > max_velocity)
             velocity = max_velocity;
 
-        pos += velocity*delta_time*direction;
+        pos += velocity*time_tick*direction;
         last_direction = direction;
         is_moving = true;
     }
 
-    void decelerate(float delta_time)
+    void decelerate(float time_tick)
     {
         if (velocity > 0.0f)
         {
-            velocity -= 1.0f*acceleration*delta_time;
+            velocity -= 1.0f*acceleration*time_tick;
             if (velocity < 0.0f)
             {
                 velocity = 0.0f;
                 is_moving = false;
             }
-            pos += velocity*delta_time*last_direction;
+            pos += velocity*time_tick*last_direction;
         }
     }
   

@@ -9,13 +9,17 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
-//Global camera object. 
+//Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
+//have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
+//any variable within the specific context of the window.
 camera cam(glm::vec3(-10.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.0f);
 
-float delta_time;
+float time_tick; //Elapsed time per frame update.
+
 float xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
-bool mouse_visible = false;
+
+bool cursor_visible = false;
 
 int win_width = 1200, win_height = 900;
 
@@ -25,53 +29,55 @@ void event_tick(GLFWwindow *win)
     bool move_key_pressed = false;
     if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, cam.front);
+        cam.accelerate(time_tick, cam.front);
         move_key_pressed = true;
     }
     if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, -cam.front);
+        cam.accelerate(time_tick, -cam.front);
         move_key_pressed = true;
     }
     if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, cam.right);
+        cam.accelerate(time_tick, cam.right);
         move_key_pressed = true;
     }
     if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, -cam.right);
+        cam.accelerate(time_tick, -cam.right);
         move_key_pressed = true;
     }
     if (glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, cam.world_up);
+        cam.accelerate(time_tick, cam.world_up);
         move_key_pressed = true;
     }
     if (glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS)
     {
-        cam.accelerate(delta_time, -cam.world_up);
+        cam.accelerate(time_tick, -cam.world_up);
         move_key_pressed = true;
     }
 
     //If no keys are pressed, decelerate.
     if (!move_key_pressed)
-        cam.decelerate(delta_time);
+        cam.decelerate(time_tick);
 }
 
-//For discrete events.
+//For discrete keyboard events.
 void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
+//When a mouse button is pressed, do the following :
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
+    //Toggle cursor visibility via the mouse right click.
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
     {
-        mouse_visible = !mouse_visible;
-        if (mouse_visible)
+        cursor_visible = !cursor_visible;
+        if (cursor_visible)
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         else
         {
@@ -84,7 +90,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 //When the mouse moves, do the following :
 void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 {
-    if (mouse_visible)
+    if (cursor_visible)
         return;
 
     if (first_time_entered_the_window)
@@ -137,8 +143,6 @@ int main()
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //Hide the mouse initially.
 
     glfwGetWindowSize(window, &win_width, &win_height);
-    xpos_previous = win_width/2.0f;
-    ypos_previous = win_height/2.0f;
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -176,14 +180,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
         t2 = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
-        delta_time = t2 - t1;
+        time_tick = t2 - t1;
         t1 = t2;
 
         event_tick(window);
 
         projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,100.0f);
         shad.set_mat4_uniform("projection", projection);
-        cam.move(delta_time);
+        cam.move(time_tick);
         glm::mat4 view = cam.view();
         shad.set_mat4_uniform("view", view);
         

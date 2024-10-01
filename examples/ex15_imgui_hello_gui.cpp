@@ -1,27 +1,27 @@
 
-//always include imgui stuff first
+//Include imgui headers first.
 #include"../imgui/imgui.h"
 #include"../imgui/imgui_impl_glfw.h"
 #include"../imgui/imgui_impl_opengl3.h"
-
+//Then, anything that is related to OpenGL.
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
+
 #include<cstdio>
 
-void raw_hardware_input(GLFWwindow *window)
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
 {
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-    {
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
-    }
-    return;
 }
 
+/*
 void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0,0,width,height);
     return;
 }
+*/
 
 int main()
 {
@@ -30,7 +30,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow *window = glfwCreateWindow(800,600, "imgui", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(800,600, "OpenGL window", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to open a glfw window. Exiting...\n");
@@ -38,7 +38,8 @@ int main()
     }
 
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
+    //glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -47,14 +48,13 @@ int main()
         return 0;
     }
 
-
-    //initialize imgui assuming glfw will be used
+    //Initialize imgui.
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
     (void)io;
-    ImGui::StyleColorsDark(); //set background color for imgui window
+    ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
 
@@ -63,24 +63,23 @@ int main()
     {   
 		glClear(GL_COLOR_BUFFER_BIT);
 
-        //create a new imgui frame
+        //Create a new imgui frame.
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        //what to do draw in the imgui frame
-        ImGui::Begin("imgui window"); //title
-        ImGui::Text("Hello world!"); //raw text
-        ImGui::End();
+        ImGui::Begin("Imgui window"); //Imgui window with title.
+        ImGui::Text("Hello from GUI!"); //Raw text printing on the gui window.
+        ImGui::End(); //End of the gui window.
+        
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
-        raw_hardware_input(window);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    //free imgui resources
+    //Free imgui resources.
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();

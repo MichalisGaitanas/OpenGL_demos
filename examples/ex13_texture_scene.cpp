@@ -62,6 +62,7 @@ int main()
         return 0;
     }
 
+    //Load the meshes with the corresponding textures.
     meshvft ground("../obj/vft/plane10x10.obj", "../images/texture/aerial_grass_rock_diff_4k.jpg");
     meshvft wooden_stool("../obj/vft/wooden_stool.obj", "../images/texture/wooden_stool_diff_2k.jpg");
     meshvft brick_cube("../obj/vft/cube1x1x1_correct_uv.obj", "../images/texture/red_brick_diff_2k.jpg");
