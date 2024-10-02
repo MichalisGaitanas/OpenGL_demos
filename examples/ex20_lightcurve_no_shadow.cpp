@@ -13,7 +13,7 @@
 #include<cmath>
 #include<vector>
 
-#include<omp.h>
+//#include<omp.h>
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
