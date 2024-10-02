@@ -52,7 +52,7 @@ public:
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), &verts, GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(inds), &inds, GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glBindVertexArray(0); //Unbind the vao.
 
@@ -64,7 +64,7 @@ public:
                                 "../images/skybox/starfield_4k/bottom.jpg",
                                 "../images/skybox/starfield_4k/front.jpg",
                                 "../images/skybox/starfield_4k/back.jpg" };
-
+        
         //Create the skybox (cubemap) texture object.
         unsigned int tao;
         glGenTextures(1, &tao);

@@ -109,6 +109,11 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
     cam.rotate(xoffset, yoffset);
 }
 
+void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+{
+    cam.zoom((float)yoffset);
+}
+
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 {
     win_width = w;
@@ -139,6 +144,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //Hide the mouse initially.
 
@@ -185,7 +191,7 @@ int main()
 
         event_tick(window);
 
-        projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,100.0f);
+        projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.01f,100.0f);
         shad.set_mat4_uniform("projection", projection);
         cam.move(time_tick);
         view = cam.view();

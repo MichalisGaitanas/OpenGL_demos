@@ -21,14 +21,17 @@ public:
 
     float mouse_sensitivity;
 
+    float fov; //Camera's field of view.
+
     //Constructor :
     camera(glm::vec3 init_pos = glm::vec3(0.0f,0.0f,0.0f),
            glm::vec3 init_world_up = glm::vec3(0.0f,0.0f,1.0f),
-           float init_yaw = 90.0f,
+           float init_yaw = 90.0f, //Point at the +y axis by default.
            float init_pitch = 0.0f,
            float init_max_velocity = 5.0f,
            float init_acceleration = 10.0f,
-           float init_mouse_sensitivity = 0.1f)
+           float init_mouse_sensitivity = 0.1f,
+           float init_fov = 45.0f)
     {
         pos = init_pos;
         world_up = init_world_up;
@@ -40,6 +43,7 @@ public:
         last_direction = glm::vec3(0.0f,0.0f,0.0f);
         is_moving = false;
         mouse_sensitivity = init_mouse_sensitivity;
+        fov = init_fov;
 
         update_local_vectors();
     }
@@ -51,6 +55,7 @@ public:
             pos += velocity*time_tick*last_direction;
     }
 
+    //Smooth camera acceleration algorithm.
     void accelerate(float time_tick, glm::vec3 direction)
     {
         velocity += 1.5f*acceleration*time_tick;
@@ -62,6 +67,7 @@ public:
         is_moving = true;
     }
 
+    //Smooth camera deceleration algorithm.
     void decelerate(float time_tick)
     {
         if (velocity > 0.0f)
@@ -76,6 +82,7 @@ public:
         }
     }
   
+    //Right-left (yaw) and up-down (pitch) rotation.
     void rotate(float xoffset, float yoffset)
     {
         yaw -= xoffset*mouse_sensitivity;
@@ -89,8 +96,20 @@ public:
         if (abs(yaw) > 360.0f)
             yaw = 0.0f;
 
-        //Recalculate the camera direction vectors.
+        //Upon orientaion change, recalculate the camera local direction vectors, because these will change as well.
         update_local_vectors();
+    }
+
+    //Camera's zoom effect. Basically we only change the fov and then this is passed as argument in the projection matrix, wherever the matrix is calculated...
+    void zoom(float yoffset)
+    {
+        fov -= 1.0f*yoffset;
+
+        //Set bounds to the fov.
+        if (fov <= 1.0f)
+            fov = 1.0f;
+        else if (fov >= 150.0f)
+            fov = 150.0f; //This will cause a very distorted view.
     }
 
     void update_local_vectors()

@@ -89,10 +89,6 @@ int main()
     const size_t max_size_data = 11000; //Set the maximum number of curve points to retain.
     bool show_beat_plot = false;
 
-    //double t_until_while_loop = glfwGetTime();
-    // Time window to display (e.g., show only the last 10 seconds of data)
-    //float time_window = 10.0f;
-
     glClearColor(0.0f,0.2f,0.2f,1.0f);
     while (!glfwWindowShouldClose(window))
     {
