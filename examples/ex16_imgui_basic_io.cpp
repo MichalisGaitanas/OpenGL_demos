@@ -69,7 +69,12 @@ int main()
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::Begin("Basic io"); //Imgui window with title.
+        ImGui::SetNextWindowPos( ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
+        //ImGui::SetNextWindowSize(ImVec2(300.0f, 600.0f), ImGuiCond_FirstUseEver);
+        static bool popen = true;
+        ImGui::Begin("Basic io", &popen); //Imgui window with title and a close button.
+        if (!popen)
+            glfwSetWindowShouldClose(window, true);
 
         ImGui::Text("Text printing"); //Raw text printing on the gui.
         

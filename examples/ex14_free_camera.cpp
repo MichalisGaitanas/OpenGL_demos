@@ -188,7 +188,7 @@ int main()
         projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,100.0f);
         shad.set_mat4_uniform("projection", projection);
         cam.move(time_tick);
-        glm::mat4 view = cam.view();
+        view = cam.view();
         shad.set_mat4_uniform("view", view);
         
         model = glm::mat4(1.0f);
