@@ -136,7 +136,7 @@ int main()
 
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "First person camera", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Depth buffer", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");

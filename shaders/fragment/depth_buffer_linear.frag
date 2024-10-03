@@ -10,7 +10,7 @@ void main()
     depth = 2.0f*depth - 1.0f; //Depth value, mapped in range [-1,1] (1st transformation).
 
     float near = 0.1f;
-    float far = 100.0f;
+    float far = 200.0f;
     depth = (2.0f*near*far)/(far + near - depth*(far - near)); //Depth value, mapped in range [near,far] (2nd transformation).
     depth /= far; //Depth value, mapped in range [0,1] (3rd transformation).
 
