@@ -13,7 +13,17 @@
 #include<cmath>
 #include<vector>
 
-//#include<omp.h>
+#ifdef _OPENMP
+#include<omp.h>
+#endif
+
+void omp_setup_threads()
+{
+#ifdef _OPENMP
+    omp_set_dynamic(false);  //Obey to my following thread numer request.
+    omp_set_num_threads(omp_get_max_threads()/2);  //Set threads to half of the max available of the machine.
+#endif
+}
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
@@ -31,27 +41,9 @@ float calculate_brightness(unsigned int texture_id, int width, int height)
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
     
     //Sum up the intensity values stored in the red channel.
-    float brightness = 0.0f;
-    for (int i = 0; i < width*height; i++)
-        brightness += pixels[i];
-
-    return brightness/(width*height); //Normalize the brightness.
-}
-
-/*
-float calculate_brightness(unsigned int texture_id, int width, int height)
-{
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    std::vector<float> pixels(width*height);
-    
-    //Read the pixels from the texture (only the red channel, i.e. grayscale color).
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
-    
-    //Sum up the intensity values stored in the red channel.
-    float brightness = 0.0f;
-    omp_set_dynamic(false);
-    omp_set_num_threads(12);
+#ifdef _OPENMP
     size_t i, total_pixels = width*height;
+    float brightness = 0.0f;
     #pragma omp parallel for firstprivate(total_pixels)\
                              private(i)\
                              shared(pixels)\
@@ -59,10 +51,15 @@ float calculate_brightness(unsigned int texture_id, int width, int height)
                              reduction(+:brightness)
     for (i = 0; i < total_pixels; ++i)
         brightness += pixels[i];
+#else
+    float brightness = 0.0f;
+    for (int i = 0; i < width*height; ++i)
+        brightness += pixels[i];
+#endif
 
-    return brightness/total_pixels; //Normalize the brightness.
+
+    return brightness/(width*height); //Normalize the brightness.
 }
-*/
 
 //Create a new auxiliary hidden framebuffer, that we will use to perform the lightcurve calculation.
 void setup_hidden_framebuffer(int width, int height)
@@ -122,6 +119,8 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 
 int main()
 {
+    omp_setup_threads();
+
     //Setup glfw stuff.
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
