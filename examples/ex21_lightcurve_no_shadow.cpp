@@ -20,7 +20,7 @@
 void omp_setup_threads()
 {
 #ifdef _OPENMP
-    omp_set_dynamic(false);  //Obey to my following thread numer request.
+    omp_set_dynamic(false);  //Obey to my following thread number request.
     omp_set_num_threads(omp_get_max_threads()/2);  //Set threads to half of the max available of the machine.
 #endif
 }
@@ -437,7 +437,7 @@ int main()
 
         ImGui::Dummy(ImVec2(0.0f,15.0f));
 
-        ImGui::Text("Monitor fps [ %.0f ] ", ImGui::GetIO().Framerate);
+        ImGui::Text("FPS [ %.0f ] ", ImGui::GetIO().Framerate);
 
         ImGui::Dummy(ImVec2(0.0f,15.0f));
 
