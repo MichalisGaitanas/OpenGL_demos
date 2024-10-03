@@ -86,7 +86,7 @@ int main()
     //Real time beat curve.
     std::vector<double> time_data;
     std::vector<double> beat_data;
-    const size_t max_size_data = 11000; //Set the maximum number of curve points to retain.
+    const size_t max_size_data = 25000; //Set the maximum number of curve points to retain.
     bool show_beat_plot = false;
 
     glClearColor(0.0f,0.2f,0.2f,1.0f);
@@ -149,7 +149,7 @@ int main()
         if (show_standing_wave_plot)
         {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Standing wave plot", &show_standing_wave_plot);
+            ImGui::Begin("Standing wave plot (real time)", &show_standing_wave_plot);
             ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
             if (ImPlot::BeginPlot("y = 0.5*cos(x)*cos(2*t)", plot_win_size))
             {
@@ -175,7 +175,7 @@ int main()
         if (show_beat_plot)
         {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Beat plot", &show_beat_plot);
+            ImGui::Begin("Beat plot (real time)", &show_beat_plot);
             ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
             if (ImPlot::BeginPlot("y = sin(2*t) + sin(2.3*t)", plot_win_size))
             {
