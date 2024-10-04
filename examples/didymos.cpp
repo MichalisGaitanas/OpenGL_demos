@@ -26,8 +26,8 @@ camera cam(glm::vec3(0.0f, -5.0f, 0.0f),
            glm::vec3(0.0f,0.0f,1.0f),
            90.0f,
            0.0f,
-           2.0f,
-           5.0f,
+           1.0f,
+           3.0f,
            0.05f,
            45.0f );
 
@@ -90,8 +90,8 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 //When a mouse button is pressed, do the following :
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
-    //Toggle cursor visibility via the mouse right click.
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+    //Toggle cursor visibility via the mouse middle click.
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
     {
         cursor_visible = !cursor_visible;
         if (cursor_visible)
@@ -729,6 +729,13 @@ int main()
     q1 = quat2unit(q1);
     q2 = quat2unit(q2);
 
+    std::vector<double> time_data;
+    std::vector<double> energy_data;
+    std::vector<double> momentum_data;
+    std::vector<double> r_data;
+    std::vector<double> z_data;
+    std::vector<double> thita_data;
+
     duration = 0.0;
     dt = 10.0;
     I1 = ell_inertia(M1, semiaxes1);
@@ -747,9 +754,12 @@ int main()
     glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.05f,0.05f,0.05f,1.0f);
+    glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-    double t1 = 0.0f, tnow;
+    double t1 = 0.0, tnow;
+    double ms_per_frame = 1000.0;
+    int frame = 0, frames_per_sec;
+    double tfps = t1;
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -758,7 +768,17 @@ int main()
         time_tick = tnow - t1;
         t1 = tnow;
 
-        event_tick(window); 
+        //Custom algorithm for FPS measurement. Just to check if it is the same with ImGui's ImGui::GetIO().Framerate
+        ++frame;
+        if (tnow - tfps >= 1.0)
+        {
+            ms_per_frame = 1000.0/frame;
+            frame = 0;
+            tfps += 1.0;
+        }
+        frames_per_sec = 1000.0/ms_per_frame;
+
+        event_tick(window);
 
         projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.1f,1000.0f);
         cam.move(time_tick);
@@ -809,40 +829,72 @@ int main()
         ImGui::NewFrame();
  
         static bool gui_is_closable = true;
+
         static bool show_energy_conservation = false;
         static bool show_momentum_conservation = false;
+        static bool show_mutual_r = false;
+        static bool show_mutual_z = false;
+        static bool show_mutual_thita = false;
+
 
         ImGui::SetNextWindowSize(ImVec2(300.0f,500.0f), ImGuiCond_FirstUseEver);
 		ImGui::Begin("GUI", &gui_is_closable);
         if (!gui_is_closable)
             glfwSetWindowShouldClose(window, true);
-        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "Right click to toggle the cursor functionality.");
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "Middle click to toggle the cursor functionality.");
         ImGui::Dummy(ImVec2(0.0f, 10.0f));
-        ImGui::Text("Duration %.1f [days]", duration);
-        ImGui::Checkbox("Show energy conservation", &show_energy_conservation);
+        if (ImGui::CollapsingHeader("Time"))
+        {
+            ImGui::BulletText("Physical duration : %.0f [sec]", (float)tnow);
+            ImGui::BulletText("Simulated duration : %.1f [days]", (float)duration);
+            ImGui::BulletText("Integration step : %.1f [sec]", (float)dt);
+            ImGui::BulletText("FPS : %.0f (imgui)", ImGui::GetIO().Framerate);
+            ImGui::BulletText("FPS : %d (custom)", frames_per_sec);
+        }
+        if (ImGui::CollapsingHeader("Camera"))
+        {
+            ImGui::BulletText("Position : (%.1f, %.1f, %.1f) [km]", cam.pos.x, cam.pos.y, cam.pos.z);
+            ImGui::BulletText("Yaw : %.1f [deg]", cam.yaw);
+            ImGui::BulletText("Pitch : %.1f [deg]", cam.pitch);
+            ImGui::BulletText("FoV : %.1f [deg]", cam.fov);
+        }
+        if (ImGui::CollapsingHeader("Plots"))
+        {
+            ImGui::Checkbox("Energy", &show_energy_conservation);
+            ImGui::Checkbox("Momentum", &show_momentum_conservation);
+            ImGui::Checkbox("Mutual r", &show_mutual_r);
+            ImGui::Checkbox("Mutual thita", &show_mutual_thita);
+            ImGui::Checkbox("Mutual z", &show_mutual_z);
+        }
         ImGui::End();
 
-        /*
         dvec2 energy_momentum = ener_mom(state);
         energy_data.push_back(fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
         momentum_data.push_back(fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
-        time_data.push_back(tnow);
-        if (time_data.size() > 1000)
+        r_data.push_back(sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]));
+        z_data.push_back(state[2]);
+        thita_data.push_back(atan2(state[1],state[0])*180.0/pi);
+        time_data.push_back(duration);
+        if (time_data.size() > 10000)
         {
             time_data.erase(time_data.begin());
             energy_data.erase(energy_data.begin());
-            momentum_data.erase(energy_data.begin());
+            momentum_data.erase(momentum_data.begin());
+            r_data.erase(r_data.begin());
+            z_data.erase(z_data.begin());
+            thita_data.erase(thita_data.begin());
         }
         if (show_energy_conservation)
         {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Energy conservation (real time)", &show_energy_conservation);
+            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Energy conservation", &show_energy_conservation);
             ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
             if (ImPlot::BeginPlot("Energy conservation", plot_win_size))
             {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "y");
-                ImPlot::SetupAxisLimits(ImAxis_X1, tnow - 70.0, tnow, ImGuiCond_Always); //Automatically scroll the view with time.
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+                ImPlot::SetupAxes("t [days]", "|dE/E0|");
+                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
                 ImPlot::PlotLine("", time_data.data(), energy_data.data(), time_data.size());
                 ImPlot::PopStyleColor();
                 ImPlot::EndPlot();
@@ -852,67 +904,74 @@ int main()
         if (show_momentum_conservation)
         {
             ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Energy conservation (real time)", &show_momentum_conservation);
+            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Momentum conservation", &show_momentum_conservation);
             ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Energy conservation", plot_win_size))
+            if (ImPlot::BeginPlot("Momentum conservation", plot_win_size))
             {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "y");
-                ImPlot::SetupAxisLimits(ImAxis_X1, tnow - 70.0, tnow, ImGuiCond_Always); //Automatically scroll the view with time.
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+                ImPlot::SetupAxes("t [days]", "|dL/L0|");
+                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
                 ImPlot::PlotLine("", time_data.data(), momentum_data.data(), time_data.size());
                 ImPlot::PopStyleColor();
                 ImPlot::EndPlot();
             }
             ImGui::End();
         }
-        */
+        if (show_mutual_r)
+        {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Mutual distance", &show_mutual_r);
+            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
+            if (ImPlot::BeginPlot("Mutual distance", plot_win_size))
+            {
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+                ImPlot::SetupAxes("t [days]", "r [km]");
+                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
+                ImPlot::PlotLine("", time_data.data(), r_data.data(), time_data.size());
+                ImPlot::PopStyleColor();
+                ImPlot::EndPlot();
+            }
+            ImGui::End();
+        }
+        if (show_mutual_thita)
+        {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Mutual polar angle", &show_mutual_thita);
+            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
+            if (ImPlot::BeginPlot("Mutual polar angle", plot_win_size))
+            {
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+                ImPlot::SetupAxes("t [days]", "thita [deg]");
+                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
+                ImPlot::PlotLine("", time_data.data(), thita_data.data(), time_data.size());
+                ImPlot::PopStyleColor();
+                ImPlot::EndPlot();
+            }
+            ImGui::End();
+        }
+        if (show_mutual_z)
+        {
+            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+            ImGui::Begin("Mutual z", &show_mutual_z);
+            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
+            if (ImPlot::BeginPlot("Mutual z", plot_win_size))
+            {
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+                ImPlot::SetupAxes("t [days]", "z [km]");
+                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
+                ImPlot::PlotLine("", time_data.data(), z_data.data(), time_data.size());
+                ImPlot::PopStyleColor();
+                ImPlot::EndPlot();
+            }
+            ImGui::End();
+        }
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-        
-        /*
-        char text[100];
-
-        sprintf(text, "time :  %.2f [ days ]", duration);
-        ttf.draw(text, 20.0f, win_height - 30.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( x, y, z ) :  ( %.2f, %.2f, %.2f ) [ km ]", state[0], state[1], state[2]);
-        ttf.draw(text, 20.0f, win_height - 60.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( roll 1, pitch 1, yaw 1 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy1[0]*180.0/M_PI, rpy1[1]*180.0/M_PI, rpy1[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 90.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( quaternion 1 ) :  ( %.2f, %.2f, %.2f, %.2f ) [  ]", state[6], state[7], state[8], state[9]);
-        ttf.draw(text, 20.0f, win_height - 120.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( roll 2, pitch 2, yaw 2 ) :  ( %.2f, %.2f, %.2f ) [ deg ]", rpy2[0]*180.0/M_PI, rpy2[1]*180.0/M_PI, rpy2[2]*180.0/M_PI);
-        ttf.draw(text, 20.0f, win_height - 150.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( quaternion 2 ) :  ( %.2f, %.2f, %.2f, %.2f ) [  ]", state[13], state[14], state[15], state[16]);
-        ttf.draw(text, 20.0f, win_height - 180.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        vec2 energy_momentum = ener_mom(state);
-        sprintf(text, "energy error :  %.0e", fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
-        ttf.draw(text, 20.0f, win_height - 210.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-        sprintf(text, "momentum error :  %.0e", fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
-        ttf.draw(text, 20.0f, win_height - 230.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "fps :  %d [ %s ]", (int)(1000.0/ms_per_frame), gpu_vendor);
-        ttf.draw(text, 20.0f, win_height - 260.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-
-        sprintf(text, "camera : ");
-        ttf.draw(text, 20.0f, win_height - 900.0f, win_width, win_height, 0.4f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( x, y, z ) :  ( %.2f, %.2f, %.2f ) [ km ]", cam.pos[0], cam.pos[1], cam.pos[2]);
-        ttf.draw(text, 20.0f, win_height - 930.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( roll, pitch, yaw ) :  ( 0.00, %.2f, %.2f ) [ deg ]", cam.pitch, cam.yaw);
-        ttf.draw(text, 20.0f, win_height - 960.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-
-        sprintf(text, "( fov (zoom) ) :  ( %.2f ) [ deg ]", fov);
-        ttf.draw(text, 20.0f, win_height - 990.0f, win_width, win_height, 0.3f, glm::vec3(0.9f,0.9f,0.0f), text_shad);
-        */
 
         glfwSwapBuffers(window);
         glfwPollEvents();

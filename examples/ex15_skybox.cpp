@@ -7,7 +7,6 @@
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
-#include"../include/skybox.hpp"
 #include"../include/camera.hpp"
 
 camera cam(glm::vec3(0.0f, -10.0f, 0.0f));
@@ -190,12 +189,11 @@ int main()
         suzanne.draw_triangles();
 
         glDepthFunc(GL_LEQUAL);
-            projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,500.0f);
             view = glm::mat4(glm::mat3(glm::lookAt(cam.pos, cam.pos + cam.front, cam.up)));
             shadsb.use();
             shadsb.set_mat4_uniform("projection", projection);
             shadsb.set_mat4_uniform("view", view);
-            sb.draw();
+            sb.draw_elements();
         glDepthFunc(GL_LESS);
 
         glfwSwapBuffers(window);
