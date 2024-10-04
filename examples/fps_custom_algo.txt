@@ -1,0 +1,32 @@
+Global:
+
+float t1 = 0.0f, t2, delta_time;
+float xpos_previous, ypos_previous;
+bool first_time_entered_the_window = true;
+float fov = 45.0f;
+
+int win_width, win_height;
+float aspect_ratio;
+
+double tglfw, tprev, ms_per_frame = 1000.0;
+int frames = 0;
+
+...
+
+
+tprev = glfwGetTime();
+while (!glfwWindowShouldClose(win))
+{
+    t2 = glfwGetTime(); 
+    delta_time = t2 - t1;
+    t1 = t2;
+    tglfw = glfwGetTime();
+    frames++;
+    if (tglfw - tprev >= 1.0)
+    {
+        ms_per_frame = 1000.0/(double)frames;
+        frames = 0;
+        tprev += 1.0;
+    }
+
+    ....

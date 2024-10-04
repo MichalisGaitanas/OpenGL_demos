@@ -139,7 +139,7 @@ int main()
 
     while (!glfwWindowShouldClose(window)) //Game loop.
     {
-        printf("tnow = %f\n", tnow);
+        //printf("tnow = %f\n", tnow);
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
