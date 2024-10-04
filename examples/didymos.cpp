@@ -128,7 +128,8 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
 {
-    cam.zoom((double)yoffset);
+    if (!cursor_visible)
+        cam.zoom((double)yoffset);
 }
 
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
@@ -701,6 +702,8 @@ int main()
     meshvfn aster2_axis_y("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_y.obj");
     meshvfn aster2_axis_z("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_z.obj");
 
+    meshvfn ref_ground("../obj/vfn/plane20x20_wavy.obj");
+
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
     shad.use();
 
@@ -719,7 +722,7 @@ int main()
     M2 = 4.940814359692687e+09;
     dvec3 semiaxes1 = {0.416194, 0.418765, 0.39309};
     dvec3 semiaxes2 = {0.104, 0.080, 0.066};
-    dvec3 r   = {1.19, 0.0, 0.0};
+    dvec3 r   = {1.19, 0.0, 0.4};
     dvec3 v   = {0.0, 0.00017421523858789, 0.0};
     dvec4 q1  = {1.0, 0.0, 0.0, 0.0};
     dvec3 w1i = {0.0, 0.0, 0.000772269580528465};
@@ -824,6 +827,12 @@ int main()
         shad.set_vec3_uniform("mesh_col", axis_z_col);
         aster2_axis_z.draw_triangles();
 
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, glm::vec3(0.0f,0.0f,-2.0f));
+        shad.set_mat4_uniform("model", model);
+        shad.set_vec3_uniform("mesh_col", aster_col);
+        ref_ground.draw_triangles();
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
@@ -841,7 +850,7 @@ int main()
 		ImGui::Begin("GUI", &gui_is_closable);
         if (!gui_is_closable)
             glfwSetWindowShouldClose(window, true);
-        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "Middle click to toggle the cursor functionality.");
+        ImGui::TextColored(ImVec4(1.0f,0.0f,0.0f,1.0f), "Middle mouse click toggles the cursor.");
         ImGui::Dummy(ImVec2(0.0f, 10.0f));
         if (ImGui::CollapsingHeader("Time"))
         {
