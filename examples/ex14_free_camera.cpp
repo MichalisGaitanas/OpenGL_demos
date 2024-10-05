@@ -159,7 +159,7 @@ int main()
 
     meshvfn suzanne("../obj/vfn/suzanne.obj");
     meshvfn ak47("../obj/vfn/ak47.obj");
-    meshvfn ground("../obj/vfn/plane20x20.obj");
+    meshvfn ground("../obj/vfn/plane40x40.obj");
 
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ad.frag");
     shad.use();

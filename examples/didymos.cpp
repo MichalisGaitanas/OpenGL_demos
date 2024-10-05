@@ -17,7 +17,22 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//Create some aliases for the following data structures.
+typedef std::array<double, 2> dvec2;
+typedef std::array<double, 3> dvec3;
+typedef std::array<double, 4> dvec4;
+typedef std::array<double, 20> dvec20; //20 is the number of differential equations that we'll continuously be solving at each frame. 
+typedef std::array<dvec3, 3> dmat3;
+
+//Globals...
 const double pi = 3.1415926535897932384626433832795;
+double G,M1,M2; //Gravity constant and asteroid masses.
+dmat3 I1,I2; //Moment of inertia tensors of the asteroids.
+double dt; //Integration step;
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
 //have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
@@ -35,122 +50,11 @@ double time_tick; //Elapsed time per frame update.
 
 double xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
-
 bool cursor_visible = false;
 
-int win_width = 1200, win_height = 900;
+int win_width = 1200, win_height = 900; //Window's dimensions.
 
-//For 'continuous' events, i.e. at every frame in the while() loop.
-void event_tick(GLFWwindow *win)
-{
-    bool move_key_pressed = false;
-    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, cam.front);
-        move_key_pressed = true;
-    }
-    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, -cam.front);
-        move_key_pressed = true;
-    }
-    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, cam.right);
-        move_key_pressed = true;
-    }
-    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, -cam.right);
-        move_key_pressed = true;
-    }
-    if (glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, cam.world_up);
-        move_key_pressed = true;
-    }
-    if (glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS)
-    {
-        cam.accelerate(time_tick, -cam.world_up);
-        move_key_pressed = true;
-    }
-
-    //If no keys are pressed, decelerate.
-    if (!move_key_pressed)
-        cam.decelerate(time_tick);
-}
-
-//For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
-{
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
-        glfwSetWindowShouldClose(window, true);
-}
-
-//When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
-{
-    //Toggle cursor visibility via the mouse middle click.
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
-    {
-        cursor_visible = !cursor_visible;
-        if (cursor_visible)
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-        else
-        {
-            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-            first_time_entered_the_window = true;
-        }
-    }
-}
-
-//When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
-{
-    if (cursor_visible)
-        return;
-
-    if (first_time_entered_the_window)
-    {
-        xpos_previous = xpos;
-        ypos_previous = ypos;
-        first_time_entered_the_window = false;
-    }
-
-    double xoffset = xpos - xpos_previous;
-    double yoffset = ypos - ypos_previous;
-
-    xpos_previous = xpos;
-    ypos_previous = ypos;
-
-    cam.rotate(xoffset, yoffset);
-}
-
-void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
-{
-    if (!cursor_visible)
-        cam.zoom((double)yoffset);
-}
-
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
-{
-    win_width = w;
-    win_height = h;
-    glViewport(0,0,w,h);
-}
-
-
-typedef std::array<double, 2> dvec2;
-typedef std::array<double, 3> dvec3;
-typedef std::array<double, 4> dvec4;
-typedef std::array<double, 20> dvec20;
-typedef std::array<dvec3, 3> dmat3;
-
-double G,M1,M2; //Gravity constant and asteroid masses.
-dmat3 I1,I2; //Moment of inertia tensors of the asteroids.
-double duration, dt; //Integration duration and method's step.
-
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 /* Overload some operators to make our life easier. */
 
@@ -560,8 +464,9 @@ dvec3 fw2(const dvec3 &r, const dvec4 &q2, const dvec3 &w2b)
 
 /* Write the integration method (RK4 scheme). */
 
-void rk4_step(dvec20 &state)
+void rk4_do_step(dvec20 &state)
 {
+    //State extraction into simple variables.
     dvec3 r   = { state[0], state[1], state[2] };
     dvec3 v   = { state[3], state[4], state[5] };
     dvec4 q1  = { state[6], state[7], state[8],  state[9] };
@@ -569,9 +474,11 @@ void rk4_step(dvec20 &state)
     dvec4 q2  = { state[13], state[14], state[15], state[16] };
     dvec3 w2b = { state[17], state[18], state[19] };
 
+    //Normalize the quaternions at each step, so that they do represent orientations.
     q1 = quat2unit(q1);
     q2 = quat2unit(q2);
 
+    //Step 1.
     dvec3 kr = fr(v);
     dvec3 kv = fv(r,q1,q2);
     dvec4 kq1 = fq1(q1,w1b);
@@ -579,6 +486,7 @@ void rk4_step(dvec20 &state)
     dvec4 kq2 = fq2(q2,w2b);
     dvec3 kw2b = fw2(r,q2,w2b);
 
+    //Step 2.
     dvec3 lr = fr(v + 0.5*dt*kv);
     dvec3 lv = fv(r + 0.5*dt*kr, q1 + 0.5*dt*kq1, q2 + 0.5*dt*kq2);
     dvec4 lq1 = fq1(q1 + 0.5*dt*kq1, w1b + 0.5*dt*kw1b);
@@ -586,6 +494,7 @@ void rk4_step(dvec20 &state)
     dvec4 lq2 = fq2(q2 + 0.5*dt*kq2, w2b + 0.5*dt*kw2b);
     dvec3 lw2b = fw2(r + 0.5*dt*kr, q2 + 0.5*dt*kq2, w2b + 0.5*dt*kw2b);
 
+    //Step 3.
     dvec3 mr = fr(v + 0.5*dt*lv);
     dvec3 mv = fv(r + 0.5*dt*lr, q1 + 0.5*dt*lq1, q2 + 0.5*dt*lq2);
     dvec4 mq1 = fq1(q1 + 0.5*dt*lq1, w1b + 0.5*dt*lw1b);
@@ -593,6 +502,7 @@ void rk4_step(dvec20 &state)
     dvec4 mq2 = fq2(q2 + 0.5*dt*lq2, w2b + 0.5*dt*lw2b);
     dvec3 mw2b = fw2(r + 0.5*dt*lr, q2 + 0.5*dt*lq2, w2b + 0.5*dt*lw2b);
 
+    //Step 4.
     dvec3 nr = fr(v + dt*mv);
     dvec3 nv = fv(r + dt*mr, q1 + dt*mq1, q2 + dt*mq2);
     dvec4 nq1 = fq1(q1 + dt*mq1, w1b + dt*mw1b);
@@ -600,6 +510,7 @@ void rk4_step(dvec20 &state)
     dvec4 nq2 = fq2(q2 + dt*mq2, w2b + dt*mw2b);
     dvec3 nw2b = fw2(r + dt*mr, q2 + dt*mq2, w2b + dt*mw2b);
 
+    //Update the variables.
     r   = r   + (dt/6.0)*(kr   + 2.0*lr   + 2.0*mr   + nr);
     v   = v   + (dt/6.0)*(kv   + 2.0*lv   + 2.0*mv   + nv);
     q1  = q1  + (dt/6.0)*(kq1  + 2.0*lq1  + 2.0*mq1  + nq1);
@@ -607,6 +518,7 @@ void rk4_step(dvec20 &state)
     q2  = q2  + (dt/6.0)*(kq2  + 2.0*lq2  + 2.0*mq2  + nq2);
     w2b = w2b + (dt/6.0)*(kw2b + 2.0*lw2b + 2.0*mw2b + nw2b);
 
+    //Update the state (which is passed by reference).
     state[0] = r[0];
     state[1] = r[1];
     state[2] = r[2];
@@ -638,8 +550,166 @@ void rk4_step(dvec20 &state)
 
 /* End of integration method. */
 
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//For 'continuous' events, i.e. at every frame in the while() loop.
+void event_tick(GLFWwindow *win)
+{
+    bool move_key_pressed = false;
+    if (glfwGetKey(win, GLFW_KEY_W) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, cam.front);
+        move_key_pressed = true;
+    }
+    if (glfwGetKey(win, GLFW_KEY_S) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, -cam.front);
+        move_key_pressed = true;
+    }
+    if (glfwGetKey(win, GLFW_KEY_D) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, cam.right);
+        move_key_pressed = true;
+    }
+    if (glfwGetKey(win, GLFW_KEY_A) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, -cam.right);
+        move_key_pressed = true;
+    }
+    if (glfwGetKey(win, GLFW_KEY_E) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, cam.world_up);
+        move_key_pressed = true;
+    }
+    if (glfwGetKey(win, GLFW_KEY_Q) == GLFW_PRESS)
+    {
+        cam.accelerate(time_tick, -cam.world_up);
+        move_key_pressed = true;
+    }
+
+    //If no keys are pressed, decelerate.
+    if (!move_key_pressed)
+        cam.decelerate(time_tick);
+}
+
+//For discrete keyboard events.
+void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
+        glfwSetWindowShouldClose(window, true);
+}
+
+//When a mouse button is pressed, do the following :
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+{
+    //Toggle cursor visibility via the mouse middle click.
+    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+    {
+        cursor_visible = !cursor_visible;
+        if (cursor_visible)
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+        else
+        {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+            first_time_entered_the_window = true;
+        }
+    }
+}
+
+//When the mouse moves, do the following :
+void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+{
+    if (cursor_visible)
+        return;
+
+    if (first_time_entered_the_window)
+    {
+        xpos_previous = xpos;
+        ypos_previous = ypos;
+        first_time_entered_the_window = false;
+    }
+
+    double xoffset = xpos - xpos_previous;
+    double yoffset = ypos - ypos_previous;
+
+    xpos_previous = xpos;
+    ypos_previous = ypos;
+
+    cam.rotate(xoffset, yoffset);
+}
+
+//When the mouse scrolls, do the following :
+void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+{
+    if (!cursor_visible)
+        cam.zoom((double)yoffset);
+}
+
+//When the framebuffer resizes, do the following :
+void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+{
+    win_width = w;
+    win_height = h;
+    glViewport(0,0,w,h);
+}
+
+void common_plot(const char *plot_label, const char *yaxis_label, bool bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
+{
+    ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
+    ImGui::Begin(plot_label, &bool_plot_func);
+    ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
+    if (ImPlot::BeginPlot(plot_label, plot_win_size))
+    {
+        ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
+        ImPlot::SetupAxes("t [days]", yaxis_label);
+        ImPlot::SetupAxisLimits(ImAxis_X1, simulated_duration - 1.0, simulated_duration, ImGuiCond_Always); //Automatically scroll the view with time.
+        ImPlot::PlotLine("", time_data.data(), plot_data.data(), time_data.size());
+        ImPlot::PopStyleColor();
+        ImPlot::EndPlot();
+    }
+    ImGui::End();
+}
+
 int main()
 {
+    //Set physical parameters and initial conditions.
+    G = 6.67430e-20;
+    M1 = 5.320591856403073e11; //[kg]
+    M2 = 4.940814359692687e9; //[kg]
+    dvec3 semiaxes1 = {0.416194, 0.418765, 0.39309}; //[km]
+    dvec3 semiaxes2 = {0.104, 0.080, 0.066}; //[km]
+    dvec3 r   = {1.2, 0.0, 0.0}; //[km]
+    dvec3 v   = {0.0, 0.00015, 0.0001}; //[km/sec]
+    dvec4 q1  = {1.0, 0.0, 0.0, 0.0}; //[ ]
+    dvec3 w1i = {0.0, 0.000, 0.000772269580528465}; //[rad/sec]
+    dvec4 q2  = {1.0, 0.0, 0.0, 0.0}; // [ ]
+    dvec3 w2i = {0.0, 0.0, 0.000146399360157891}; //[rad/sec]
+
+    //Normalize the quaternions.
+    q1 = quat2unit(q1);
+    q2 = quat2unit(q2);
+
+    double simulated_duration = 0.0; //Simulated duration.
+    dt = 20.0; //Numerical method's integration step in [sec] (RK4).
+    //Calculate inertia tensors.
+    I1 = ell_inertia(M1, semiaxes1);
+    I2 = ell_inertia(M2, semiaxes2);
+    //Convert the inertial (world) angluar velocity to the body frames.
+    dvec3 w1b = iner2body(w1i, quat2mat(q1));
+    dvec3 w2b = iner2body(w2i, quat2mat(q2));
+
+    dvec20 state = {  r[0],   r[1],   r[2],
+                      v[0],   v[1],   v[2],
+                     q1[0],  q1[1],  q1[2], q1[3],
+                    w1b[0], w1b[1], w1b[2],
+                     q2[0],  q2[1],  q2[2], q2[3],
+                    w2b[0], w2b[1], w2b[2]         };
+    
+    //Energy and momentum at t = 0.
+    dvec2 ener0_mom0 = ener_mom(state);
+
+    //Setup glfw.
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -692,18 +762,22 @@ int main()
 
     //const unsigned char *gpu_vendor = glGetString(GL_VENDOR);
 
+    //Asteroid 1 along with its coordsys.
     meshvfn aster1("../obj/vfn/asteroids/didymos/didymain2019.obj");
     meshvfn aster1_axis_x("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_x.obj");
     meshvfn aster1_axis_y("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_y.obj");
     meshvfn aster1_axis_z("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_z.obj");
 
+    //Asteroid 2 along with its coordsys.
     meshvfn aster2("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid.obj");
     meshvfn aster2_axis_x("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_x.obj");
     meshvfn aster2_axis_y("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_y.obj");
     meshvfn aster2_axis_z("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_z.obj");
 
+    //This is just for visual convenience.
     meshvfn ref_ground("../obj/vfn/plane20x20_wavy.obj");
 
+    //We use 1 shader only throughout the whole app.
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
     shad.use();
 
@@ -717,52 +791,14 @@ int main()
     shad.set_vec3_uniform("light_dir", light_dir);
     shad.set_vec3_uniform("light_col", light_col);
 
-    G = 6.67430e-20;
-    M1 = 5.320591856403073e+11;
-    M2 = 4.940814359692687e+09;
-    dvec3 semiaxes1 = {0.416194, 0.418765, 0.39309};
-    dvec3 semiaxes2 = {0.104, 0.080, 0.066};
-    dvec3 r   = {1.19, 0.0, 0.4};
-    dvec3 v   = {0.0, 0.00017421523858789, 0.0};
-    dvec4 q1  = {1.0, 0.0, 0.0, 0.0};
-    dvec3 w1i = {0.0, 0.0, 0.000772269580528465};
-    dvec4 q2  = {1.0, 0.0, 0.0, 0.0};
-    dvec3 w2i = {0.0, 0.0, 0.000146399360157891};
-
-    q1 = quat2unit(q1);
-    q2 = quat2unit(q2);
-
-    std::vector<double> time_data;
-    std::vector<double> energy_data;
-    std::vector<double> momentum_data;
-    std::vector<double> r_data;
-    std::vector<double> z_data;
-    std::vector<double> thita_data;
-
-    duration = 0.0;
-    dt = 10.0;
-    I1 = ell_inertia(M1, semiaxes1);
-    I2 = ell_inertia(M2, semiaxes2);
-    dvec3 w1b = iner2body(w1i, quat2mat(q1));
-    dvec3 w2b = iner2body(w2i, quat2mat(q2));
-
-    dvec20 state = {  r[0],   r[1],   r[2],
-                      v[0],   v[1],   v[2],
-                     q1[0],  q1[1],  q1[2], q1[3],
-                    w1b[0], w1b[1], w1b[2],
-                     q2[0],  q2[1],  q2[2], q2[3],
-                    w2b[0], w2b[1], w2b[2]         };
-    dvec2 ener0_mom0 = ener_mom(state);
-
     glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-    double t1 = 0.0, tnow;
-    double ms_per_frame = 1000.0;
+    double t1 = 0.0, tfps = 0.0, ms_per_frame = 1000.0;
+    double tnow;
     int frame = 0, frames_per_sec;
-    double tfps = t1;
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -790,6 +826,8 @@ int main()
         shad.set_mat4_uniform("projection", projection);
         shad.set_mat4_uniform("view", view);
 
+
+        //Asteroid 1.
         model = glm::mat4(1.0f);
         model = glm::translate(model, (float)(-M2/(M1 + M2))*glm::vec3(state[0], (-M2/(M1 + M2))*state[1], (-M2/(M1 + M2))*state[2]));
         dvec3 rpy1 = quat2ang({state[6], state[7], state[8], state[9]});
@@ -810,6 +848,7 @@ int main()
 
 
 
+        //Asteroid 2.
         model = glm::mat4(1.0f);
         model = glm::translate(model, (float)(M1/(M1 + M2))*glm::vec3(state[0], state[1], state[2]));
         dvec3 rpy2 = quat2ang({state[13], state[14], state[15], state[16]});
@@ -827,24 +866,46 @@ int main()
         shad.set_vec3_uniform("mesh_col", axis_z_col);
         aster2_axis_z.draw_triangles();
 
+
+
+
+
+        //Reference ground.
         model = glm::mat4(1.0f);
         model = glm::translate(model, glm::vec3(0.0f,0.0f,-2.0f));
         shad.set_mat4_uniform("model", model);
         shad.set_vec3_uniform("mesh_col", aster_col);
         ref_ground.draw_triangles();
 
+
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
- 
-        static bool gui_is_closable = true;
+
+        //Simulated time.
+        static std::vector<double> time_data;
+        //Integrals of motion.
+        static std::vector<double> energy_data, momentum_data;
+        //Mutual cylindrical coordinates (translation).
+        static std::vector<double> r_data, z_data, thita_data;
+        //Asteroid 1 and 2 angles (rotation).
+        static std::vector<double> roll1_data, pitch1_data, yaw1_data;
+        static std::vector<double> roll2_data, pitch2_data, yaw2_data;
+        //We could plot the inertial and body angular velocities as well, but now I got bored. Gonna play God of War. Byyeeee!
 
         static bool show_energy_conservation = false;
         static bool show_momentum_conservation = false;
         static bool show_mutual_r = false;
         static bool show_mutual_z = false;
         static bool show_mutual_thita = false;
+        static bool show_roll1 = false;
+        static bool show_pitch1 = false;
+        static bool show_yaw1 = false;
+        static bool show_roll2 = false;
+        static bool show_pitch2 = false;
+        static bool show_yaw2 = false;
 
+        static bool gui_is_closable = true;
 
         ImGui::SetNextWindowSize(ImVec2(300.0f,500.0f), ImGuiCond_FirstUseEver);
 		ImGui::Begin("GUI", &gui_is_closable);
@@ -855,14 +916,19 @@ int main()
         if (ImGui::CollapsingHeader("Time"))
         {
             ImGui::BulletText("Physical duration : %.0f [sec]", (float)tnow);
-            ImGui::BulletText("Simulated duration : %.1f [days]", (float)duration);
-            ImGui::BulletText("Integration step : %.1f [sec]", (float)dt);
+            ImGui::BulletText("Simulated duration : %.1f [days]", (float)simulated_duration);
+            ImGui::BulletText("Integration step");
+            float float_dt = (float)dt;
+            ImGui::SliderFloat("[sec]", &float_dt, 0.0,120.0);
+            dt = (double)float_dt;
+            ImGui::Dummy(ImVec2(0.0f, 10.0f));
             ImGui::BulletText("FPS : %.0f (imgui)", ImGui::GetIO().Framerate);
             ImGui::BulletText("FPS : %d (custom)", frames_per_sec);
         }
         if (ImGui::CollapsingHeader("Camera"))
         {
             ImGui::BulletText("Position : (%.1f, %.1f, %.1f) [km]", cam.pos.x, cam.pos.y, cam.pos.z);
+            ImGui::BulletText("Aim : (%.1f, %.1f, %.1f) [  ]", cam.front.x, cam.front.y, cam.front.z);
             ImGui::BulletText("Yaw : %.1f [deg]", cam.yaw);
             ImGui::BulletText("Pitch : %.1f [deg]", cam.pitch);
             ImGui::BulletText("FoV : %.1f [deg]", cam.fov);
@@ -871,20 +937,40 @@ int main()
         {
             ImGui::Checkbox("Energy", &show_energy_conservation);
             ImGui::Checkbox("Momentum", &show_momentum_conservation);
+            ImGui::Dummy(ImVec2(0.0f, 10.0f));
             ImGui::Checkbox("Mutual r", &show_mutual_r);
             ImGui::Checkbox("Mutual thita", &show_mutual_thita);
             ImGui::Checkbox("Mutual z", &show_mutual_z);
+            ImGui::Dummy(ImVec2(0.0f, 10.0f));
+            ImGui::Checkbox("Roll 1", &show_roll1);
+            ImGui::Checkbox("Pitch 1", &show_pitch1);
+            ImGui::Checkbox("Yaw 1", &show_yaw1);
+            ImGui::Dummy(ImVec2(0.0f, 10.0f));
+            ImGui::Checkbox("Roll 2", &show_roll2);
+            ImGui::Checkbox("Pitch 2", &show_pitch2);
+            ImGui::Checkbox("Yaw 2", &show_yaw2);
         }
         ImGui::End();
 
-        dvec2 energy_momentum = ener_mom(state);
+        dvec2 energy_momentum = ener_mom(state); //Calculate energy and momentum for the current state.
         energy_data.push_back(fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
         momentum_data.push_back(fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
+
         r_data.push_back(sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]));
         z_data.push_back(state[2]);
-        thita_data.push_back(atan2(state[1],state[0])*180.0/pi);
-        time_data.push_back(duration);
-        if (time_data.size() > 10000)
+        thita_data.push_back(atan2(state[1],state[0])*180.0/pi); //[deg]
+
+        roll1_data.push_back(rpy1[0]*180.0/pi);
+        pitch1_data.push_back(rpy1[1]*180.0/pi);
+        yaw1_data.push_back(rpy1[2]*180.0/pi);
+
+        roll2_data.push_back(rpy2[0]*180.0/pi);
+        pitch2_data.push_back(rpy2[1]*180.0/pi);
+        yaw2_data.push_back(rpy2[2]*180.0/pi);
+
+        time_data.push_back(simulated_duration);
+        static std::size_t plot_points_to_remember = 10000;
+        if (time_data.size() > plot_points_to_remember)
         {
             time_data.erase(time_data.begin());
             energy_data.erase(energy_data.begin());
@@ -892,92 +978,36 @@ int main()
             r_data.erase(r_data.begin());
             z_data.erase(z_data.begin());
             thita_data.erase(thita_data.begin());
+            roll1_data.erase(roll1_data.begin());
+            pitch1_data.erase(pitch1_data.begin());
+            yaw1_data.erase(yaw1_data.begin());
+            roll2_data.erase(roll2_data.begin());
+            pitch2_data.erase(pitch2_data.begin());
+            yaw2_data.erase(yaw2_data.begin());
         }
+
         if (show_energy_conservation)
-        {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Energy conservation", &show_energy_conservation);
-            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Energy conservation", plot_win_size))
-            {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "|dE/E0|");
-                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
-                ImPlot::PlotLine("", time_data.data(), energy_data.data(), time_data.size());
-                ImPlot::PopStyleColor();
-                ImPlot::EndPlot();
-            }
-            ImGui::End();
-        }
+            common_plot("Energy conservation",  "|dE/E0| [ ]", show_energy_conservation, energy_data, time_data, simulated_duration);
         if (show_momentum_conservation)
-        {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Momentum conservation", &show_momentum_conservation);
-            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Momentum conservation", plot_win_size))
-            {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "|dL/L0|");
-                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
-                ImPlot::PlotLine("", time_data.data(), momentum_data.data(), time_data.size());
-                ImPlot::PopStyleColor();
-                ImPlot::EndPlot();
-            }
-            ImGui::End();
-        }
+            common_plot("Momentum conservation",  "|dL/L0| [ ]", show_momentum_conservation, momentum_data, time_data, simulated_duration);
         if (show_mutual_r)
-        {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Mutual distance", &show_mutual_r);
-            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Mutual distance", plot_win_size))
-            {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "r [km]");
-                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
-                ImPlot::PlotLine("", time_data.data(), r_data.data(), time_data.size());
-                ImPlot::PopStyleColor();
-                ImPlot::EndPlot();
-            }
-            ImGui::End();
-        }
+            common_plot("Mutual distance",  "r [km]", show_mutual_r, r_data, time_data, simulated_duration);
         if (show_mutual_thita)
-        {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Mutual polar angle", &show_mutual_thita);
-            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Mutual polar angle", plot_win_size))
-            {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "thita [deg]");
-                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
-                ImPlot::PlotLine("", time_data.data(), thita_data.data(), time_data.size());
-                ImPlot::PopStyleColor();
-                ImPlot::EndPlot();
-            }
-            ImGui::End();
-        }
+            common_plot("Mutual polar angle",  "thita [deg]", show_mutual_thita, thita_data, time_data, simulated_duration);
         if (show_mutual_z)
-        {
-            ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
-            ImGui::Begin("Mutual z", &show_mutual_z);
-            ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-            if (ImPlot::BeginPlot("Mutual z", plot_win_size))
-            {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
-                ImPlot::SetupAxes("t [days]", "z [km]");
-                ImPlot::SetupAxisLimits(ImAxis_X1, duration - 1.0, duration, ImGuiCond_Always); //Automatically scroll the view with time.
-                ImPlot::PlotLine("", time_data.data(), z_data.data(), time_data.size());
-                ImPlot::PopStyleColor();
-                ImPlot::EndPlot();
-            }
-            ImGui::End();
-        }
+            common_plot("Mutual z",  "z [km]", show_mutual_z, z_data, time_data, simulated_duration);
+        if (show_roll1)
+            common_plot("Roll 1",  "Roll 1 [deg]", show_roll1, roll1_data, time_data, simulated_duration);
+        if (show_pitch1)
+            common_plot("Pitch 1",  "Pitch 1 [deg]", show_pitch1, pitch1_data, time_data, simulated_duration);
+        if (show_yaw1)
+            common_plot("Yaw 1",  "Yaw 1 [deg]", show_yaw1, yaw1_data, time_data, simulated_duration);
+        if (show_roll2)
+            common_plot("Roll 2",  "Roll 2 [deg]", show_roll2, roll2_data, time_data, simulated_duration);
+        if (show_pitch2)
+            common_plot("Pitch 2",  "Pitch 2 [deg]", show_pitch2, pitch2_data, time_data, simulated_duration);
+        if (show_yaw2)
+            common_plot("Yaw 2",  "Yaw 2 [deg]", show_yaw2, yaw2_data, time_data, simulated_duration);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -985,8 +1015,8 @@ int main()
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        rk4_step(state);
-        duration += dt/86400.0;
+        rk4_do_step(state);
+        simulated_duration += dt/86400.0;
     }
 
     ImGui_ImplOpenGL3_Shutdown();
