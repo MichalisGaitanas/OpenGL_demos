@@ -1,0 +1,32 @@
+Info obtained at 2024 via available papers, wikipedia, etc.
+
+Shape files :
+Currently they are unknown, so we model them as triaxial ellipsoids with their semi-axes
+obtained from occultation observations.
+
+Patroclus semi-axes :
+a1 = 63.5 [km]
+b1 = 58.5 [km]
+c1 = 49.0 [km]
+
+Menoetius semi-axes (semi-extents) :
+a2 = 58.5 [km]
+b2 = 54.0 [km]
+c2 = 45.0 [km]
+
+Mutual separation :
+r = 664.6 [km] (Assuming tidal locking.)
+
+Orbital period :
+T = 4.41 [days]
+
+Mass density :
+ρ = 881 [kg/m^3]
+
+Binary total mass (Observed and then Keplerian fit probably...) :
+Mtot,obs = M1 + M2 = 1.36*10^18 [kg]
+
+Binary total mass (This is evaluated by me via 2nd order mutual potential fit ) :
+Mtot,eval = M1 + M2 = 1.19264*10^18 [kg]
+M1 = 0.669656*10^18 [kg]
+M2 = 0.522984*10^18 [kg]

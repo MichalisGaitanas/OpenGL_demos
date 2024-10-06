@@ -119,7 +119,7 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 
 int main()
 {
-    omp_setup_threads();
+    omp_setup_threads(); //Occupy half of the machine's threads for the calculation of the lightcurve at each frame.
 
     //Setup glfw stuff.
     glfwInit();

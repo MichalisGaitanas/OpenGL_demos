@@ -19,6 +19,18 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
+#ifdef _OPENMP
+#include<omp.h>
+#endif
+
+void omp_setup_threads()
+{
+#ifdef _OPENMP
+    omp_set_dynamic(false);  //Obey to my following thread number request.
+    omp_set_num_threads(omp_get_max_threads()/2);  //Set threads to half of the max available of the machine.
+#endif
+}
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //Create some aliases for the following data structures.
@@ -39,12 +51,12 @@ double dt; //Integration step;
 //Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
 //have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
 //any variable within the specific context of the window.
-camera cam(glm::vec3(0.0f, -5.0f, 0.0f),
+camera cam(glm::vec3(0.0f, -750.0f, 0.0f),
            glm::vec3(0.0f,0.0f,1.0f),
            90.0f,
            0.0f,
-           1.0f,
-           3.0f,
+           100.0f,
+           300.0f,
            0.05f,
            45.0f );
 
@@ -55,6 +67,8 @@ bool first_time_entered_the_window = true;
 bool cursor_visible = false;
 
 int win_width = 1200, win_height = 900; //Window's dimensions.
+
+unsigned int hidden_framebuffer, rbo, rendered_texture;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -554,6 +568,76 @@ void rk4_do_step(dvec20 &state)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+//Calculate brightness (lightcurve) from the rendered scene of the hidden framebuffer.
+float calculate_brightness(unsigned int texture_id, int width, int height)
+{
+    glBindTexture(GL_TEXTURE_2D, texture_id);
+    std::vector<float> pixels(width*height);
+    
+    //Read the pixels from the texture (only the red channel, i.e. grayscale color).
+    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
+    
+    //Sum up the intensity values stored in the red channel.
+#ifdef _OPENMP
+    size_t i, total_pixels = width*height;
+    float brightness = 0.0f;
+    #pragma omp parallel for firstprivate(total_pixels)\
+                             private(i)\
+                             shared(pixels)\
+                             schedule(static)\
+                             reduction(+:brightness)
+    for (i = 0; i < total_pixels; ++i)
+        brightness += pixels[i];
+#else
+    float brightness = 0.0f;
+    for (int i = 0; i < width*height; ++i)
+        brightness += pixels[i];
+#endif
+
+
+    return brightness/(width*height); //Normalize the brightness.
+}
+
+//Create a new auxiliary hidden framebuffer, that we will use to perform the lightcurve calculation.
+void setup_hidden_framebuffer(int width, int height)
+{
+    //If the hidden framebuffer was already created, delete it first.
+    if (hidden_framebuffer)
+    {
+        glDeleteFramebuffers(1, &hidden_framebuffer);
+        glDeleteTextures(1, &rendered_texture);
+        glDeleteRenderbuffers(1, &rbo);
+    }
+
+    //Create a framebuffer object (fbo). This is basically similar as the process of creating vbo, vao, ebo, etc...
+    glGenFramebuffers(1, &hidden_framebuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+
+    //Create a texture to render to.
+    glGenTextures(1, &rendered_texture);
+    glBindTexture(GL_TEXTURE_2D, rendered_texture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //Attach the texture to the hidden framebuffer.
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture, 0);
+    
+    //Create a renderbuffer for depth and stencil.
+    glGenRenderbuffers(1, &rbo);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        printf("Hidden framebuffer not complete!\n");
+
+    //The hidden framebuffer is now created. We refer to it from now via binding or unbinding.
+
+    //Unbind the hidden framebuffer to render to the default one (0).
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 //For 'continuous' events, i.e. at every frame in the while() loop.
 void event_tick(GLFWwindow *win)
 {
@@ -653,9 +737,10 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
+    setup_hidden_framebuffer(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
-void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
+void common_plot(const char *plot_label, const char *yaxis_label, bool bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
 {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
@@ -665,7 +750,7 @@ void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plo
     {
         ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.5f, 0.0f, 1.0f));
         ImPlot::SetupAxes("t [days]", yaxis_label);
-        ImPlot::SetupAxisLimits(ImAxis_X1, simulated_duration - 1.0, simulated_duration, ImGuiCond_Always); //Automatically scroll the view with time.
+        ImPlot::SetupAxisLimits(ImAxis_X1, simulated_duration - 10.0, simulated_duration, ImGuiCond_Always); //Automatically scroll the view with time.
         ImPlot::PlotLine("", time_data.data(), plot_data.data(), time_data.size());
         ImPlot::PopStyleColor();
         ImPlot::EndPlot();
@@ -675,25 +760,27 @@ void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plo
 
 int main()
 {
+    omp_setup_threads(); //Occupy half of the machine's threads for the calculation of the lightcurve  at each frame.
+
     //Set physical parameters and initial conditions.
-    G = 6.67430e-20;
-    M1 = 5.320591856403073e11; //[kg]
-    M2 = 4.940814359692687e9; //[kg]
-    dvec3 semiaxes1 = {0.416194, 0.418765, 0.39309}; //[km]
-    dvec3 semiaxes2 = {0.104, 0.080, 0.066}; //[km]
-    dvec3 r   = {1.2, 0.0, 0.0}; //[km]
-    dvec3 v   = {0.0, 0.00015, 0.0001}; //[km/sec]
+    G = 4.9823382527999985e-8;
+    M1 = 0.669656; //[kgstar]
+    M2 = 0.522984; //[kgstar]
+    dvec3 semiaxes1 = {63.5, 58.5, 49.0}; //[km]
+    dvec3 semiaxes2 = {58.5, 54.0, 45.0}; //[km]
+    dvec3 r   = {664.6, 0.0, 0.0}; //[km]
+    dvec3 v   = {0.0, 0.0, 0.0}; //[km/day]
     dvec4 q1  = {1.0, 0.0, 0.0, 0.0}; //[ ]
-    dvec3 w1i = {0.0, 0.000, 0.000772269580528465}; //[rad/sec]
+    dvec3 w1i = {0.0, 0.0, 0.0}; //[rad/day]
     dvec4 q2  = {1.0, 0.0, 0.0, 0.0}; // [ ]
-    dvec3 w2i = {0.0, 0.0, 0.000146399360157891}; //[rad/sec]
+    dvec3 w2i = {0.0, 0.0, 0.0}; //[rad/day]
 
     //Normalize the quaternions.
     q1 = quat2unit(q1);
     q2 = quat2unit(q2);
 
     double simulated_duration = 0.0; //Simulated duration.
-    dt = 20.0; //Numerical method's integration step in [sec] (RK4).
+    dt = 0.001; //Numerical method's integration step in [days] (RK4).
     //Calculate inertia tensors.
     I1 = ell_inertia(M1, semiaxes1);
     I2 = ell_inertia(M2, semiaxes2);
@@ -728,8 +815,8 @@ int main()
         return 0;
     }
     glfwMakeContextCurrent(window);
-    glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
+    glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_pos_callback);
@@ -764,71 +851,45 @@ int main()
 
     //const unsigned char *gpu_vendor = glGetString(GL_VENDOR);
 
-    //Asteroid 1 along with its coordsys.
-    meshvfn aster1("../obj/vfn/asteroids/didymos/didymain2019.obj");
-    meshvfn aster1_axis_x("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_x.obj");
-    meshvfn aster1_axis_y("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_y.obj");
-    meshvfn aster1_axis_z("../obj/vfn/asteroids/didymos/didymain2019_pos_axis_z.obj");
-
-    //Asteroid 2 along with its coordsys.
-    meshvfn aster2("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid.obj");
-    meshvfn aster2_axis_x("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_x.obj");
-    meshvfn aster2_axis_y("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_y.obj");
-    meshvfn aster2_axis_z("../obj/vfn/asteroids/didymos/dimorphos_ellipsoid_pos_axis_z.obj");
-
-    //This is just for visual convenience.
-    meshvfn ref_ground("../obj/vfn/plane20x20_wavy.obj");
+    //Asteroid 1.
+    meshvfn aster1("../obj/vfn/asteroids/patroclus/pri_patroclus.obj");
+    //Asteroid 2.
+    meshvfn aster2("../obj/vfn/asteroids/patroclus/sec_menoetius.obj");
 
     //We use 1 shader only throughout the whole app.
-    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
+    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
 
-    glm::vec3 light_dir = glm::vec3(0.0f,-1.0f,0.5f);
+    glm::vec3 light_dir = glm::vec3(1.0f,-1.0f,1.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 aster_col = glm::vec3(0.5f,0.5f,0.5f);
-    glm::vec3 axis_x_col = glm::vec3(1.0f,0.0f,0.0f);
-    glm::vec3 axis_y_col = glm::vec3(0.0f,1.0f,0.0f);
-    glm::vec3 axis_z_col = glm::vec3(0.0f,0.0f,1.0f);
-
+    glm::vec3 aster_col = glm::vec3(1.0f,1.0f,1.0f);
     shad.set_vec3_uniform("light_dir", light_dir);
     shad.set_vec3_uniform("light_col", light_col);
+    shad.set_vec3_uniform("mesh_col", aster_col);
 
     glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.1f,0.1f,0.1f,1.0f);
+    glClearColor(0.0f,0.0f,0.0f,1.0f);
 
-    double t1 = 0.0, tfps = 0.0, ms_per_frame = 1000.0;
-    double tnow;
-    int frame = 0, frames_per_sec;
+    double t1 = 0.0, tnow;
     while (!glfwWindowShouldClose(window))
     {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
         tnow = glfwGetTime(); //Elapsed time [sec] since glfwInit().
         time_tick = tnow - t1;
         t1 = tnow;
 
-        //Custom algorithm for FPS measurement. Just to check if it is the same with ImGui's ImGui::GetIO().Framerate
-        ++frame;
-        if (tnow - tfps >= 1.0)
-        {
-            ms_per_frame = 1000.0/frame;
-            frame = 0;
-            tfps += 1.0;
-        }
-        frames_per_sec = 1000.0/ms_per_frame;
-
         event_tick(window);
 
-        projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.1f,1000.0f);
+        projection = glm::infinitePerspective(glm::radians(cam.fov), (float)win_width/win_height, 5.0f);
         cam.move(time_tick);
         view = cam.view();
 
         shad.set_mat4_uniform("projection", projection);
         shad.set_mat4_uniform("view", view);
 
-
+        glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //Asteroid 1.
         model = glm::mat4(1.0f);
         model = glm::translate(model, (float)(-M2/(M1 + M2))*glm::vec3(state[0], state[1], state[2]));
@@ -837,19 +898,7 @@ int main()
         model = glm::rotate(model, (float)rpy1[1], glm::vec3(0.0f,1.0f,0.0f));
         model = glm::rotate(model, (float)rpy1[0], glm::vec3(1.0f,0.0f,0.0f));
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", aster_col);
         aster1.draw_triangles();
-
-        shad.set_vec3_uniform("mesh_col", axis_x_col);
-        aster1_axis_x.draw_triangles();
-        shad.set_vec3_uniform("mesh_col", axis_y_col);
-        aster1_axis_y.draw_triangles();
-        shad.set_vec3_uniform("mesh_col", axis_z_col);
-        aster1_axis_z.draw_triangles();
-
-
-
-
         //Asteroid 2.
         model = glm::mat4(1.0f);
         model = glm::translate(model, (float)(M1/(M1 + M2))*glm::vec3(state[0], state[1], state[2]));
@@ -858,27 +907,26 @@ int main()
         model = glm::rotate(model, (float)rpy2[1], glm::vec3(0.0f,1.0f,0.0f));
         model = glm::rotate(model, (float)rpy2[0], glm::vec3(1.0f,0.0f,0.0f));
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", aster_col);
         aster2.draw_triangles();
 
-        shad.set_vec3_uniform("mesh_col", axis_x_col);
-        aster2_axis_x.draw_triangles();
-        shad.set_vec3_uniform("mesh_col", axis_y_col);
-        aster2_axis_y.draw_triangles();
-        shad.set_vec3_uniform("mesh_col", axis_z_col);
-        aster2_axis_z.draw_triangles();
-
-
-
-
-
-        //Reference ground.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        //Asteroid 1.
         model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,0.0f,-2.0f));
+        model = glm::translate(model, (float)(-M2/(M1 + M2))*glm::vec3(state[0], state[1], state[2]));
+        model = glm::rotate(model, (float)rpy1[2], glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, (float)rpy1[1], glm::vec3(0.0f,1.0f,0.0f));
+        model = glm::rotate(model, (float)rpy1[0], glm::vec3(1.0f,0.0f,0.0f));
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", aster_col);
-        ref_ground.draw_triangles();
-
+        aster1.draw_triangles();
+        //Asteroid 2.
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, (float)(M1/(M1 + M2))*glm::vec3(state[0], state[1], state[2]));
+        model = glm::rotate(model, (float)rpy2[2], glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(model, (float)rpy2[1], glm::vec3(0.0f,1.0f,0.0f));
+        model = glm::rotate(model, (float)rpy2[0], glm::vec3(1.0f,0.0f,0.0f));
+        shad.set_mat4_uniform("model", model);
+        aster2.draw_triangles();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -893,7 +941,7 @@ int main()
         //Asteroid 1 and 2 angles (rotation).
         static std::vector<double> roll1_data, pitch1_data, yaw1_data;
         static std::vector<double> roll2_data, pitch2_data, yaw2_data;
-        //We could plot the inertial and body angular velocities as well, but now I got bored. Gonna play God of War. Byyeeee!
+        static std::vector<double> brightness_data;
 
         static bool show_energy_conservation = false;
         static bool show_momentum_conservation = false;
@@ -906,6 +954,8 @@ int main()
         static bool show_roll2 = false;
         static bool show_pitch2 = false;
         static bool show_yaw2 = false;
+
+        static bool show_brightness = false;
 
         static bool gui_is_closable = true;
 
@@ -921,11 +971,10 @@ int main()
             ImGui::BulletText("Simulated duration : %.1f [days]", (float)simulated_duration);
             ImGui::BulletText("Integration step");
             float float_dt = (float)dt;
-            ImGui::SliderFloat("[sec]", &float_dt, 0.0,120.0);
+            ImGui::SliderFloat("[days]", &float_dt, 0.0,0.01);
             dt = (double)float_dt;
             ImGui::Dummy(ImVec2(0.0f, 10.0f));
-            ImGui::BulletText("FPS : %.0f (imgui)", ImGui::GetIO().Framerate);
-            ImGui::BulletText("FPS : %d (custom)", frames_per_sec);
+            ImGui::BulletText("FPS : %.0f", ImGui::GetIO().Framerate);
         }
         if (ImGui::CollapsingHeader("Camera"))
         {
@@ -951,6 +1000,8 @@ int main()
             ImGui::Checkbox("Roll 2", &show_roll2);
             ImGui::Checkbox("Pitch 2", &show_pitch2);
             ImGui::Checkbox("Yaw 2", &show_yaw2);
+            ImGui::Dummy(ImVec2(0.0f, 10.0f));
+            ImGui::Checkbox("Brightness", &show_brightness);
         }
         ImGui::End();
 
@@ -970,6 +1021,8 @@ int main()
         pitch2_data.push_back(rpy2[1]*180.0/pi);
         yaw2_data.push_back(rpy2[2]*180.0/pi);
 
+        brightness_data.push_back(calculate_brightness(rendered_texture, win_width, win_height));
+
         time_data.push_back(simulated_duration);
         static std::size_t plot_points_to_remember = 10000;
         if (time_data.size() > plot_points_to_remember)
@@ -986,6 +1039,7 @@ int main()
             roll2_data.erase(roll2_data.begin());
             pitch2_data.erase(pitch2_data.begin());
             yaw2_data.erase(yaw2_data.begin());
+            brightness_data.erase(brightness_data.begin());
         }
 
         if (show_energy_conservation)
@@ -1010,6 +1064,8 @@ int main()
             common_plot("Pitch 2",  "Pitch 2 [deg]", show_pitch2, pitch2_data, time_data, simulated_duration);
         if (show_yaw2)
             common_plot("Yaw 2",  "Yaw 2 [deg]", show_yaw2, yaw2_data, time_data, simulated_duration);
+        if (show_brightness)
+            common_plot("Brightness",  "Brightness [norm]", show_brightness, brightness_data, time_data, simulated_duration);
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -1018,7 +1074,7 @@ int main()
         glfwPollEvents();
 
         rk4_do_step(state);
-        simulated_duration += dt/86400.0;
+        simulated_duration += dt;
     }
 
     ImGui_ImplOpenGL3_Shutdown();
