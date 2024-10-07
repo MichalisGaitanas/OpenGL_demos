@@ -51,14 +51,14 @@ double dt; //Integration step;
 //Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
 //have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
 //any variable within the specific context of the window.
-camera cam(glm::vec3(0.0f, -750.0f, 0.0f),
+camera cam(glm::vec3(0.0f, -10000.0f, 0.0f),
            glm::vec3(0.0f,0.0f,1.0f),
            90.0f,
            0.0f,
            100.0f,
            300.0f,
            0.05f,
-           45.0f );
+           60.0f );
 
 double time_tick; //Elapsed time per frame update.
 
@@ -740,7 +740,7 @@ void framebuffer_size_callback(GLFWwindow *win, int w, int h)
     setup_hidden_framebuffer(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
-void common_plot(const char *plot_label, const char *yaxis_label, bool bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
+void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
 {
     ImGui::SetNextWindowPos(ImVec2(ImGui::GetWindowPos().x + ImGui::GetWindowSize().x, ImGui::GetWindowPos().y), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver);
@@ -763,17 +763,17 @@ int main()
     omp_setup_threads(); //Occupy half of the machine's threads for the calculation of the lightcurve  at each frame.
 
     //Set physical parameters and initial conditions.
-    G = 4.9823382527999985e-8;
+    G = 4.9823382527999985e8;
     M1 = 0.669656; //[kgstar]
     M2 = 0.522984; //[kgstar]
     dvec3 semiaxes1 = {63.5, 58.5, 49.0}; //[km]
     dvec3 semiaxes2 = {58.5, 54.0, 45.0}; //[km]
-    dvec3 r   = {664.6, 0.0, 0.0}; //[km]
-    dvec3 v   = {0.0, 0.0, 0.0}; //[km/day]
+    dvec3 r   = {664.6, 0.0, 10.0}; //[km]
+    dvec3 v   = {0.0, r[0]*2*pi/4.41, 0.0}; //[km/day]
     dvec4 q1  = {1.0, 0.0, 0.0, 0.0}; //[ ]
-    dvec3 w1i = {0.0, 0.0, 0.0}; //[rad/day]
+    dvec3 w1i = {0.0, 2.0, 2*pi/4.41}; //[rad/day]
     dvec4 q2  = {1.0, 0.0, 0.0, 0.0}; // [ ]
-    dvec3 w2i = {0.0, 0.0, 0.0}; //[rad/day]
+    dvec3 w2i = {0.0, 0.0, 2*pi/4.41}; //[rad/day]
 
     //Normalize the quaternions.
     q1 = quat2unit(q1);
@@ -807,7 +807,7 @@ int main()
 
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "65803 Didymos", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "617 Patroclus dynamics + lightcurve", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -852,9 +852,9 @@ int main()
     //const unsigned char *gpu_vendor = glGetString(GL_VENDOR);
 
     //Asteroid 1.
-    meshvfn aster1("../obj/vfn/asteroids/patroclus/pri_patroclus.obj");
+    meshvfn aster1("../obj/vfn/asteroids/patroclus/pri_patroclus_ellipsoid.obj");
     //Asteroid 2.
-    meshvfn aster2("../obj/vfn/asteroids/patroclus/sec_menoetius.obj");
+    meshvfn aster2("../obj/vfn/asteroids/patroclus/sec_menoetius_ellipsoid.obj");
 
     //We use 1 shader only throughout the whole app.
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
@@ -869,6 +869,8 @@ int main()
 
     glm::mat4 projection, view, model;
 
+    //Create the (clean) hidden framebuffer.
+    setup_hidden_framebuffer(win_width, win_height);
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
 
@@ -881,7 +883,7 @@ int main()
 
         event_tick(window);
 
-        projection = glm::infinitePerspective(glm::radians(cam.fov), (float)win_width/win_height, 5.0f);
+        projection = glm::infinitePerspective(glm::radians(cam.fov), (float)win_width/win_height, 10.0f);
         cam.move(time_tick);
         view = cam.view();
 
@@ -969,12 +971,10 @@ int main()
         {
             ImGui::BulletText("Physical duration : %.0f [sec]", (float)tnow);
             ImGui::BulletText("Simulated duration : %.1f [days]", (float)simulated_duration);
-            ImGui::BulletText("Integration step");
+            ImGui::BulletText("Integration step (RK4)");
             float float_dt = (float)dt;
             ImGui::SliderFloat("[days]", &float_dt, 0.0,0.01);
             dt = (double)float_dt;
-            ImGui::Dummy(ImVec2(0.0f, 10.0f));
-            ImGui::BulletText("FPS : %.0f", ImGui::GetIO().Framerate);
         }
         if (ImGui::CollapsingHeader("Camera"))
         {
@@ -983,6 +983,7 @@ int main()
             ImGui::BulletText("Yaw : %.1f [deg]", cam.yaw);
             ImGui::BulletText("Pitch : %.1f [deg]", cam.pitch);
             ImGui::BulletText("FoV : %.1f [deg]", cam.fov);
+            ImGui::BulletText("FPS : %.0f", ImGui::GetIO().Framerate);
         }
         if (ImGui::CollapsingHeader("Plots"))
         {
@@ -1024,6 +1025,7 @@ int main()
         brightness_data.push_back(calculate_brightness(rendered_texture, win_width, win_height));
 
         time_data.push_back(simulated_duration);
+
         static std::size_t plot_points_to_remember = 10000;
         if (time_data.size() > plot_points_to_remember)
         {
