@@ -111,7 +111,8 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 
 void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
 {
-    cam.zoom((float)yoffset);
+    if (!cursor_visible)
+        cam.zoom((float)yoffset);
 }
 
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
@@ -157,20 +158,16 @@ int main()
         return 0;
     }
 
-    meshvfn suzanne("../obj/vfn/suzanne.obj");
-    meshvfn ak47("../obj/vfn/ak47.obj");
-    meshvfn ground("../obj/vfn/plane40x40.obj");
+    meshvfn sponza_temple("../obj/vfn/sponza_merged.obj");
 
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ad.frag");
     shad.use();
 
-    glm::vec3 suzanne_col = glm::vec3(0.8f,0.2f,0.1f);
-    glm::vec3 ak47_col = glm::vec3(0.0f,0.8f,0.0f);
-    glm::vec3 ground_col = glm::vec3(0.0,0.0f,1.0f);
-
+    glm::vec3 mesh_col = glm::vec3(0.5f,0.5f,1.0f);
     glm::vec3 light_pos = glm::vec3(0.0f,0.0f,3.0f); //Light position in world coordinates.
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color.
-    
+
+    shad.set_vec3_uniform("mesh_col", mesh_col);
     shad.set_vec3_uniform("light_pos", light_pos);
     shad.set_vec3_uniform("light_col", light_col);
 
@@ -192,30 +189,14 @@ int main()
         event_tick(window);
 
         projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.01f,100.0f);
-        shad.set_mat4_uniform("projection", projection);
+        model = glm::mat4(1.0f);
         cam.move(time_tick);
         view = cam.view();
+        shad.set_mat4_uniform("projection", projection);
         shad.set_mat4_uniform("view", view);
-        
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,5.0f,0.0f));
-        model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f,0.0f,1.0f));
         shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", ak47_col);
-        ak47.draw_triangles();
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,-5.0f,0.0f));
-        shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", suzanne_col);
-        suzanne.draw_triangles(); 
-
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, glm::vec3(0.0f,0.0f,-3.0f));
-        shad.set_mat4_uniform("model", model);
-        shad.set_vec3_uniform("mesh_col", ground_col);
-        ground.draw_triangles(); 
-
+        sponza_temple.draw_triangles();
+       
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

@@ -2,7 +2,7 @@
 
 This project contains some examples-tutorials-demos of OpenGL. The codes are written in C++.
 
-In order to follow the examples, it is essential that you know a bit of C++. We recommend this website [https://www.learncpp.com].
+In order to follow the examples, it is essential that you know C++. We recommend this website [https://www.learncpp.com].
 OpenGL tutorials can be found in this website [https://learnopengl.com].
 
 In order to be able to run all the example codes, the following dependencies must be installed :
@@ -11,7 +11,7 @@ In order to be able to run all the example codes, the following dependencies mus
 3) GLFW. This provides hardware functionality (keyboard, mouse, monitor, Xbox controller, etc...).
 4) GLEW. This is complicated... We need GLEW because OpenGL function pointers, especially for modern features, aren't loaded automatically by the system. GLEW
    dynamically loads these functions at runtime, allowing your application to use modern OpenGL across different hardware and drivers.
-5) GLM. Insanely fast algebra and geometry functions needed for spatial rendering and transformations (dot product, cross product, matrix multiplication, etc...).
+5) GLM. Fast algebra-geometry functions needed for spatial rendering and transformations (dot product, cross product, matrix multiplication, etc...).
 
 Note : In case we want to add GUI rendering and plots (see below), ImGui and ImPlot must be installed as well. Here, the corresponding libraries are already present
 in the /imgui directory. Originally obtained. via : [https://github.com/ocornut/imgui] and [https://github.com/epezent/implot].

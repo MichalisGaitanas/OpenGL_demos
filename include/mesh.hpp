@@ -338,6 +338,55 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
     }
 
+};  
+
+class quadtex
+{
+public:
+    unsigned int vao, vbo;
+    std::vector<float> main_buffer;
+
+    quadtex()
+    {
+        //Hard-coded quad vertices for a screen-space quad.
+        main_buffer = {  //Positions.        //UVs.
+                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+
+                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+                         1.0f,  1.0f, 0.0f,  1.0f, 1.0f };
+
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0); //Positions.
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float))); //UVs.
+        glEnableVertexAttribArray(1);
+        glBindVertexArray(0); //Unbind the vao.
+    }
+
+    //Delete the quad-mesh.
+    ~quadtex()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteTextures(1, &tao);
+    }
+
+    //Draw the quad-mesh (triangles).
+    void draw_triangles(unsigned framebuffer_tex)
+    {
+        glBindTexture(GL_TEXTURE_2D, framebuffer_tex);
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
 };
 
 class skybox
