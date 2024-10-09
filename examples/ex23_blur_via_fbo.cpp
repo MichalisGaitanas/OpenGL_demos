@@ -128,7 +128,7 @@ int main()
     glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.0f,0.7f,1.0f,1.0f);
+    glClearColor(0.0f,0.3f,0.5f,1.0f);
     while (!glfwWindowShouldClose(window))
     {
         /* First rendering pass : Render the entire 3D scene in the fbo, which we will never see it in the monitor. */
