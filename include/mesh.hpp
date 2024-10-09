@@ -342,6 +342,7 @@ public:
 
 class quadtex
 {
+    
 public:
     unsigned int vao, vbo;
     std::vector<float> main_buffer;
@@ -375,11 +376,10 @@ public:
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
-        glDeleteTextures(1, &tao);
     }
 
     //Draw the quad-mesh (triangles).
-    void draw_triangles(unsigned framebuffer_tex)
+    void draw_triangles(unsigned int framebuffer_tex)
     {
         glBindTexture(GL_TEXTURE_2D, framebuffer_tex);
         glBindVertexArray(vao);
