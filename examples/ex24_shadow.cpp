@@ -9,7 +9,10 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
-camera cam(glm::vec3(0.0f, -10.0f, 0.0f));
+//Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
+//have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
+//any variable within the specific context of the window.
+camera cam(glm::vec3(-10.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.0f);
 
 float time_tick; //Elapsed time per frame update.
 
@@ -106,6 +109,12 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
     cam.rotate(xoffset, yoffset);
 }
 
+void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+{
+    if (!cursor_visible)
+        cam.zoom((float)yoffset);
+}
+
 void framebuffer_size_callback(GLFWwindow *win, int w, int h)
 {
     win_width = w;
@@ -123,7 +132,7 @@ int main()
 
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Skybox", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "First person camera", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -136,6 +145,7 @@ int main()
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwSetCursorPosCallback(window, cursor_pos_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     glfwSetMouseButtonCallback(window, mouse_button_callback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); //Hide the mouse initially.
 
@@ -148,27 +158,25 @@ int main()
         return 0;
     }
 
-    meshvfn suzanne("../obj/vfn/suzanne.obj");
-    shader shadsuz("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
-    
-    glm::vec3 light_dir = glm::vec3(1.0f,-1.0f,1.0f);
-    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 mesh_col = glm::vec3(0.1f,0.8f,0.0f);
-    shadsuz.use();
-    shadsuz.set_vec3_uniform("light_dir", light_dir);
-    shadsuz.set_vec3_uniform("light_col", light_col);
-    shadsuz.set_vec3_uniform("mesh_col", mesh_col);
+    meshvfn sponza_mesh("../obj/vfn/sponza_merged.obj");
+    shader sponza_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
 
-    skybox sb;
-    shader shadsb("../shaders/vertex/skybox.vert","../shaders/fragment/skybox.frag");
+    glm::vec3 mesh_col = glm::vec3(0.5f,0.5f,0.5f);
+    glm::vec3 light_dir; //Light direction in world coordinates.
+    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color.
+
+    sponza_shad.use();
+    sponza_shad.set_vec3_uniform("mesh_col", mesh_col);
+    sponza_shad.set_vec3_uniform("light_col", light_col);
+
+    glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-    glm::mat4 projection, view, model;
-
     float t1 = 0.0f, t2;
-    while (!glfwWindowShouldClose(window))
+
+    while (!glfwWindowShouldClose(window)) //game loop
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
@@ -178,24 +186,17 @@ int main()
 
         event_tick(window);
 
-        projection = glm::perspective(glm::radians(45.0f), (float)win_width/win_height, 0.01f,500.0f);
+        projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.01f,100.0f);
+        model = glm::mat4(1.0f);
         cam.move(time_tick);
         view = cam.view();
-        model = glm::mat4(1.0f);
-        shadsuz.use();
-        shadsuz.set_mat4_uniform("projection", projection);
-        shadsuz.set_mat4_uniform("view", view);
-        shadsuz.set_mat4_uniform("model", model);
-        suzanne.draw_triangles();
-
-        glDepthFunc(GL_LEQUAL);
-            view = glm::mat4(glm::mat3(cam.view()));
-            shadsb.use();
-            shadsb.set_mat4_uniform("projection", projection);
-            shadsb.set_mat4_uniform("view", view);
-            sb.draw_elements();
-        glDepthFunc(GL_LESS);
-
+        light_dir = glm::vec3(cos(t2), sin(t2), 1.0f); //Revolving light.
+        sponza_shad.set_mat4_uniform("projection", projection);
+        sponza_shad.set_mat4_uniform("view", view);
+        sponza_shad.set_mat4_uniform("model", model);
+        sponza_shad.set_vec3_uniform("light_dir", light_dir);
+        sponza_mesh.draw_triangles();
+       
         glfwSwapBuffers(window);
         glfwPollEvents();
     }

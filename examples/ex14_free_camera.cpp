@@ -159,17 +159,23 @@ int main()
     }
 
     meshvfn sponza_temple("../obj/vfn/sponza_merged.obj");
+    shader sponza_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ad.frag");
 
-    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/point_light_ad.frag");
-    shad.use();
+    meshvf sphere_lamp("../obj/vf/uv_sphere_rad1_20x20.obj");
+    shader lamp_shad("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
 
-    glm::vec3 mesh_col = glm::vec3(0.5f,0.5f,1.0f);
+    glm::vec3 sponza_col = glm::vec3(0.5f,0.5f,1.0f);
+    glm::vec3 lamp_col = glm::vec3(0.8f,0.8f,1.0f);
     glm::vec3 light_pos = glm::vec3(0.0f,0.0f,3.0f); //Light position in world coordinates.
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color.
 
-    shad.set_vec3_uniform("mesh_col", mesh_col);
-    shad.set_vec3_uniform("light_pos", light_pos);
-    shad.set_vec3_uniform("light_col", light_col);
+    lamp_shad.use();
+    lamp_shad.set_vec3_uniform("mesh_col", lamp_col);
+
+    sponza_shad.use();
+    sponza_shad.set_vec3_uniform("mesh_col", sponza_col);
+    sponza_shad.set_vec3_uniform("light_pos", light_pos);
+    sponza_shad.set_vec3_uniform("light_col", light_col);
 
     glm::mat4 projection, view, model;
 
@@ -192,10 +198,20 @@ int main()
         model = glm::mat4(1.0f);
         cam.move(time_tick);
         view = cam.view();
-        shad.set_mat4_uniform("projection", projection);
-        shad.set_mat4_uniform("view", view);
-        shad.set_mat4_uniform("model", model);
+        sponza_shad.use();
+        sponza_shad.set_mat4_uniform("projection", projection);
+        sponza_shad.set_mat4_uniform("view", view);
+        sponza_shad.set_mat4_uniform("model", model);
         sponza_temple.draw_triangles();
+
+
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, light_pos);
+        lamp_shad.use();
+        lamp_shad.set_mat4_uniform("projection", projection);
+        lamp_shad.set_mat4_uniform("view", view);
+        lamp_shad.set_mat4_uniform("model", model);
+        sphere_lamp.draw_triangles();
        
         glfwSwapBuffers(window);
         glfwPollEvents();

@@ -407,22 +407,22 @@ public:
                            1.0f,  1.0f, -1.0f,
                           -1.0f,  1.0f, -1.0f };
       
-        unsigned int inds[] = { //Right
+        unsigned int inds[] = { //Right.
                                 1, 2, 6,
                                 6, 5, 1,
-                                //Left
+                                //Left.
                                 0, 4, 7,
                                 7, 3, 0,
-                                //Top
+                                //Top.
                                 4, 5, 6,
                                 6, 7, 4,
-                                //Bottom
+                                //Bottom.
                                 0, 3, 2,
                                 2, 1, 0,
-                                //Back
+                                //Back.
                                 0, 1, 5,
                                 5, 4, 0,
-                                //Front
+                                //Front.
                                 3, 7, 6,
                                 6, 2, 3  };
 
@@ -458,8 +458,9 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+        //This might help with seams on some systems.
         //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-        // This might help with seams on some systems
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
         //Loop through all the textures and attach them to the tao object.
@@ -470,15 +471,15 @@ public:
             if (data)
             {
                 stbi_set_flip_vertically_on_load(false);
-                glTexImage2D ( GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                               0,
-                               GL_RGB,
-                               width,
-                               height,
-                               0,
-                               GL_RGB,
-                               GL_UNSIGNED_BYTE,
-                               data );
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                             0,
+                             GL_RGB,
+                             width,
+                             height,
+                             0,
+                             GL_RGB,
+                             GL_UNSIGNED_BYTE,
+                             data);
                 stbi_image_free(data);
             }
             else
