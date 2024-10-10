@@ -9,10 +9,7 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
-//Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
-//have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
-//any variable within the specific context of the window.
-camera cam(glm::vec3(-10.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.0f);
+camera cam(glm::vec3(-10.0f, 0.0f, 2.0f), glm::vec3(0.0f, 0.0f, 1.0f), 0.0f);
 
 float time_tick; //Elapsed time per frame update.
 
@@ -22,6 +19,29 @@ bool first_time_entered_the_window = true;
 bool cursor_visible = false;
 
 int win_width = 1200, win_height = 900;
+
+unsigned int fbo_depth, tex_depth;
+
+void setup_fbo_depth()
+{
+    glGenFrameBuffers(1, &fbo_depth);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
+
+    glGenTextures(1, &tex_depth);
+    glBindTexture(GL_TEXTURE_2D, tex_depth);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, 1024, 1024, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);  
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float border_col[] = {1.0f, 1.0f, 1.0f, 1.0f};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_col);
+
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth, 0);
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    glBindBuffer(GL_FRAMEBUFFER, 0); //Unbind the fbo_depth, and switch to the default fbo, i.e. the displayed in the monitor.
+}
 
 //For 'continuous' events, i.e. at every frame in the while() loop.
 void event_tick(GLFWwindow *win)
@@ -158,16 +178,21 @@ int main()
         return 0;
     }
 
-    meshvfn sponza_mesh("../obj/vfn/sponza_merged.obj");
-    shader sponza_shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
+    meshvfn ground("../obj/vfn/shad_ground40x40.obj");
+    meshvfn zarrow("../obj/vfn/shad_z_arrow.obj");
+    meshvfn north("../obj/vfn/shad_north.obj");
+    meshvfn south("../obj/vfn/shad_south.obj");
+    meshvfn east("../obj/vfn/shad_east.obj");
+    meshvfn west("../obj/vfn/shad_west.obj");
+    shader shad_dlight("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
 
     glm::vec3 mesh_col = glm::vec3(0.5f,0.5f,0.5f);
     glm::vec3 light_dir; //Light direction in world coordinates.
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color.
 
-    sponza_shad.use();
-    sponza_shad.set_vec3_uniform("mesh_col", mesh_col);
-    sponza_shad.set_vec3_uniform("light_col", light_col);
+    shad_dlight.use();
+    shad_dlight.set_vec3_uniform("mesh_col", mesh_col);
+    shad_dlight.set_vec3_uniform("light_col", light_col);
 
     glm::mat4 projection, view, model;
 
@@ -191,11 +216,16 @@ int main()
         cam.move(time_tick);
         view = cam.view();
         light_dir = glm::vec3(cos(t2), sin(t2), 1.0f); //Revolving light.
-        sponza_shad.set_mat4_uniform("projection", projection);
-        sponza_shad.set_mat4_uniform("view", view);
-        sponza_shad.set_mat4_uniform("model", model);
-        sponza_shad.set_vec3_uniform("light_dir", light_dir);
-        sponza_mesh.draw_triangles();
+        shad_dlight.set_mat4_uniform("projection", projection);
+        shad_dlight.set_mat4_uniform("view", view);
+        shad_dlight.set_mat4_uniform("model", model);
+        shad_dlight.set_vec3_uniform("light_dir", light_dir);
+        ground.draw_triangles();
+        zarrow.draw_triangles();
+        north.draw_triangles();
+        south.draw_triangles();
+        east.draw_triangles();
+        west.draw_triangles();
        
         glfwSwapBuffers(window);
         glfwPollEvents();
