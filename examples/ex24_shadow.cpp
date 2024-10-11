@@ -203,6 +203,8 @@ int main()
 
     float t1 = 0.0f, t2;
 
+    //hello
+
     while (!glfwWindowShouldClose(window)) //game loop
     {   
         t2 = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
