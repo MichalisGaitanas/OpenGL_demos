@@ -24,7 +24,7 @@ unsigned int fbo_depth, tex_depth;
 
 void setup_fbo_depth()
 {
-    glGenFrameBuffers(1, &fbo_depth);
+    glGenFramebuffers(1, &fbo_depth);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
 
     glGenTextures(1, &tex_depth);
@@ -40,10 +40,10 @@ void setup_fbo_depth()
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth, 0);
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
-    glBindBuffer(GL_FRAMEBUFFER, 0); //Unbind the fbo_depth, and switch to the default fbo, i.e. the displayed in the monitor.
+    glBindFramebuffer(GL_FRAMEBUFFER, 0); //Unbind the fbo_depth, and switch to the default fbo, i.e. the displayed in the monitor.
 }
 
-//For 'continuous' events, i.e. at every frame in the while() loop.
+//For 'continuous' events, i.e. at every frame (tick) in the while() loop.
 void event_tick(GLFWwindow *win)
 {
     bool move_key_pressed = false;
@@ -184,10 +184,12 @@ int main()
     meshvfn south("../obj/vfn/shad_south.obj");
     meshvfn east("../obj/vfn/shad_east.obj");
     meshvfn west("../obj/vfn/shad_west.obj");
-    shader shad_dlight("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad.frag");
+    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_ad_shadow.frag");
+    shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
+
+    setup_fbo_depth();
 
     glm::vec3 mesh_col = glm::vec3(0.5f,0.5f,0.5f);
-    glm::vec3 light_dir; //Light direction in world coordinates.
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color.
 
     shad_dlight.use();
@@ -202,24 +204,45 @@ int main()
     float t1 = 0.0f, t2;
 
     while (!glfwWindowShouldClose(window)) //game loop
-    {
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        
+    {   
         t2 = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
         time_tick = t2 - t1;
         t1 = t2;
-
         event_tick(window);
 
+
+        ////////////////////////////////////////////////////////////////////////////////////////////////
+
+        glm::vec3 light_dir = glm::vec3(cos(t2), sin(t2), 1.0f); //Revolving light.
+        glm::vec3 light_dummy_pos = 500.0f*glm::normalize(light_dir);
+        glm::mat4 dir_light_projection = glm::ortho(-100.0f,100.0f, -100.0f,100.0f, 0.1f, 100.0f);
+        glm::mat4 dir_light_view = glm::lookAt(light_dummy_pos, glm::vec3(0.0f,0.0f,0.0f), glm::vec3(0.0f,0.0f,1.0f));
+        //glm::mat4 dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
+
         projection = glm::perspective(glm::radians(cam.fov), (float)win_width/win_height, 0.01f,100.0f);
+        view = cam.view(); cam.move(time_tick);
         model = glm::mat4(1.0f);
-        cam.move(time_tick);
-        view = cam.view();
-        light_dir = glm::vec3(cos(t2), sin(t2), 1.0f); //Revolving light.
-        shad_dlight.set_mat4_uniform("projection", projection);
-        shad_dlight.set_mat4_uniform("view", view);
-        shad_dlight.set_mat4_uniform("model", model);
-        shad_dlight.set_vec3_uniform("light_dir", light_dir);
+
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
+        glViewport(0,0, 1024,1024);
+        glClear(GL_DEPTH_BUFFER_BIT); //Clear only depth, coz we write only depth in this buffer. There's no color attachment.
+        shad_depth.set_mat4_uniform("dir_light_projection", dir_light_projection);
+        shad_depth.set_mat4_uniform("dir_light_view", dir_light_view);
+        shad_depth.set_mat4_uniform("model", model);
+        ground.draw_triangles();
+        zarrow.draw_triangles();
+        north.draw_triangles();
+        south.draw_triangles();
+        east.draw_triangles();
+        west.draw_triangles();
+
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        glViewport(0,0 win_width, win_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        shad_dir_light_with_shadow.set_mat4_uniform("projection", projection);
+        shad_dir_light_with_shadow.set_mat4_uniform("view", view);
+        shad_dir_light_with_shadow.set_mat4_uniform("model", model);
+        shad_dir_light_with_shadow.set_vec3_uniform("light_dir", light_dir);
         ground.draw_triangles();
         zarrow.draw_triangles();
         north.draw_triangles();

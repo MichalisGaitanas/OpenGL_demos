@@ -23,7 +23,7 @@ bool cursor_visible = false;
 
 int win_width = 1200, win_height = 900;
 
-//For 'continuous' events, i.e. at every frame in the while() loop.
+//For 'continuous' events, i.e. at every frame (tick) in the while() loop.
 void event_tick(GLFWwindow *win)
 {
     bool move_key_pressed = false;
