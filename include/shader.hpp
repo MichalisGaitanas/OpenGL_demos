@@ -78,7 +78,7 @@ public:
         }
         
         //We no longer need the vshader and fshader, so let's delete them from now.
-        //We DO ned however the ID, which will be kept for deletion in the destructor.
+        //We DO need however the ID, which will be kept for deletion in the destructor.
         glDeleteShader(vshader);
         glDeleteShader(fshader);
     }

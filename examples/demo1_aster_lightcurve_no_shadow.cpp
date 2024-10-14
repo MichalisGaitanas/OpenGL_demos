@@ -213,6 +213,7 @@ int main()
     setup_hidden_framebuffer(win_width, win_height);
 
     glEnable(GL_DEPTH_TEST); //Automatic depth test.
+    glEnable(GL_CULL_FACE); //Enable face culling.
     glClearColor(0.0f,0.0f,0.0f,1.0f); //Black background color.
 
     //Actual lightcure data.

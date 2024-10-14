@@ -331,6 +331,7 @@ public:
     //Draw the mesh (triangles).
     void draw_triangles()
     {
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tao);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/5));
@@ -381,6 +382,7 @@ public:
     //Draw the quad-mesh (triangles).
     void draw_triangles(unsigned int framebuffer_tex)
     {
+        glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, framebuffer_tex);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -502,9 +504,9 @@ public:
     //Draw the skybox cube mesh.
     void draw_elements()
     {
-        glBindVertexArray(vao);
-		glActiveTexture(GL_TEXTURE0);
+        glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
+        glBindVertexArray(vao);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.

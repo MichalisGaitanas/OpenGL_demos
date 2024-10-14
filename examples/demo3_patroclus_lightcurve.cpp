@@ -872,6 +872,7 @@ int main()
     //Create the (clean) hidden framebuffer.
     setup_hidden_framebuffer(win_width, win_height);
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE); //Enable face culling.
     glClearColor(0.0f,0.0f,0.0f,1.0f);
 
     double t1 = 0.0, tnow;

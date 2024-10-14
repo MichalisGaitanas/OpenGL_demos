@@ -191,7 +191,7 @@ int main()
 
     float t1 = 0.0f, t2;
 
-    while (!glfwWindowShouldClose(window)) //game loop
+    while (!glfwWindowShouldClose(window)) //Game loop.
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //The depth buffer will be cleared in accordance with the argument passed in glDepthFunc().
         

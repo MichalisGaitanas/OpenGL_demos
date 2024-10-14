@@ -70,6 +70,7 @@ int main()
     glm::vec3 aster_col = glm::vec3(0.5f,0.5f,0.5f);
     aster_shad.set_vec3_uniform("mesh_col", aster_col);
 
+    //Virtual camera's settings.
     glm::vec3 cam_pos = glm::vec3(-1.0f,-1.0f,1.0f);
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f);
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f);
@@ -80,7 +81,7 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
-    while (!glfwWindowShouldClose(window)) //render loop
+    while (!glfwWindowShouldClose(window)) //Render loop.
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 

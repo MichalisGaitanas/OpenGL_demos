@@ -11,7 +11,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); //Version x.3
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //Core OpenGL.
 
-    //Create window object (at default position).
+    //Create window object (pointer to struct) at default position.
     GLFWwindow *window = glfwCreateWindow(800, 500, "Black window", NULL, NULL);
     if (window == NULL)
     {

@@ -1,6 +1,5 @@
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
-
 #include<cstdio>
 
 void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
@@ -18,7 +17,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    //Create window object.
+    //Create window object (pointer to struct).
     GLFWwindow *window = glfwCreateWindow(900, 600, "Colored window", NULL, NULL);
     if (window == NULL)
     {
