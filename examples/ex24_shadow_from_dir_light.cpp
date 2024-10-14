@@ -31,7 +31,7 @@ unsigned int fbo_depth, tex_depth; //IDs to hold the fbo and the depth texture (
 //Think of it like a classical image creation. 1k, 2k, 4k, etc... The more pixels in the image, the higher its detail. The shadow map-tex (as we will see later),
 //is literally an image creation and each pixel of this image holds some 'special' info (not rgb colors, but depth), that we use. For real time lighting and shadow,
 //this image is recreated at each frame.
-const int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //2k resolution.
+const int shadow_tex_reso_x = 4096, shadow_tex_reso_y = 4096; //4k image resolution.
 
 void setup_fbo_depth()
 {

@@ -14,14 +14,18 @@ uniform vec3 light_col; //Light color.
 uniform sampler2D sample_shadow; //Depth image texture, obtained by the other shader.
 
 //Algorithm to decide whether the fragment is in shadow or not.
-float get_shadow(vec4 frag_pos_light)
+float get_shadow(vec4 frag_pos_light, vec3 norm, vec3 light_dir_norm)
 {
     vec3 projected_coords = frag_pos_light.xyz/frag_pos_light.w;
     projected_coords = 0.5f*projected_coords + 0.5f;
+    if (projected_coords.z > 1.0f)
+        return 0.0f;
 
     float nearest_frag_depth = texture(sample_shadow, projected_coords.xy).r;
     float current_frag_depth = projected_coords.z;
-    float bias = 0.001f;
+
+    float const_bias = 0.0002f;
+    float bias = max(0.002f*(1.0f - dot(norm, light_dir_norm)), const_bias);
     if (current_frag_depth - bias > nearest_frag_depth)
         return 1.0f;
     return 0.0f;
@@ -38,7 +42,7 @@ void main()
     float diffuse = max(dot(norm, light_dir_norm), 0.0f);
 
     //Shadow color component.
-    float shadow = get_shadow(frag_pos_light);
+    float shadow = get_shadow(frag_pos_light, norm, light_dir_norm);
 
     frag_col = vec4((ambient + (1.0f - shadow)*diffuse)*mesh_col*light_col, 1.0f);
 }
