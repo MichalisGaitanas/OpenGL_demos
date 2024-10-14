@@ -13,6 +13,8 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
+#define PI 3.1415926535897932384626433832795
+
 camera cam(glm::vec3(0.0f, -5.0f, 2.0f), glm::vec3(0.0f, 0.0f, 1.0f), 90.0f); //Set the camera.
 
 float time_tick; //Elapsed time per frame update.
@@ -229,13 +231,13 @@ int main()
     shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_ad_shadow.frag");
 
     //This shader is only used to render the geometry model of the directional light in our scene.
-    meshvf arrow("../obj/vf/dir_light_arrow.obj");
-    shader shad_arrow("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
+    meshvf arrows("../obj/vf/dir_light_arrows.obj");
+    shader shad_arrows("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
 
     setup_fbo_depth();
 
     //Constant mesh and light colors. We pass them to the shader from now to avoid doing it in the while loop...
-    glm::vec3 mesh_col = glm::vec3(0.6f,0.6f,0.6f);
+    glm::vec3 mesh_col = glm::vec3(0.6f,0.8f,0.6f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
     shad_dir_light_with_shadow.use();
     shad_dir_light_with_shadow.set_vec3_uniform("mesh_col", mesh_col);
@@ -246,7 +248,7 @@ int main()
     glm::mat4 projection, view, model; //Camera's matrices. The 'model' matrix is common.
 
     glEnable(GL_DEPTH_TEST);
-    glClearColor(0.1f,0.1f,0.1f,1.0f);
+    glClearColor(0.1f,0.25f,0.1f,1.0f);
     float t1 = 0.0f, t2;
     while (!glfwWindowShouldClose(window))
     {   
@@ -262,8 +264,10 @@ int main()
         //geometrically defined with respect to the light's view space. As the light's direction changes over time (due to lookAt() using the light_dir),
         //the whole frustum rotates along with the light, always 'looking at' any target you set in lookAt() (2nd argument).
         static float ortho_dx = 40.0f, ortho_dy = 40.0f, ortho_znear = 0.1f, ortho_zfar = 150.0f;
-        static float dir_light_dist = 40.0f, dir_light_lon = glm::radians(20.0f), dir_light_lat = glm::radians(20.0f);
-        glm::vec3 light_dir = glm::vec3(dir_light_dist*cos(dir_light_lon)*sin(dir_light_lat), dir_light_dist*sin(dir_light_lon)*sin(dir_light_lat), dir_light_dist*cos(dir_light_lat));
+        static float dir_light_dist = 40.0f, dir_light_lon = 20.0f, dir_light_lat = 20.0f;
+        glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
+                                                       sin(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
+                                                       cos(glm::radians(dir_light_lat)));
         dir_light_projection = glm::ortho(-ortho_dx,ortho_dx, -ortho_dy,ortho_dy, ortho_znear,ortho_zfar);
         dir_light_view = glm::lookAt(light_dir, glm::vec3(0.0f), glm::vec3(0.0f,0.0f,1.0f));
         dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
@@ -350,14 +354,20 @@ int main()
         glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tex_depth.
 
         model = glm::translate(glm::mat4(1.0f), light_dir);
-        glm::vec3 tlight_dir = glm::normalize(light_dir);
-        model = glm::rotate(model, acos(tlight_dir.z), glm::cross(glm::vec3(0.0f,0.0f,1.0f), tlight_dir));
-            shad_arrow.use();
-            shad_arrow.set_vec3_uniform("mesh_col", light_col);
-            shad_arrow.set_mat4_uniform("projection", projection);
-            shad_arrow.set_mat4_uniform("view", view);
-            shad_arrow.set_mat4_uniform("model", model);
-            arrow.draw_triangles();
+        //Check if the normalized light direction is almost aligned with the z-axis (north or south pole case).
+        //However, When light_dir points directly along the -z axis (south pole), apply a 180-degree rotation.
+        glm::vec3 norm_light_dir = glm::normalize(light_dir);
+        if (glm::abs(norm_light_dir.z - 1.0f) > 0.001f && glm::abs(norm_light_dir.z + 1.0f) > 0.001f)
+            model = glm::rotate(model, acos(norm_light_dir.z), glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), -norm_light_dir));
+        else if (norm_light_dir.z < -0.999f)
+            model = glm::rotate(model, glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        
+        shad_arrows.use();
+        shad_arrows.set_vec3_uniform("mesh_col", light_col);
+        shad_arrows.set_mat4_uniform("projection", projection);
+        shad_arrows.set_mat4_uniform("view", view);
+        shad_arrows.set_mat4_uniform("model", model);
+        arrows.draw_triangles();
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
@@ -369,7 +379,13 @@ int main()
         if (!popen)
             glfwSetWindowShouldClose(window, true);
 
-        ImGui::BulletText("Orthographic frustum size");
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,100,0,255));
+        ImGui::Text("Right click to toggle the cursor.");
+        ImGui::PopStyleColor();
+
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+
+        ImGui::BulletText("Light's orthographic frustum size");
         ImGui::SliderFloat("dx##ortho_dx", &ortho_dx, 1.0f, 100.0f);
         ImGui::SliderFloat("dy##ortho_dy", &ortho_dy, 1.0f, 100.0f);
         ImGui::SliderFloat("z-near##ortho_znear", &ortho_znear, 0.01f, 1.0f);
@@ -377,10 +393,10 @@ int main()
 
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
 
-        ImGui::BulletText("Light's direction");
+        ImGui::BulletText("Light's (dummy) position");
         ImGui::SliderFloat("dist##dir_light_dist", &dir_light_dist, 10.0f, 100.0f);
-        ImGui::SliderFloat("lon##dir_light_lon", &dir_light_lon, glm::radians(0.0f), glm::radians(180.0f));
-        ImGui::SliderFloat("lat##dir_light_lat", &dir_light_lat, glm::radians(0.0f), glm::radians(90.0f));
+        ImGui::SliderFloat("lon [deg]##dir_light_lon", &dir_light_lon, 0.0f, 360.0f);
+        ImGui::SliderFloat("lat [deg]##dir_light_lat", &dir_light_lat, 0.0f, 180.0f);
 
         ImGui::End();
 

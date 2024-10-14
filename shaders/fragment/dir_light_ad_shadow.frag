@@ -21,8 +21,8 @@ float get_shadow(vec4 frag_pos_light)
 
     float nearest_frag_depth = texture(sample_shadow, projected_coords.xy).r;
     float current_frag_depth = projected_coords.z;
-
-    if (current_frag_depth > nearest_frag_depth + 0.005f)
+    float bias = 0.001f;
+    if (current_frag_depth - bias > nearest_frag_depth)
         return 1.0f;
     return 0.0f;
 }
