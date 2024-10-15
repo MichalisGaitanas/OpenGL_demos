@@ -11,7 +11,7 @@ out vec4 frag_col; //Final color of the fragment after lighting calculations.
 uniform vec3 mesh_col; //Mesh color.
 uniform vec3 light_dir; //Direction of the light in world coordinates.
 uniform vec3 light_col; //Light color.
-uniform sampler2D sample_shadow; //Depth image texture, obtained by the other shader.
+uniform sampler2DShadow sample_shadow; //Depth image texture, obtained by the other shader.
 
 //Algorithm to decide whether the fragment is in shadow or not.
 float get_shadow(vec4 frag_pos_light, vec3 norm, vec3 light_dir_norm)
