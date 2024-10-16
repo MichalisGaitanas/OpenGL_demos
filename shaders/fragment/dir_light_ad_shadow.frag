@@ -38,6 +38,7 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
 {
     vec3 projected_coords = frag_pos_light.xyz/frag_pos_light.w; //Perspective division to obtain NDC in [-1,1] for each component.
     projected_coords = 0.5f*projected_coords + 0.5f; //Transform to [0,1]. This is required to access the shadow map texture, because internally, the range is in [0,1].
+    
     //For any fragment that is outside the orthographic frustum, don't calculate shadow.
     if (projected_coords.x < 0.0f || projected_coords.x > 1.0f ||
         projected_coords.y < 0.0f || projected_coords.x > 1.0f ||
@@ -47,13 +48,11 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
     }
 
     //Read the shadow map's depth value, which corresponds to the nearest fragment (red channel only coz the map has grayscale values only).
-    //float nearest_frag_depth = texture(sample_shadow, projected_coords.xy).r;
     float current_frag_depth = projected_coords.z;
 
     //This is basically to avoid shadow acne, i.e. self shadowing. But on the cost of Peter-shitty-Panning! Find your balance.
-    float const_bias = 0.0004f;
-    float multiplier = 0.004f;
-    float bias = max(multiplier*(1.0f - dot(norm, light_dir_norm)), const_bias);
+    float min_bias = 0.0003f, amplifier = 0.003f;
+    float bias = max(amplifier*(1.0f - max(dot(norm, light_dir_norm), 0.0f)), min_bias);
 
     float shadow = 0.0f;
     vec2 texel_size = 1.0f/textureSize(sample_shadow, 0);

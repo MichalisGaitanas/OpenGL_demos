@@ -287,7 +287,7 @@ int main()
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,12.0f,3.0f));
             shad_depth.set_mat4_uniform("model", model);
             didymain.draw_triangles();
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(0.4f*sin(t2),11.0f,3.0f));
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(t2),11.0f,3.0f));
             shad_depth.set_mat4_uniform("model", model);
             dimorphos.draw_triangles();
         model = glm::translate(glm::mat4(1.0f), glm::vec3(-13.0f,2.0f,2.0f));
@@ -328,7 +328,7 @@ int main()
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,12.0f,3.0f));
             shad_dir_light_with_shadow.set_mat4_uniform("model", model);
             didymain.draw_triangles();
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(0.4f*sin(t2),11.0f,3.0f));
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(t2),11.0f,3.0f));
             shad_dir_light_with_shadow.set_mat4_uniform("model", model);
             dimorphos.draw_triangles();
         model = glm::translate(glm::mat4(1.0f), glm::vec3(-13.0f,2.0f,2.0f));
