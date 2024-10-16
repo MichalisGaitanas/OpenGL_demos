@@ -15,7 +15,7 @@
 
 #define PI 3.1415926535897932384626433832795
 
-camera cam(glm::vec3(0.0f, -5.0f, 2.0f), glm::vec3(0.0f, 0.0f, 1.0f), 90.0f); //Set the camera.
+camera cam(glm::vec3(0.0f, -20.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 90.0f); //Set the camera.
 
 float time_tick; //Elapsed time per frame update.
 
@@ -40,7 +40,7 @@ void setup_fbo_depth()
     glGenTextures(1, &tex_depth); //Create tex and assign ID.
     glBindTexture(GL_TEXTURE_2D, tex_depth); //This means that all subsequent tex operations affect the tex_depth.
     //Actually create the depth texture with the specified resolution. Stored as floats and initialized as NULL because no data is provided yet.
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadow_tex_reso_x, shadow_tex_reso_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, shadow_tex_reso_x, shadow_tex_reso_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     //The following ensures that when texture coordinates go outside [0,1] range, the border_col is used as depth-color.
@@ -248,6 +248,7 @@ int main()
     glm::mat4 projection, view, model; //Camera's matrices. The 'model' matrix is common.
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glClearColor(0.1f,0.25f,0.1f,1.0f);
     float t1 = 0.0f, t2;
     while (!glfwWindowShouldClose(window))
@@ -264,7 +265,7 @@ int main()
         //geometrically defined with respect to the light's view space. As the light's direction changes over time (due to lookAt() using the light_dir),
         //the whole frustum rotates along with the light, always 'looking at' any target you set in lookAt() (2nd argument).
         static float ortho_dx = 40.0f, ortho_dy = 40.0f, ortho_znear = 0.1f, ortho_zfar = 150.0f;
-        static float dir_light_dist = 40.0f, dir_light_lon = 20.0f, dir_light_lat = 20.0f;
+        static float dir_light_dist = 40.0f, dir_light_lon = 80.0f, dir_light_lat = 50.0f;
         glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        sin(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        cos(glm::radians(dir_light_lat)));
