@@ -269,8 +269,16 @@ int main()
         glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        sin(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        cos(glm::radians(dir_light_lat)));
+        glm::vec3 norm_light_dir = glm::normalize(light_dir);
+        float dir_light_up_x = 0.0f, dir_light_up_y = 0.0f, dir_light_up_z = 1.0f;
+        if (glm::abs(norm_light_dir.z) > 0.999f)
+        {
+            dir_light_up_y = 1.0f;
+            dir_light_up_z = 0.0f;
+        }
+
         dir_light_projection = glm::ortho(-ortho_dx,ortho_dx, -ortho_dy,ortho_dy, ortho_znear,ortho_zfar);
-        dir_light_view = glm::lookAt(light_dir, glm::vec3(0.0f), glm::vec3(0.0f,0.0f,1.0f));
+        dir_light_view = glm::lookAt(light_dir, glm::vec3(0.0f), glm::vec3(dir_light_up_x, dir_light_up_y, dir_light_up_z));
         dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
         //Camera's updated parameters.
@@ -357,7 +365,6 @@ int main()
         model = glm::translate(glm::mat4(1.0f), light_dir);
         //Check if the normalized light direction is almost aligned with the z-axis (north or south pole case).
         //However, When light_dir points directly along the -z axis (south pole), apply a 180-degree rotation.
-        glm::vec3 norm_light_dir = glm::normalize(light_dir);
         if (glm::abs(norm_light_dir.z - 1.0f) > 0.001f && glm::abs(norm_light_dir.z + 1.0f) > 0.001f)
             model = glm::rotate(model, acos(norm_light_dir.z), glm::cross(glm::vec3(0.0f, 0.0f, -1.0f), -norm_light_dir));
         else if (norm_light_dir.z < -0.999f)
