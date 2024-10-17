@@ -444,12 +444,12 @@ public:
 
 
         //Skybox faces. Make sure they are in this exact order.
-        std::string path[6] = { "../images/skybox/landscape_2k/right.jpg",
-                                "../images/skybox/landscape_2k/left.jpg",
-                                "../images/skybox/landscape_2k/top.jpg",
-                                "../images/skybox/landscape_2k/bottom.jpg",
-                                "../images/skybox/landscape_2k/front.jpg",
-                                "../images/skybox/landscape_2k/back.jpg" };
+        std::string path[6] = { "../images/skybox/starfield_4k/right.jpg",
+                                "../images/skybox/starfield_4k/left.jpg",
+                                "../images/skybox/starfield_4k/top.jpg",
+                                "../images/skybox/starfield_4k/bottom.jpg",
+                                "../images/skybox/starfield_4k/front.jpg",
+                                "../images/skybox/starfield_4k/back.jpg" };
         
         //Create the skybox (cubemap) texture object.
         unsigned int tao;

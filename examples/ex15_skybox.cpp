@@ -190,9 +190,13 @@ int main()
 
         glDepthFunc(GL_LEQUAL);
             view = glm::mat4(glm::mat3(cam.view()));
+            model = glm::mat4(1.0f);
+            model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
             shadsb.use();
             shadsb.set_mat4_uniform("projection", projection);
             shadsb.set_mat4_uniform("view", view);
+            shadsb.set_mat4_uniform("model", model);
             sb.draw_elements();
         glDepthFunc(GL_LESS);
 
