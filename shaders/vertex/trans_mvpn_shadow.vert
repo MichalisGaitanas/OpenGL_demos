@@ -10,7 +10,7 @@ out vec3 normal;
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
-uniform mat4 dir_light_pv;
+uniform mat4 dir_light_pv; //Light's projection*view matrix.
 
 void main()
 {

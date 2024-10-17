@@ -237,7 +237,7 @@ int main()
     setup_fbo_depth();
 
     //Constant mesh and light colors. We pass them to the shader from now to avoid doing it in the while loop...
-    glm::vec3 mesh_col = glm::vec3(0.6f,0.8f,0.6f);
+    glm::vec3 mesh_col = glm::vec3(0.2f,0.7f,1.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
     shad_dir_light_with_shadow.use();
     shad_dir_light_with_shadow.set_vec3_uniform("mesh_col", mesh_col);
@@ -249,7 +249,7 @@ int main()
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
-    glClearColor(0.1f,0.25f,0.1f,1.0f);
+    glClearColor(0.15f,0.3f,0.6f,1.0f);
     float t1 = 0.0f, t2;
     while (!glfwWindowShouldClose(window))
     {   
