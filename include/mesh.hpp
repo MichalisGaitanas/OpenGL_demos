@@ -304,6 +304,7 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures (e.g. grayscale).
 
         //Determine the correct format for glTexImage2D based on the number of channels (imgchannels).
         GLenum format;
@@ -316,7 +317,6 @@ public:
 
         glTexImage2D(GL_TEXTURE_2D, 0, format, imgwidth, imgheight, 0, format, GL_UNSIGNED_BYTE, imgdata);
         glGenerateMipmap(GL_TEXTURE_2D);
-        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
         stbi_image_free(imgdata); //Free image resources.
     }
 
@@ -344,10 +344,10 @@ public:
 class skybox
 {
 
-public:
-
+private:
     unsigned int vao, vbo, ebo, tao;
 
+public:
     skybox(const char *path_to_right, const char *path_to_left, const char *path_to_top, const char *path_to_bottom, const char *path_to_front, const char *path_to_back)
     {   
         float verts[] = { -1.0f, -1.0f,  1.0f,
@@ -371,13 +371,14 @@ public:
                                 //Bottom.
                                 0, 3, 2,
                                 2, 1, 0,
-                                //Back.
-                                0, 1, 5,
-                                5, 4, 0,
                                 //Front.
                                 3, 7, 6,
-                                6, 2, 3  };
+                                6, 2, 3, 
+                                //Back.
+                                0, 1, 5,
+                                5, 4, 0 };
 
+        //Setup skybox's data in the memory.
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
@@ -388,10 +389,9 @@ public:
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(inds), &inds, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        glBindVertexArray(0); //Unbind the vao.
+        glBindVertexArray(0);
 
-        //Create the skybox (cubemap) texture object.
-        unsigned int tao;
+        //Create the skybox's texture.
         glGenTextures(1, &tao);
         glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -399,17 +399,19 @@ public:
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-        //glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures (e.g. grayscale).
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-        //Skybox's expected image names. Do not change their order in the following array.
+        //Skybox's expected image names. Do not change their order..
         std::string paths[6] = { path_to_right, path_to_left, path_to_top, path_to_bottom, path_to_front, path_to_back };
 
-        //Loop through all the textures and attach them to the tao object.
+        stbi_set_flip_vertically_on_load(false);
         for (int i = 0; i < 6; i++)
         {
             int width, height, nchannels;
             unsigned char *data = stbi_load(paths[i].c_str(), &width, &height, &nchannels, 0);
+            if (!data)
+                printf("Error : Failed to load texture '%s'\n", paths[i].c_str());
 
             //Determine the correct format for glTexImage2D based on the number of channels (nchannels).
             GLenum format;
@@ -420,21 +422,12 @@ public:
             else if (nchannels == 4)
                 format = GL_RGBA; //4-channel image, i.e. RGB + alpha channel for opacity (e.g. png).
 
-            if (data)
-            {
-                stbi_set_flip_vertically_on_load(false);
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-                stbi_image_free(data);
-            }
-            else
-            {
-                printf("Failed to load texture '%s'\n", paths[i]);
-                stbi_image_free(data);
-            }
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
         }
     }
 
-    //Delete the skybox.
+    //Delete the skybox's resources.
     ~skybox()
     {
         glDeleteVertexArrays(1, &vao);
@@ -449,9 +442,11 @@ public:
         glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
         glBindVertexArray(vao);
+        glDepthFunc(GL_LEQUAL); //Ensures that the skybox fragments will render behind everything else.
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+        glDepthFunc(GL_LESS); //Restore the default depth test function for rendering the rest of the scene.
 		glBindVertexArray(0);
-        glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
+        glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
     }
 };
 

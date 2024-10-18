@@ -159,13 +159,12 @@ int main()
     shadsuz.set_vec3_uniform("light_col", light_col);
     shadsuz.set_vec3_uniform("mesh_col", mesh_col);
 
-    ///skybox sb("../images/skyboxes/landsacpe_2k");
-    skybox sb("../images/skyboxes/landsacpe_2k/right.jpg",
-              "../images/skyboxes/landsacpe_2k/left.jpg",
-              "../images/skyboxes/landsacpe_2k/top.jpg",
-              "../images/skyboxes/landsacpe_2k/bottom.jpg",
-              "../images/skyboxes/landsacpe_2k/front.jpg",
-              "../images/skyboxes/landsacpe_2k/back.jpg");
+    skybox sb("../images/skyboxes/landscape_2k/right.jpg",
+              "../images/skyboxes/landscape_2k/left.jpg",
+              "../images/skyboxes/landscape_2k/top.jpg",
+              "../images/skyboxes/landscape_2k/bottom.jpg",
+              "../images/skyboxes/landscape_2k/front.jpg",
+              "../images/skyboxes/landscape_2k/back.jpg");
 
     shader shadsb("../shaders/vertex/skybox.vert","../shaders/fragment/skybox.frag");
 
@@ -195,17 +194,16 @@ int main()
         shadsuz.set_mat4_uniform("model", model);
         suzanne.draw_triangles();
 
-        glDepthFunc(GL_LEQUAL);
-            view = glm::mat4(glm::mat3(cam.view()));
-            model = glm::mat4(1.0f);
-            model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-            model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-            shadsb.use();
-            shadsb.set_mat4_uniform("projection", projection);
-            shadsb.set_mat4_uniform("view", view);
-            shadsb.set_mat4_uniform("model", model);
-            sb.draw_elements();
-        glDepthFunc(GL_LESS);
+        
+        view = glm::mat4(glm::mat3(cam.view()));
+        model = glm::mat4(1.0f);
+        model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(model, glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+        shadsb.use();
+        shadsb.set_mat4_uniform("projection", projection);
+        shadsb.set_mat4_uniform("view", view);
+        shadsb.set_mat4_uniform("model", model);
+        sb.draw_elements();
 
         glfwSwapBuffers(window);
         glfwPollEvents();
