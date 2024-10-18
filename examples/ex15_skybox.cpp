@@ -159,7 +159,14 @@ int main()
     shadsuz.set_vec3_uniform("light_col", light_col);
     shadsuz.set_vec3_uniform("mesh_col", mesh_col);
 
-    skybox sb;
+    ///skybox sb("../images/skyboxes/landsacpe_2k");
+    skybox sb("../images/skyboxes/landsacpe_2k/right.jpg",
+              "../images/skyboxes/landsacpe_2k/left.jpg",
+              "../images/skyboxes/landsacpe_2k/top.jpg",
+              "../images/skyboxes/landsacpe_2k/bottom.jpg",
+              "../images/skyboxes/landsacpe_2k/front.jpg",
+              "../images/skyboxes/landsacpe_2k/back.jpg");
+
     shader shadsb("../shaders/vertex/skybox.vert","../shaders/fragment/skybox.frag");
 
     glEnable(GL_DEPTH_TEST);
