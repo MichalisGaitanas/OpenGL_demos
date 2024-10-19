@@ -22,7 +22,7 @@ public:
         fp.open(objpath);
         if (!fp.is_open())
         {
-            printf("'%s' not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
             exit(EXIT_FAILURE);
         }
 
@@ -46,14 +46,14 @@ public:
             else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %d %d %d", &i1,&i2,&i3);
+                sscanf(tmp_line, "f %u %u %u", &i1,&i2,&i3);
                 inds.push_back({i1-1, i2-1, i3-1}); //Subtract 1 to convert to 0-based indexing.
             }
         }
 
         //Now combine verts[][] and inds[][] to construct the main_buffer[]
         //which will have all the data needed for drawing.
-        for (int i = 0; i < inds.size(); ++i)
+        for (size_t i = 0; i < inds.size(); ++i)
         {
             main_buffer.push_back( verts[ inds[i][0] ][0] );
             main_buffer.push_back( verts[ inds[i][0] ][1] );
@@ -108,7 +108,7 @@ public:
         fp.open(objpath);
         if (!fp.is_open())
         {
-            printf("'%s' not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
             exit(EXIT_FAILURE);
         }
 
@@ -142,14 +142,14 @@ public:
             else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %d//%d %d//%d %d//%d", &i11,&i12, &i21,&i22, &i31,&i32);
+                sscanf(tmp_line, "f %u//%u %u//%u %u//%u", &i11,&i12, &i21,&i22, &i31,&i32);
                 inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
             }
         }
 
         //Now combine verts[][], norms[][] and inds[][] to construct the main buffer main_buffer[],
         //which will have everything needed in the correct order for rendering.
-        for (int i = 0; i < inds.size(); ++i)
+        for (size_t i = 0; i < inds.size(); ++i)
         {
             main_buffer.push_back( verts[ inds[i][0] ][0] );
             main_buffer.push_back( verts[ inds[i][0] ][1] );
@@ -214,7 +214,7 @@ public:
         fp.open(objpath);
         if (!fp.is_open())
         {
-            printf("'%s' not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
             exit(EXIT_FAILURE);
         }
 
@@ -248,14 +248,14 @@ public:
             else if (line[0] == 'f') //Then we have a index line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %d/%d %d/%d %d/%d", &i11,&i12, &i21,&i22, &i31,&i32);
+                sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &i11,&i12, &i21,&i22, &i31,&i32);
                 inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
             }
         }
 
         //Now combine verts[][], uvs[][] and inds[][] to construct the main buffer main_buffer[]
         //which will have all the main_buffer needed for drawing.
-        for (int i = 0; i < inds.size(); ++i)
+        for (size_t i = 0; i < inds.size(); ++i)
         {
             main_buffer.push_back( verts[ inds[i][0] ][0] );
             main_buffer.push_back( verts[ inds[i][0] ][1] );
@@ -294,7 +294,7 @@ public:
         unsigned char *imgdata = stbi_load(imgpath, &imgwidth, &imgheight, &imgchannels, 0);
         if (!imgdata)
         {
-            printf("'%s' not found. Exiting...\n", imgpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", imgpath);
             exit(EXIT_FAILURE);
         }
 
@@ -508,10 +508,10 @@ public:
     }
 
     //Draw the quadtex mesh (triangles).
-    void draw_triangles(unsigned int framebuffer_tex)
+    void draw_triangles(unsigned int framebuffer_tao)
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, framebuffer_tex);
+        glBindTexture(GL_TEXTURE_2D, framebuffer_tao);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);

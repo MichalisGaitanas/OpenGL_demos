@@ -10,8 +10,10 @@
 
 class shader
 {
+private:
+    unsigned int ID; //Shader program ID. With this, we recognize which shader to use.
+
 public:
-    unsigned ID; //Shader program ID. With this, we recognize which shader to use.
 
     //Constructor.
     shader(const char *vpath, const char *fpath)
