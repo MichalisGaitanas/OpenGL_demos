@@ -6,7 +6,8 @@
 #include<string>
 #include<fstream>
 #include<vector>
-#define STB_IMAGE_IMPLEMENTATION
+
+#define STB_IMAGE_IMPLEMENTATION //This must happen only once.
 #include"stb_image.h"
 
 class meshvf
@@ -338,18 +339,21 @@ public:
         glBindVertexArray(0); //Unbind the vao.
         glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
     }
-
 };
+
+
 
 class skybox
 {
-
 private:
     unsigned int vao, vbo, ebo, tao;
 
 public:
-    skybox(const char *path_to_right, const char *path_to_left, const char *path_to_top, const char *path_to_bottom, const char *path_to_front, const char *path_to_back)
+    //Make sure that the images have all the same size in pixels (e.g. 2048x2048, 500x500, etc...) AND channels.
+    skybox(const char *right_img_path, const char *left_img_path, const char *top_img_path, const char *bottom_img_path, const char *front_img_path, const char *back_img_path)
     {   
+        /* Basically a cube, procedurally generated. */
+
         float verts[] = { -1.0f, -1.0f,  1.0f,
                            1.0f, -1.0f,  1.0f,
                            1.0f, -1.0f, -1.0f,
@@ -402,29 +406,43 @@ public:
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures (e.g. grayscale).
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-        //Skybox's expected image names. Do not change their order..
-        std::string paths[6] = { path_to_right, path_to_left, path_to_top, path_to_bottom, path_to_front, path_to_back };
+        //Skybox's expected image names. Do not change their order.
+        std::string paths[6] = { right_img_path, left_img_path, top_img_path, bottom_img_path, front_img_path, back_img_path };
+        int img_widths[6], img_heights[6], img_channels[6];
 
         stbi_set_flip_vertically_on_load(false);
         for (int i = 0; i < 6; i++)
         {
-            int width, height, nchannels;
-            unsigned char *data = stbi_load(paths[i].c_str(), &width, &height, &nchannels, 0);
+            unsigned char *data = stbi_load(paths[i].c_str(), &img_widths[i], &img_heights[i], &img_channels[i], 0);
             if (!data)
-                printf("Error : Failed to load texture '%s'\n", paths[i].c_str());
+                fprintf(stderr, "Error : Failed to load texture '%s'\n", paths[i].c_str());
 
-            //Determine the correct format for glTexImage2D based on the number of channels (nchannels).
+            //Determine the correct format for glTexImage2D based on the number of channels (img_channels).
             GLenum format;
-            if (nchannels == 1)
+            if (img_channels[i] == 1)
                 format = GL_RED; //Single-channel grayscale image.
-            else if (nchannels == 3)
+            else if (img_channels[i] == 3)
                 format = GL_RGB; //Classical 3-channel image (e.g. jpg).
-            else if (nchannels == 4)
+            else if (img_channels[i] == 4)
                 format = GL_RGBA; //4-channel image, i.e. RGB + alpha channel for opacity (e.g. png).
 
-            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+            glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, format, img_widths[i], img_heights[i], 0, format, GL_UNSIGNED_BYTE, data);
             stbi_image_free(data);
         }
+
+        //Check if all images have the same width, height, and channels. Otherwise the skybox may not render.
+        bool img_consistency = true;
+        for (int i = 1; i < 6; i++)
+        {
+            if (img_widths[i] != img_widths[0] || img_heights[i] != img_heights[0] || img_channels[i] != img_channels[0])
+            {
+                img_consistency = false;
+                break;
+            }
+        }
+        if (!img_consistency)
+            fprintf(stderr, "Error : All 6 images must have the same width, height, and channels.\n");
+
     }
 
     //Delete the skybox's resources.
@@ -442,7 +460,7 @@ public:
         glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
         glBindVertexArray(vao);
-        glDepthFunc(GL_LEQUAL); //Ensures that the skybox fragments will render behind everything else.
+        glDepthFunc(GL_LEQUAL); //Ensures that the skybox fragments will render behind everything else. (A bit dangerous to place it here. Be cautious.)
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
         glDepthFunc(GL_LESS); //Restore the default depth test function for rendering the rest of the scene.
 		glBindVertexArray(0);
@@ -450,45 +468,46 @@ public:
     }
 };
 
+
+
 class quadtex
 {
-    
-public:
+private:
     unsigned int vao, vbo;
-    std::vector<float> main_buffer;
 
+public:
     quadtex()
     {
-        //Hard-coded quad vertices for a screen-space quad.
-        main_buffer = {  //Positions.        //UVs.
-                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-                        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-
-                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-                         1.0f,  1.0f, 0.0f,  1.0f, 1.0f };
+        //Procedural.
+        float main_buffer[] = {  //Positions.         //UVs.
+                                 -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                                 -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+                                  1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+                                  
+                                 -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                                  1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+                                  1.0f,  1.0f, 0.0f,  1.0f, 1.0f };
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(main_buffer), &main_buffer, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0); //Positions.
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float))); //UVs.
         glEnableVertexAttribArray(1);
-        glBindVertexArray(0); //Unbind the vao.
+        glBindVertexArray(0);
     }
 
-    //Delete the quad-mesh.
+    //Delete the quadtex mesh.
     ~quadtex()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
     }
 
-    //Draw the quad-mesh (triangles).
+    //Draw the quadtex mesh (triangles).
     void draw_triangles(unsigned int framebuffer_tex)
     {
         glActiveTexture(GL_TEXTURE0);

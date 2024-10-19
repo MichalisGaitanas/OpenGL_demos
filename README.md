@@ -6,53 +6,17 @@ In order to follow the examples, it is essential that you know C++. We recommend
 OpenGL tutorials can be found in this website [https://learnopengl.com].
 
 In order to be able to run all the example codes, the following dependencies must be installed :
-1) C++ compiler. Choose either GNU's gcc (g++) or Microsoft's MSVC.
+1) C++ compiler. We use GNU's gcc (g++).
 2) OpenGL kernel. This is usually preinstalled in all operating systems.
 3) GLFW. This provides hardware functionality (keyboard, mouse, monitor, Xbox controller, etc...).
 4) GLEW. This is complicated... We need GLEW because OpenGL function pointers, especially for modern features, aren't loaded automatically by the system. GLEW
    dynamically loads these functions at runtime, allowing your application to use modern OpenGL across different hardware and drivers.
 5) GLM. Fast algebra-geometry functions needed for spatial rendering and transformations (dot product, cross product, matrix multiplication, etc...).
 
-Note : In case we want to add GUI rendering and plots (see below), ImGui and ImPlot must be installed as well. Here, the corresponding libraries are already present
-in the /imgui directory. Originally obtained. via : [https://github.com/ocornut/imgui] and [https://github.com/epezent/implot].
+In case we want to add GUI rendering and plots (see below), ImGui and ImPlot must be installed as well. Here, the corresponding libraries are already present
+in the /imgui directory. Originally obtained via : [https://github.com/ocornut/imgui] and [https://github.com/epezent/implot].
 
-
-Useful advice :
-
-Advice 1) First include GL/glew.h before any other OpenGL header. In case of ImGui/ImPlot usage, neglect this advice and see below.
-
-#include<GL/glew.h>
-#include<GLFW/glfw3.h>
-...
-
-
-
-Advice 2) Do not forget this piece of code before the glfw rendering loop.
-
-...
-glewExperimental = GL_TRUE;
-if (glewInit() != GLEW_OK)
-{
-    printf("Failed to initialize GLEW. Exiting...\n");
-    return -1;
-}
-...
-
-Advice 3) Assuming that the code uses ImGui/ImPlot libraries, you must first include the corresponding headers :
-
-#include"imgui.h"
-#include"imgui_impl_glfw.h"
-#include"imgui_impl_opengl3.h"
-
-#include"../imgui/implot.h" //Add this only if you intend to use ImPlot functions. Otherwise it is not necessary.
-
-//Then comes the following.
-
-#include<GL/glew.h>
-#include<GLFW/glfw3.h>
-
-
-Advice 4) In case you use g++ compiler, here's how you can compile and run the .cpp programs in the /examples directory :
+In case you use g++ compiler, here's how you can compile and run the .cpp programs in the /examples directory :
 
 -------------------------------------------------------------------------------------------------------------------------------------------------
 

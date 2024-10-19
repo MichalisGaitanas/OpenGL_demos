@@ -159,7 +159,8 @@ int main()
     shadsuz.set_vec3_uniform("light_col", light_col);
     shadsuz.set_vec3_uniform("mesh_col", mesh_col);
 
-    skybox sb("../images/skyboxes/landscape_2k/right.jpg",
+    //Make sure that the images have all the same size in pixels (e.g. 2048x2048, 500x500, etc..) AND channels.
+    skybox sb("../images/skyboxes/landscape_2k/untitled.jpg",.
               "../images/skyboxes/landscape_2k/left.jpg",
               "../images/skyboxes/landscape_2k/top.jpg",
               "../images/skyboxes/landscape_2k/bottom.jpg",
