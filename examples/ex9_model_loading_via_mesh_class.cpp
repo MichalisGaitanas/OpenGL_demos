@@ -67,8 +67,9 @@ int main()
     shader aster_shad("../shaders/vertex/trans_mvp.vert","../shaders/fragment/monochromatic.frag");
     aster_shad.use();
 
-    glm::vec3 aster_col = glm::vec3(0.5f,0.5f,0.5f);
-    aster_shad.set_vec3_uniform("mesh_col", aster_col);
+    glm::vec3 aster_col_triangle = glm::vec3(0.5f,0.5f,0.5f);
+    glm::vec3 aster_line_col = glm::vec3(0.0f,0.7f,0.8f);
+    glm::vec3 aster_point_col = glm::vec3(1.0f,0.0f,0.0f);
 
     //Virtual camera's settings.
     glm::vec3 cam_pos = glm::vec3(-1.0f,-1.0f,1.0f);
@@ -90,8 +91,17 @@ int main()
 
         model = glm::rotate(glm::mat4(1.0f), (0.5f*(float)glfwGetTime()), glm::vec3(1.0f,1.0f,1.0f));
         aster_shad.set_mat4_uniform("model", model);
-        
+        aster_shad.set_vec3_uniform("mesh_col", aster_col_triangle);
         aster.draw_triangles();
+        //Play with this.
+        model = glm::scale(model, glm::vec3(1.001f,1.001f,1.001f));
+        aster_shad.set_mat4_uniform("model", model);
+        aster_shad.set_vec3_uniform("mesh_col", aster_line_col);
+        aster.draw_lines();
+        model = glm::scale(model, glm::vec3(1.001f,1.001f,1.001f));
+        aster_shad.set_mat4_uniform("model", model);
+        aster_shad.set_vec3_uniform("mesh_col", aster_point_col);
+        aster.draw_points(3.0f);
 
         glfwSwapBuffers(window);
         glfwPollEvents();

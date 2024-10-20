@@ -12,10 +12,12 @@
 
 class meshvf
 {
-public:
-    unsigned int vao, vbo; //Vertex array and buffer object.
-    std::vector<float> main_buffer; //Final form of the geometry data to draw.
+private:
+    unsigned int vao, vbo, ebo; //Vertex array object, vertex buffer object, element (index) buffer object.
+    std::vector<float> verts; //Obj's vertices {x1,y1,z1, x2,y2,z2, ...}.
+    std::vector<unsigned int> inds; //Obj's indices {i11,i12,i13, i21,i22,i23, ...}.
 
+public:
     meshvf(const char *objpath)
     {
         std::ifstream fp;
@@ -26,75 +28,82 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        //Vertices (format : v x y z).
-        std::vector<std::vector<float>> verts;
         float x,y,z;
-
-        //Indices (format : f i1 i2 i3).
-        std::vector<std::vector<unsigned int>> inds;
         unsigned int i1,i2,i3;
-
         std::string line;
         while (getline(fp, line))
         {
             if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
-                const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "v %f %f %f", &x,&y,&z);
-                verts.push_back({x,y,z});
+                const char *temp_line = line.c_str();
+                sscanf(temp_line, "v %f %f %f", &x,&y,&z);
+                //Append the vertex coordinates to the verts vector.
+                verts.push_back(x);
+                verts.push_back(y);
+                verts.push_back(z);
             }
             else if (line[0] == 'f') //Then we have an index line.
             {
-                const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %u %u %u", &i1,&i2,&i3);
-                inds.push_back({i1-1, i2-1, i3-1}); //Subtract 1 to convert to 0-based indexing.
+                const char *temp_line = line.c_str();
+                sscanf(temp_line, "f %u %u %u", &i1,&i2,&i3);
+                //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
+                inds.push_back(i1-1);
+                inds.push_back(i2-1);
+                inds.push_back(i3-1);
             }
         }
-
-        //Now combine verts[][] and inds[][] to construct the main_buffer[]
-        //which will have all the data needed for drawing.
-        for (size_t i = 0; i < inds.size(); ++i)
-        {
-            main_buffer.push_back( verts[ inds[i][0] ][0] );
-            main_buffer.push_back( verts[ inds[i][0] ][1] );
-            main_buffer.push_back( verts[ inds[i][0] ][2] );
-
-            main_buffer.push_back( verts[ inds[i][1] ][0] );
-            main_buffer.push_back( verts[ inds[i][1] ][1] );
-            main_buffer.push_back( verts[ inds[i][1] ][2] );
-
-            main_buffer.push_back( verts[ inds[i][2] ][0] );
-            main_buffer.push_back( verts[ inds[i][2] ][1] );
-            main_buffer.push_back( verts[ inds[i][2] ][2] );
-        }
-        //Now main_buffer[] has the form : {x1,y1,z1, x2,y2,z2, x3,y3,z3, ... }, where
-        //consecutive triads of vertices form triangles-faces of the object to be rendered.
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
+        glGenBuffers(1, &ebo); //OpenGL expects the indices stored in the ebo to reference positions in the vertex buffer.
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0], GL_STATIC_DRAW);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size()*sizeof(unsigned int), &inds[0], GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-        glBindVertexArray(0); //Unbind the vao.
+        glBindVertexArray(0);
     }
 
-    //Delete the mesh.
+    //Cleanup memory.
     ~meshvf()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
     }
 
-    //Draw the mesh (triangles).
+    //Draw the mesh in the form of individual triangles.
     void draw_triangles()
     {
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/3));
+        glBindVertexArray(vao); //Bind the mesh's vao.
+        glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0); //Unbind the vao.
     }
+
+    //Draw the mesh in the form of individual lines (wireframe).
+    void draw_lines(const float line_width = 1.0f)
+    {
+        glBindVertexArray(vao);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE); //Switch to line mode for wireframe/edge only drawing.
+        glLineWidth(line_width);
+        glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL); //Restore fill mode.
+        glBindVertexArray(0);
+    }
+
+    //Draw the mesh in the form of individual points (vertices).
+    void draw_points(const float point_size = 2.0f)
+    {
+        glBindVertexArray(vao);
+        glPointSize(point_size);
+        glDrawElements(GL_POINTS, (int)inds.size(), GL_UNSIGNED_INT, 0); //Point mode.
+        glBindVertexArray(0);
+    }
 };
+
+
 
 class meshvfn
 {
