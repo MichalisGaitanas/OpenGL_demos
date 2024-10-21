@@ -13,23 +13,23 @@
 #include<cmath>
 #include<vector>
 
+#include"../include/shader.hpp"
+#include"../include/mesh.hpp"
+
 #ifdef _OPENMP
 #include<omp.h>
 #endif
 
+int win_width = 800, win_height = 600; //Initial glfw window size.
+unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
+
 void omp_setup_threads()
 {
 #ifdef _OPENMP
-    omp_set_dynamic(false);  //Obey to my following thread number request.
-    omp_set_num_threads(omp_get_max_threads()/2);  //Set threads to half of the max available of the machine.
+    omp_set_dynamic(false); //Obey to my following thread number request.
+    omp_set_num_threads(omp_get_max_threads()/2); //Occupy half of the machine's threads for the calculation of the lightcurve at each frame.
 #endif
 }
-
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-
-int win_width = 800, win_height = 600; //Initial glfw window size.
-unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
 
 //Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
 float calculate_brightness(unsigned int tex, int width_pix, int height_pix)
@@ -118,7 +118,7 @@ void framebuffer_size_callback(GLFWwindow *, int w, int h)
 
 int main()
 {
-    omp_setup_threads(); //Occupy half of the machine's threads for the calculation of the lightcurve at each frame.
+    omp_setup_threads();
 
     //Setup glfw stuff.
     glfwInit();
@@ -177,8 +177,6 @@ int main()
     meshvfn kleopatra("../obj/vfn/asteroids/kleopatra4k.obj");            bool show_kleopatra   = false;
     //Btw, it could be done with an array and then looooop, but whatever... I got bored.
 
-    bool show_any_asteroid = false; //Don't render anything initially, unless we decide to.
-
     //We use only 1 shader throughout the whole app, so we construct it and .use() it here, before the while() loop.
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
@@ -195,6 +193,12 @@ int main()
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f); //Camera aims at the origin of our 'world' coordsys.
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f); //Camera's local up direction vector (+z).
     float fov = 45.0f; //Camera's field of view. Exposed in the gui.
+
+    //Actual lightcure data.
+    std::vector<float> time_vector;
+    std::vector<float> brightness_vector;
+    const size_t max_size = 4000; //Set the maximum number of lightcurve points to retain.
+    bool show_realtime_lightcurve = false; //Exposed in the gui.
 
     //Transformation matrices that take us from the 3D 'world' coordsys to the 2D monitor pixeled coordsys.
     glm::mat4 projection, view, model;
@@ -215,12 +219,6 @@ int main()
     glEnable(GL_CULL_FACE); //Enable face culling.
     glClearColor(0.0f,0.0f,0.0f,1.0f); //Black background color.
 
-    //Actual lightcure data.
-    std::vector<float> time_vector;
-    std::vector<float> brightness_vector;
-    const size_t max_size = 4000; //Set the maximum number of lightcurve points to retain.
-    bool show_realtime_lightcurve = false; //Exposed in the gui.
-
     float t_delay_due_to_initializations = (float)glfwGetTime();
     while (!glfwWindowShouldClose(win))
     {
@@ -238,14 +236,14 @@ int main()
         view = glm::lookAt(cam_pos, cam_aim, cam_up);
         shad.set_mat4_uniform("view", view);
 
-        if (show_any_asteroid)
+        time_vector.push_back(t_now);
+        if (show_gerasimenko || show_bennu || show_didymain || show_itokawa || show_ryugu || show_toutatis || show_eros || show_kleopatra)
         {
             //Bind the hidden framebuffer and render the scene there.
             glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             model = glm::rotate(glm::mat4(1.0f), glm::radians(20.0f*t_now), glm::vec3(0.0f,0.0f,1.0f));
             shad.set_mat4_uniform("model", model);
-
             if (show_gerasimenko)
                 gerasimenko.draw_triangles();
             else if (show_bennu)
@@ -263,12 +261,10 @@ int main()
             else if (show_kleopatra)
                 kleopatra.draw_triangles();
 
-            //The scene is now rendered in the hidden (auxiliary) framebuffer. It will not be displayed on the monitor.
-
+            //The scene is now rendered in the hidden framebuffer. It will not be displayed on the monitor.
             //With that scene rendered, let's calculate the lightcurve data :
-            time_vector.push_back(t_now);
             brightness_vector.push_back(calculate_brightness(tex, win_width, win_height));
-            //The calculation of the lightvurve is over for this frame.
+            //The calculation of the lightvurve is over for this frame. The 'backend' hidden framebuffer holds the important info.
 
             //If we want to display the scene in the monitor as well (the default framebuffer), then :
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -289,13 +285,9 @@ int main()
                 eros.draw_triangles();
             else if (show_kleopatra)
                 kleopatra.draw_triangles();
-            //We could have skipped this drawing part. The 'backend' hidden framebuffer holds the important info.
         }
         else //This means that no asteroid is chosen, hence total blackness in the framebuffer, hence zerooooooo.
-        {
-            time_vector.push_back(t_now);
             brightness_vector.push_back(0.0f);
-        }
 
         //Prevent the data will not grow unstopably. When the vectors reach the desired capacity (max_size),
         //then for every new data point entering the vectors, the 'firstest' one shall be deleted, maintaining a constant size.
@@ -304,8 +296,6 @@ int main()
             time_vector.erase(time_vector.begin());
             brightness_vector.erase(brightness_vector.begin());
         }
-
-        //Done.
 
         //Render gui stuff.
 
@@ -338,93 +328,21 @@ int main()
 
         //Choose asteroid algorithm.
         if (ImGui::Checkbox("Gerasimenko", &show_gerasimenko))
-        {
-            show_any_asteroid = true;
-            show_bennu = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Bennu", &show_bennu))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Didymain", &show_didymain))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_bennu = show_itokawa = show_ryugu = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Itokawa", &show_itokawa))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_didymain = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_bennu = show_didymain = show_ryugu = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Ryugu", &show_ryugu))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_toutatis = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Toutatis", &show_toutatis))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_eros = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_ryugu = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Eros", &show_eros))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_kleopatra = false;
-        }
+            show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_kleopatra = false;
         if (ImGui::Checkbox("Kleopatra", &show_kleopatra))
-        {
-            show_any_asteroid = true;
-            show_gerasimenko = false;
-            show_bennu = false;
-            show_didymain = false;
-            show_itokawa = false;
-            show_ryugu = false;
-            show_toutatis = false;
-            show_eros = false;
-        }
+            show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_eros = false;
 
         if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros && !show_kleopatra)
         {
@@ -432,7 +350,6 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            show_any_asteroid = false;
         }
 
         ImGui::Dummy(ImVec2(0.0f,15.0f));
@@ -456,7 +373,7 @@ int main()
             ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
             if (ImPlot::BeginPlot("Lightcurve", plot_win_size))
             {
-                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(1.0f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
+                ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
                 ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
                 ImPlot::SetupAxisLimits(ImAxis_X1, t_now-70.0f, t_now, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
                 ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
