@@ -6,6 +6,7 @@
 #include<string>
 #include<fstream>
 #include<vector>
+//#include<unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION //This must happen only once.
 #include"stb_image.h"
@@ -18,13 +19,13 @@ private:
     std::vector<unsigned int> inds; //Obj's indices {i11,i12,i13, i21,i22,i23, ...}.
 
 public:
-    meshvf(const char *objpath)
+    meshvf(const char *obj_path)
     {
         std::ifstream fp;
-        fp.open(objpath);
+        fp.open(obj_path);
         if (!fp.is_open())
         {
-            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
             exit(EXIT_FAILURE);
         }
 
@@ -37,7 +38,6 @@ public:
             {
                 const char *temp_line = line.c_str();
                 sscanf(temp_line, "v %f %f %f", &x,&y,&z);
-                //Append the vertex coordinates to the verts vector.
                 verts.push_back(x);
                 verts.push_back(y);
                 verts.push_back(z);
@@ -107,51 +107,47 @@ public:
 
 class meshvfn
 {
-public:
+private:
     unsigned int vao, vbo; //Vertex array and buffer object.
+    std::vector<std::vector<float>> verts; //Vertices (format : v x y z).
+    std::vector<std::vector<float>> norms; //Normals (format : vn nx ny nz).
+    std::vector<std::vector<unsigned int>> inds; //Indices (format : f i11//i12 i21//i22 i31//i32).
     std::vector<float> main_buffer; //Final form of the geometry data to draw.
 
-    meshvfn(const char *objpath)
+public:
+    meshvfn(const char *obj_path)
     {
         std::ifstream fp;
-        fp.open(objpath);
+        fp.open(obj_path);
         if (!fp.is_open())
         {
-            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
             exit(EXIT_FAILURE);
         }
 
-        //Vertices (format : v x y z).
-        std::vector<std::vector<float>> verts;
         float x,y,z;
-
-        //Normals (format : vn nx ny nz).
-        std::vector<std::vector<float>> norms;
         float nx,ny,nz;
-
-        //Indices (format : f i11//i12 i21//i22 i31//i32).
-        std::vector<std::vector<unsigned int>> inds;
         unsigned int i11,i12, i21,i22, i31,i32;
-
         std::string line;
         while (getline(fp, line))
         {
             if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
-                const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "v %f %f %f", &x,&y,&z);
+                const char *temp_line = line.c_str();
+                sscanf(temp_line, "v %f %f %f", &x,&y,&z);
                 verts.push_back({x,y,z});
             }
             else if (line[0] == 'v' && line[1] == 'n') //Then we have a normal line.
             {
-                const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "vn %f %f %f", &nx,&ny,&nz);
+                const char *temp_line = line.c_str();
+                sscanf(temp_line, "vn %f %f %f", &nx,&ny,&nz);
                 norms.push_back({nx,ny,nz});
             }
             else if (line[0] == 'f') //Then we have an index line.
             {
-                const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %u//%u %u//%u %u//%u", &i11,&i12, &i21,&i22, &i31,&i32);
+                const char *temp_line = line.c_str();
+                sscanf(temp_line, "f %u//%u %u//%u %u//%u", &i11,&i12, &i21,&i22, &i31,&i32);
+                //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
                 inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
             }
         }
@@ -160,26 +156,16 @@ public:
         //which will have everything needed in the correct order for rendering.
         for (size_t i = 0; i < inds.size(); ++i)
         {
-            main_buffer.push_back( verts[ inds[i][0] ][0] );
-            main_buffer.push_back( verts[ inds[i][0] ][1] );
-            main_buffer.push_back( verts[ inds[i][0] ][2] );
-            main_buffer.push_back( norms[ inds[i][1] ][0] );
-            main_buffer.push_back( norms[ inds[i][1] ][1] );
-            main_buffer.push_back( norms[ inds[i][1] ][2] );
+            for (int j = 0; j < 3; ++j)
+            {
+                main_buffer.push_back( verts[ inds[i][2*j] ][0] );
+                main_buffer.push_back( verts[ inds[i][2*j] ][1] );
+                main_buffer.push_back( verts[ inds[i][2*j] ][2] );
 
-            main_buffer.push_back( verts[ inds[i][2] ][0] );
-            main_buffer.push_back( verts[ inds[i][2] ][1] );
-            main_buffer.push_back( verts[ inds[i][2] ][2] );
-            main_buffer.push_back( norms[ inds[i][3] ][0] );
-            main_buffer.push_back( norms[ inds[i][3] ][1] );
-            main_buffer.push_back( norms[ inds[i][3] ][2] );
-
-            main_buffer.push_back( verts[ inds[i][4] ][0] );
-            main_buffer.push_back( verts[ inds[i][4] ][1] );
-            main_buffer.push_back( verts[ inds[i][4] ][2] );
-            main_buffer.push_back( norms[ inds[i][5] ][0] );
-            main_buffer.push_back( norms[ inds[i][5] ][1] );
-            main_buffer.push_back( norms[ inds[i][5] ][2] );
+                main_buffer.push_back( norms[ inds[i][2*j+1] ][0] );
+                main_buffer.push_back( norms[ inds[i][2*j+1] ][1] );
+                main_buffer.push_back( norms[ inds[i][2*j+1] ][2] );
+            }
         }
         //main_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }.
 
@@ -192,10 +178,10 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-        glBindVertexArray(0); //Unbind the vao.
+        glBindVertexArray(0);
     }
 
-    //Delete the mesh.
+    //Delete the mesh's memory resources.
     ~meshvfn()
     {
         glDeleteVertexArrays(1, &vao);
@@ -206,39 +192,158 @@ public:
     void draw_triangles()
     {
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/6));
-        glBindVertexArray(0); //Unbind the vao.
+        glDrawArrays(GL_TRIANGLES, 0, (int)main_buffer.size()/6);
+        glBindVertexArray(0);
     }
 };
 
-class meshvft
+/*
+class meshvfn_ebo
 {
-public:
-    unsigned int vao, vbo, tao; //Vertex array, buffer and texture 'array object' (there's no tao officialy, but the name merges well with vao and vbo).
-    std::vector<float> main_buffer; //Final form of the geometry data to draw.
+private:
+    unsigned int vao, vbo, ebo; // Vertex Array, Vertex Buffer, and Element Buffer Objects
+    std::vector<float> main_buffer; // Interleaved vertex and normal data
+    std::vector<unsigned int> indices; // Element buffer indices
 
-    meshvft(const char *objpath, const char *imgpath)
+public:
+    meshvfn_ebo(const char *obj_path)
     {
         std::ifstream fp;
-        fp.open(objpath);
+        fp.open(obj_path);
         if (!fp.is_open())
         {
-            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", objpath);
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
             exit(EXIT_FAILURE);
         }
 
-        //Vertices (format : v x y z)
-        std::vector<std::vector<float>> verts;
+        // Temporary storage for vertices, normals, and indices
+        std::vector<std::vector<float>> verts; // {x, y, z}
+        std::vector<std::vector<float>> norms; // {nx, ny, nz}
+        std::unordered_map<std::string, unsigned int> uniqueVertexMap; // To store unique vertex-normal combos
+
+        float x, y, z;
+        float nx, ny, nz;
+        unsigned int vi1, vi2, vi3, ni1, ni2, ni3;
+        std::string line;
+
+        while (getline(fp, line))
+        {
+            if (line[0] == 'v' && line[1] == ' ') // Vertex line
+            {
+                sscanf(line.c_str(), "v %f %f %f", &x, &y, &z);
+                verts.push_back({x, y, z});
+            }
+            else if (line[0] == 'v' && line[1] == 'n') // Normal line
+            {
+                sscanf(line.c_str(), "vn %f %f %f", &nx, &ny, &nz);
+                norms.push_back({nx, ny, nz});
+            }
+            else if (line[0] == 'f') // Face line
+            {
+                sscanf(line.c_str(), "f %u//%u %u//%u %u//%u", &vi1, &ni1, &vi2, &ni2, &vi3, &ni3);
+
+                processVertex(verts, norms, vi1-1, ni1-1, uniqueVertexMap); // vi1, ni1
+                processVertex(verts, norms, vi2-1, ni2-1, uniqueVertexMap); // vi2, ni2
+                processVertex(verts, norms, vi3-1, ni3-1, uniqueVertexMap); // vi3, ni3
+            }
+        }
+
+        // Generate VAO, VBO, and EBO
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, main_buffer.size() * sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
+
+        // Position attribute
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glEnableVertexAttribArray(0);
+
+        // Normal attribute
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glEnableVertexAttribArray(1);
+
+        glBindVertexArray(0); // Unbind VAO
+    }
+
+    // Destructor to cleanup OpenGL resources
+    ~meshvfn_ebo()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
+    }
+
+    // Draw the mesh using glDrawElements
+    void draw_triangles()
+    {
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, (int)indices.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0); // Unbind VAO
+    }
+
+private:
+    // Helper function to process each vertex-normal pair
+    void processVertex(
+        const std::vector<std::vector<float>>& verts,
+        const std::vector<std::vector<float>>& norms,
+        unsigned int vertexIndex,
+        unsigned int normalIndex,
+        std::unordered_map<std::string, unsigned int>& uniqueVertexMap)
+    {
+        // Create a key for the current vertex-normal pair
+        std::string key = std::to_string(vertexIndex) + "//" + std::to_string(normalIndex);
+
+        if (uniqueVertexMap.find(key) == uniqueVertexMap.end()) {
+            // This is a new vertex-normal combination, so store it
+            main_buffer.push_back(verts[vertexIndex][0]);
+            main_buffer.push_back(verts[vertexIndex][1]);
+            main_buffer.push_back(verts[vertexIndex][2]);
+            main_buffer.push_back(norms[normalIndex][0]);
+            main_buffer.push_back(norms[normalIndex][1]);
+            main_buffer.push_back(norms[normalIndex][2]);
+
+            // Assign a new index for this unique vertex-normal combo
+            unsigned int newIndex = (unsigned int)(main_buffer.size() / 6 - 1);
+            uniqueVertexMap[key] = newIndex;
+            indices.push_back(newIndex);
+        } else {
+            // This vertex-normal pair already exists, use its existing index
+            indices.push_back(uniqueVertexMap[key]);
+        }
+    }
+};
+*/
+
+class meshvft
+{
+private:
+    unsigned int vao, vbo, tao; //Vertex array, buffer and texture 'array object' (there's no tao officialy, but the name suits well to vao and vbo).
+    std::vector<std::vector<float>> verts; //Vertices (format : v x y z)
+    std::vector<std::vector<float>> uvs; //Texture (format : vt u v).
+    std::vector<std::vector<unsigned int>> inds; //Indices (format : f i11/i12 i21/i22 i31/i32.
+    std::vector<float> main_buffer; //Final form of the geometry data to draw.
+
+public:
+
+    meshvft(const char *obj_path, const char *img_path)
+    {
+        std::ifstream fp;
+        fp.open(obj_path);
+        if (!fp.is_open())
+        {
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
+            exit(EXIT_FAILURE);
+        }
+
         float x,y,z;
-
-        //Texture (format : vt u v).
-        std::vector<std::vector<float>> uvs;
         float u,v;
-
-        //Indices (format : f i11/i12 i21/i22 i31/i32.
-        std::vector<std::vector<unsigned int>> inds;
         unsigned int i11,i12, i21,i22, i31,i32;
-
         std::string line;
         while (getline(fp, line))
         {
@@ -258,6 +363,7 @@ public:
             {
                 const char *tmp_line = line.c_str();
                 sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &i11,&i12, &i21,&i22, &i31,&i32);
+                //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
                 inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
             }
         }
@@ -266,26 +372,19 @@ public:
         //which will have all the main_buffer needed for drawing.
         for (size_t i = 0; i < inds.size(); ++i)
         {
-            main_buffer.push_back( verts[ inds[i][0] ][0] );
-            main_buffer.push_back( verts[ inds[i][0] ][1] );
-            main_buffer.push_back( verts[ inds[i][0] ][2] );
-            main_buffer.push_back(   uvs[ inds[i][1] ][0] );
-            main_buffer.push_back(   uvs[ inds[i][1] ][1] );
+            for (int j = 0; j < 3; ++j)
+            {
+                main_buffer.push_back( verts[ inds[i][2*j] ][0] );
+                main_buffer.push_back( verts[ inds[i][2*j] ][1] );
+                main_buffer.push_back( verts[ inds[i][2*j] ][2] );
 
-            main_buffer.push_back( verts[ inds[i][2] ][0] );
-            main_buffer.push_back( verts[ inds[i][2] ][1] );
-            main_buffer.push_back( verts[ inds[i][2] ][2] );
-            main_buffer.push_back(   uvs[ inds[i][3] ][0] );
-            main_buffer.push_back(   uvs[ inds[i][3] ][1] );
-
-            main_buffer.push_back( verts[ inds[i][4] ][0] );
-            main_buffer.push_back( verts[ inds[i][4] ][1] );
-            main_buffer.push_back( verts[ inds[i][4] ][2] );
-            main_buffer.push_back(   uvs[ inds[i][5] ][0] );
-            main_buffer.push_back(   uvs[ inds[i][5] ][1] );
+                main_buffer.push_back( uvs[ inds[i][2*j+1] ][0] );
+                main_buffer.push_back( uvs[ inds[i][2*j+1] ][1] );
+            }
         }
         //main_buffer[] has now the form : {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2 ... }
 
+        //Tell OpenGL how to process the mesh data in the gpu.
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
@@ -295,17 +394,7 @@ public:
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-        glBindVertexArray(0); //Unbind the vao.
-
-        //Load the image texture.
-        int imgwidth, imgheight, imgchannels;
-        stbi_set_flip_vertically_on_load(true);
-        unsigned char *imgdata = stbi_load(imgpath, &imgwidth, &imgheight, &imgchannels, 0);
-        if (!imgdata)
-        {
-            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", imgpath);
-            exit(EXIT_FAILURE);
-        }
+        glBindVertexArray(0);
 
         //Tell OpenGL how to apply the texture on the mesh.
         glGenTextures(1, &tao);
@@ -316,21 +405,31 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures (e.g. grayscale).
 
-        //Determine the correct format for glTexImage2D based on the number of channels (imgchannels).
+        //Load the image texture.
+        int img_width, img_height, img_channels;
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char *img_data = stbi_load(img_path, &img_width, &img_height, &img_channels, 0);
+        if (!img_data)
+        {
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", img_path);
+            exit(EXIT_FAILURE);
+        }
+
+        //Determine the correct format based on the number of channels (img_channels).
         GLenum format;
-        if (imgchannels == 1)
-            format = GL_RED; //Single-channel grayscale image.
-        else if (imgchannels == 3)
+        if (img_channels == 1)
+            format = GL_RED; //Single-channel (grayscale image).
+        else if (img_channels == 3)
             format = GL_RGB; //Classical 3-channel image (e.g. jpg).
-        else if (imgchannels == 4)
+        else if (img_channels == 4)
             format = GL_RGBA; //4-channel image, i.e. RGB + alpha channel for opacity (e.g. png).
 
-        glTexImage2D(GL_TEXTURE_2D, 0, format, imgwidth, imgheight, 0, format, GL_UNSIGNED_BYTE, imgdata);
+        glTexImage2D(GL_TEXTURE_2D, 0, format, img_width, img_height, 0, format, GL_UNSIGNED_BYTE, img_data);
         glGenerateMipmap(GL_TEXTURE_2D);
-        stbi_image_free(imgdata); //Free image resources.
+        stbi_image_free(img_data); //Free image resources.
     }
 
-    //Delete the mesh.
+    //Cleanup memory.
     ~meshvft()
     {
         glDeleteVertexArrays(1, &vao);
@@ -344,9 +443,9 @@ public:
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tao);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)(main_buffer.size()/5));
-        glBindVertexArray(0); //Unbind the vao.
-        glBindTexture(GL_TEXTURE_2D, 0); //Unbind the tao.
+        glDrawArrays(GL_TRIANGLES, 0, (int)main_buffer.size()/5);
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 };
 
@@ -415,7 +514,7 @@ public:
         glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures (e.g. grayscale).
         //glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
-        //Skybox's expected image names. Do not change their order.
+        //Skybox's expected image names. Do not change their order!
         std::string paths[6] = { right_img_path, left_img_path, top_img_path, bottom_img_path, front_img_path, back_img_path };
         int img_widths[6], img_heights[6], img_channels[6];
 

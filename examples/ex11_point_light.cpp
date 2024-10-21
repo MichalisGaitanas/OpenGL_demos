@@ -69,7 +69,7 @@ int main()
     shader lamp_shad("../shaders/vertex/trans_mvp.vert", "../shaders/fragment/monochromatic.frag");
 
     meshvfn cube_mesh("../obj/vfn/cube2x2x2.obj");
-    shader  cube_shad("../shaders/vertex/trans_mvpn.vert", "../shaders/fragment/point_light_ads.frag");
+    shader cube_shad("../shaders/vertex/trans_mvpn.vert", "../shaders/fragment/point_light_ads.frag");
  
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 lamp_col = glm::vec3(1.0f,1.0f,1.0f);

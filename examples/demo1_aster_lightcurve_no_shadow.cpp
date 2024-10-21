@@ -29,20 +29,20 @@ void omp_setup_threads()
 #include"../include/mesh.hpp"
 
 int win_width = 800, win_height = 600; //Initial glfw window size.
-unsigned int hidden_framebuffer, rbo, rendered_texture;
+unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
 
-//Calculate brightness (lightcurve) from the rendered scene of the hidden framebuffer.
-float calculate_brightness(unsigned int texture_id, int width, int height)
+//Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
+float calculate_brightness(unsigned int tex, int width_pix, int height_pix)
 {
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    std::vector<float> pixels(width*height);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    std::vector<float> pixels(width_pix*height_pix);
     
     //Read the pixels from the texture (only the red channel, i.e. grayscale color).
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
     
     //Sum up the intensity values stored in the red channel.
 #ifdef _OPENMP
-    size_t i, total_pixels = width*height;
+    int i, total_pixels = width_pix*height_pix;
     float brightness = 0.0f;
     #pragma omp parallel for firstprivate(total_pixels)\
                              private(i)\
@@ -53,68 +53,67 @@ float calculate_brightness(unsigned int texture_id, int width, int height)
         brightness += pixels[i];
 #else
     float brightness = 0.0f;
-    for (int i = 0; i < width*height; ++i)
+    for (int i = 0; i < width_pix*height_pix; ++i)
         brightness += pixels[i];
 #endif
 
-
-    return brightness/(width*height); //Normalize the brightness.
+    return brightness/(width_pix*height_pix); //Normalize the brightness.
 }
 
-//Create a new auxiliary hidden framebuffer, that we will use to perform the lightcurve calculation.
-void setup_hidden_framebuffer(int width, int height)
+//Create a new auxiliary hidden framebuffer (fbo), that we will use to perform the lightcurve calculation.
+void setup_fbo(int width_pix, int height_pix)
 {
-    //If the hidden framebuffer was already created, delete it first.
-    if (hidden_framebuffer)
+    //If memory resources are already allocated, delete them first.
+    if (fbo)
     {
-        glDeleteFramebuffers(1, &hidden_framebuffer);
-        glDeleteTextures(1, &rendered_texture);
+        glDeleteFramebuffers(1, &fbo);
+        glDeleteTextures(1, &tex);
         glDeleteRenderbuffers(1, &rbo);
     }
 
     //Create a framebuffer object (fbo). This is basically similar as the process of creating vbo, vao, ebo, etc...
-    glGenFramebuffers(1, &hidden_framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    //Create a texture to render to.
-    glGenTextures(1, &rendered_texture);
-    glBindTexture(GL_TEXTURE_2D, rendered_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
+    //Create a texture (tex) to render to.
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     //Attach the texture to the hidden framebuffer.
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
     
     //Create a renderbuffer for depth and stencil.
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_pix, height_pix);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        printf("Hidden framebuffer not complete!\n");
+        printf("Warning : Framebuffer (fbo) is not completed.\n");
 
-    //The hidden framebuffer is now created. We refer to it from now via binding or unbinding.
+    //The hidden framebuffer is now created. We refer to it from now by binding/unbinding.
 
     //Unbind the hidden framebuffer to render to the default one (0).
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 //When a keyboard key is pressed, do the following :
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(win, true); //Kill the game loop when 'esc' is released.
 }
 
 //When the framebuffer is resized, do the following :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
-    setup_hidden_framebuffer(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
+    setup_fbo(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
 int main()
@@ -167,7 +166,7 @@ int main()
     imstyle.FrameRounding = 5.0f;
     imstyle.WindowRounding = 5.0f;
 
-    //Load all the asteroid meshes. All are exposed in the gui.
+    //Pre-load all the asteroid meshes. All are exposed in the gui.
     meshvfn gerasimenko("../obj/vfn/asteroids/gerasimenko256k.obj");      bool show_gerasimenko = false;
     meshvfn bennu("../obj/vfn/asteroids/bennu196k.obj");                  bool show_bennu       = false;
     meshvfn didymain("../obj/vfn/asteroids/didymos/didymain2019.obj");    bool show_didymain    = false;
@@ -191,7 +190,7 @@ int main()
     
     glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f); //Asteroid color (white).
 
-    //Camera parameters. We don't use the camera class in this example to make things simpler.
+    //Camera parameters.
     glm::vec3 cam_pos = glm::vec3(0.0f,-10.0f,0.0f); //Camera's position in 'world' coordinates. Exposed in the gui.
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f); //Camera aims at the origin of our 'world' coordsys.
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f); //Camera's local up direction vector (+z).
@@ -210,7 +209,7 @@ int main()
     shad.set_vec3_uniform("mesh_col", mesh_col);
 
     //Create the (clean) hidden framebuffer.
-    setup_hidden_framebuffer(win_width, win_height);
+    setup_fbo(win_width, win_height);
 
     glEnable(GL_DEPTH_TEST); //Automatic depth test.
     glEnable(GL_CULL_FACE); //Enable face culling.
@@ -242,7 +241,7 @@ int main()
         if (show_any_asteroid)
         {
             //Bind the hidden framebuffer and render the scene there.
-            glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             model = glm::rotate(glm::mat4(1.0f), glm::radians(20.0f*t_now), glm::vec3(0.0f,0.0f,1.0f));
             shad.set_mat4_uniform("model", model);
@@ -268,7 +267,7 @@ int main()
 
             //With that scene rendered, let's calculate the lightcurve data :
             time_vector.push_back(t_now);
-            brightness_vector.push_back(calculate_brightness(rendered_texture, win_width, win_height));
+            brightness_vector.push_back(calculate_brightness(tex, win_width, win_height));
             //The calculation of the lightvurve is over for this frame.
 
             //If we want to display the scene in the monitor as well (the default framebuffer), then :
@@ -429,7 +428,7 @@ int main()
 
         if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros && !show_kleopatra)
         {
-            glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+            glBindFramebuffer(GL_FRAMEBUFFER, fbo);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glBindFramebuffer(GL_FRAMEBUFFER, 0);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

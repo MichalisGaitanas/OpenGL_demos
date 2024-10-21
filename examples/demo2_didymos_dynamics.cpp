@@ -595,14 +595,14 @@ void event_tick(GLFWwindow *win)
 }
 
 //For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow *window, int button, int action, int /*mods*/)
 {
     //Toggle cursor visibility via the mouse middle click.
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
@@ -619,7 +619,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 //When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+void cursor_pos_callback(GLFWwindow */*win*/, double xpos, double ypos)
 {
     if (cursor_visible)
         return;
@@ -641,14 +641,14 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 }
 
 //When the mouse scrolls, do the following :
-void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow */*win*/, double /*xoffset*/, double yoffset)
 {
     if (!cursor_visible)
         cam.zoom((double)yoffset);
 }
 
 //When the framebuffer resizes, do the following :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
     win_width = w;
     win_height = h;
