@@ -64,14 +64,14 @@ void event_tick(GLFWwindow *win)
 }
 
 //For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow* window, int button, int action, int)
 {
     //Toggle cursor visibility via the mouse right click.
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
@@ -88,7 +88,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 //When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+void cursor_pos_callback(GLFWwindow *, double xpos, double ypos)
 {
     if (cursor_visible)
         return;
@@ -109,14 +109,16 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
     cam.rotate(xoffset, yoffset);
 }
 
-void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow *, double, double yoffset)
 {
     if (!cursor_visible)
         cam.zoom((float)yoffset);
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
@@ -182,15 +184,14 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-    float t1 = 0.0f, t2;
-
+    float t0 = 0.0f, tnow;
     while (!glfwWindowShouldClose(window)) //Game loop.
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         
-        t2 = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
-        time_tick = t2 - t1;
-        t1 = t2;
+        tnow = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
+        time_tick = tnow - t0;
+        t0 = tnow;
 
         event_tick(window);
 

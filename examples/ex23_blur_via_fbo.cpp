@@ -61,13 +61,13 @@ void setup_framebuffer(int width, int height)
     glBindFramebuffer(GL_FRAMEBUFFER, 0); //Unbind the fbo.
 }
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
     win_width = w;
     win_height = h;
@@ -128,6 +128,7 @@ int main()
     glm::mat4 projection, view, model;
 
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_CULL_FACE);
     glClearColor(0.0f,0.3f,0.5f,1.0f);
     while (!glfwWindowShouldClose(window))
     {

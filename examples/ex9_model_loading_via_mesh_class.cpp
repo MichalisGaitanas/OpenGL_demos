@@ -11,14 +11,16 @@
 int win_width = 1000, win_height = 800;
 const char *win_label = "Mesh loading";
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);

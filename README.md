@@ -2,11 +2,11 @@
 
 This project contains some examples-tutorials-demos of OpenGL. The codes are written in C++.
 
-In order to follow the examples, it is essential that you know C++. We recommend this website [https://www.learncpp.com].
+In order to follow the examples, it is essential that you know some C++. We recommend this website [https://www.learncpp.com].
 OpenGL tutorials can be found in this website [https://learnopengl.com].
 
-In order to be able to run all the example codes, the following dependencies must be installed :
-1) C++ compiler. We use GNU's gcc (g++).
+In order to to run all the example codes, the following dependencies must be installed :
+1) C++ compiler. We use GNU's gcc/g++.
 2) OpenGL kernel. This is usually preinstalled in all operating systems.
 3) GLFW. This provides hardware functionality (keyboard, mouse, monitor, Xbox controller, etc...).
 4) GLEW. This is complicated... We need GLEW because OpenGL function pointers, especially for modern features, aren't loaded automatically by the system. GLEW
@@ -16,11 +16,13 @@ In order to be able to run all the example codes, the following dependencies mus
 In case we want to add GUI rendering and plots (see below), ImGui and ImPlot must be installed as well. Here, the corresponding libraries are already present
 in the /imgui directory. Originally obtained via : [https://github.com/ocornut/imgui] and [https://github.com/epezent/implot].
 
-In case you use g++ compiler, here's how you can compile and run the .cpp programs in the /examples directory :
+In case you use GNU's gcc/g++ compiler, here's how you can compile and run the .cpp programs in the /examples directory :
 
 -------------------------------------------------------------------------------------------------------------------------------------------------
 
-Windows :
+Windows : 
+
+'Add to path' the compiler, so you can execute commands in the cmd.
 
 Assuming that the example does NOT use ImGui/ImPlot stuff :
 
@@ -37,6 +39,8 @@ a) g++ -c *.cpp
 b) ar rcs libimgui.a *o
 Library is created.
 Then, for every new code : g++ example.cpp -o example.exe -L (PATH_TO_OPENGL_DEMOS)\imgui -limgui -lopengl32 -lglfw3 -lglew32
+
+Be strict with the compiler and add the flags -Wall -Wpedantic -Wextra -Werror 
 
 -------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -55,5 +59,7 @@ In cmd : g++ example.cpp -o example (PATH_TO_OPENGL_DEMOS)/imgui/*.cpp -I (PATH_
 The steps for precompiling ImGui/ImPlot, are the same with the Windows steps.
 
 Then, for every new code : g++ example.cpp -o example -L (PATH_TO_OPENGL_DEMOS)/imgui -limgui -lGL -lglfw -lGLEW
+
+Be strict with the compiler and add the flags -Wall -Wpedantic -Wextra -Werror
 
 -------------------------------------------------------------------------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 #include<GLFW/glfw3.h>
 #include<cstdio>
 
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {

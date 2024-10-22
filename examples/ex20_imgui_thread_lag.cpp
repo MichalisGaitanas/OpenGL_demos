@@ -13,20 +13,21 @@
 
 int win_width = 800, win_height = 600;
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+//Flag to indicate if func1 is running. DON'T use simple boolean variable for this job!
+//Atomic bool will prevent race conditions, whereas simple bool will not.
+std::atomic<bool> is_func_running(false);
+
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
 }
 
-//Flag to indicate if func1 is running. DON'T use simple boolean variable for this job!
-//Atomic bool will prevent race conditions, whereas simple bool will not.
-std::atomic<bool> is_func_running(false);
 void func()
 {
     is_func_running = true;
     for (double z = 0.0; z < 20000.0; z += 0.001)
-        double y = exp(sin(sqrt(z*fabs(z)+ cos(z))));
+        (void)exp(sin(sqrt(z*fabs(z)+ cos(z))));
     is_func_running = false;
     return;
 }

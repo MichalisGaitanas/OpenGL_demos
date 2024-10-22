@@ -9,14 +9,14 @@
 
 #include"../include/shader.hpp"
 
-const double pi = 3.141592653589793238462;
+constexpr double pi = 3.141592653589793238462;
 
 int win_width = 800, win_height = 800;
 
 bool motion = false;
 
 //When a keyboard key is pressed :
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
@@ -25,8 +25,12 @@ void key_callback(GLFWwindow *window, int key, int scancode, int action, int mod
 }
 
 //When the framebuffer is resized :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
+    //We don't want the app to crash if the glfw window is minimized for example...
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
+
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
@@ -51,7 +55,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "3D or 2D?", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "3D or 2D? (press space)", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");

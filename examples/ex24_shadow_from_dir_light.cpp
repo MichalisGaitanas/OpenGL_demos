@@ -102,14 +102,14 @@ void event_tick(GLFWwindow *win)
 }
 
 //For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
 {
     //Toggle cursor visibility via the mouse right click.
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
@@ -126,7 +126,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 //When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+void cursor_pos_callback(GLFWwindow */*win*/, double xpos, double ypos)
 {
     if (cursor_visible)
         return;
@@ -148,15 +148,17 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 }
 
 //When the mouse wheel scrolls, do the following :
-void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow */*win*/, double /*xoffset*/, double yoffset)
 {
     if (!cursor_visible)
         cam.zoom((float)yoffset);
 }
 
 //When the framebuffer resizes, do the following :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
@@ -250,12 +252,12 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glClearColor(0.15f,0.3f,0.6f,1.0f);
-    float t1 = 0.0f, t2;
+    float t0 = 0.0f, tnow;
     while (!glfwWindowShouldClose(window))
     {   
-        t2 = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
-        time_tick = t2 - t1;
-        t1 = t2;
+        tnow = (float)glfwGetTime(); //Elapsed time [sec] since glfwInit().
+        time_tick = tnow - t0;
+        t0 = tnow;
         event_tick(window);
 
         /* Directional light definition in the code. */        
@@ -295,7 +297,7 @@ int main()
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,12.0f,3.0f));
             shad_depth.set_mat4_uniform("model", model);
             didymain.draw_triangles();
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(t2),11.0f,3.0f));
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(tnow),11.0f,3.0f));
             shad_depth.set_mat4_uniform("model", model);
             dimorphos.draw_triangles();
         model = glm::translate(glm::mat4(1.0f), glm::vec3(-13.0f,2.0f,2.0f));
@@ -336,7 +338,7 @@ int main()
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,12.0f,3.0f));
             shad_dir_light_with_shadow.set_mat4_uniform("model", model);
             didymain.draw_triangles();
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(t2),11.0f,3.0f));
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(1.5f*sin(tnow),11.0f,3.0f));
             shad_dir_light_with_shadow.set_mat4_uniform("model", model);
             dimorphos.draw_triangles();
         model = glm::translate(glm::mat4(1.0f), glm::vec3(-13.0f,2.0f,2.0f));

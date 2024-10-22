@@ -12,13 +12,13 @@
 
 int win_width = 1000, win_height = 800;
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height)
+void framebuffer_size_callback(GLFWwindow */*window*/, int width, int height)
 {
     win_width = width;
     win_height = height;

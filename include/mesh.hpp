@@ -6,7 +6,7 @@
 #include<string>
 #include<fstream>
 #include<vector>
-//#include<unordered_map>
+#include<unordered_map>
 
 #define STB_IMAGE_IMPLEMENTATION //This must happen only once.
 #include"stb_image.h"
@@ -15,8 +15,8 @@ class meshvf
 {
 private:
     unsigned int vao, vbo, ebo; //Vertex array object, vertex buffer object, element (index) buffer object.
-    std::vector<float> verts; //Obj's vertices {x1,y1,z1, x2,y2,z2, ...}.
-    std::vector<unsigned int> inds; //Obj's indices {i11,i12,i13, i21,i22,i23, ...}.
+    std::vector<float> verts; //Mesh's vertices {x1,y1,z1, x2,y2,z2, ...}.
+    std::vector<unsigned int> inds; //Mesh's indices {i11,i12,i13, i21,i22,i23, ...}.
 
 public:
     meshvf(const char *obj_path)
@@ -30,7 +30,7 @@ public:
         }
 
         float x,y,z;
-        unsigned int i1,i2,i3;
+        unsigned int vi1,vi2,vi3;
         std::string line;
         while (getline(fp, line))
         {
@@ -45,11 +45,11 @@ public:
             else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *temp_line = line.c_str();
-                sscanf(temp_line, "f %u %u %u", &i1,&i2,&i3);
+                sscanf(temp_line, "f %u %u %u", &vi1,&vi2,&vi3);
                 //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
-                inds.push_back(i1-1);
-                inds.push_back(i2-1);
-                inds.push_back(i3-1);
+                inds.push_back(vi1-1);
+                inds.push_back(vi2-1);
+                inds.push_back(vi3-1);
             }
         }
 
@@ -111,8 +111,8 @@ private:
     unsigned int vao, vbo; //Vertex array and buffer object.
     std::vector<std::vector<float>> verts; //Vertices (format : v x y z).
     std::vector<std::vector<float>> norms; //Normals (format : vn nx ny nz).
-    std::vector<std::vector<unsigned int>> inds; //Indices (format : f i11//i12 i21//i22 i31//i32).
-    std::vector<float> main_buffer; //Final form of the geometry data to draw.
+    std::vector<std::vector<unsigned int>> inds; //Indices (format : f vi1//ni1 vi2//ni2 vi3//ni3).
+    std::vector<float> interleaved_buffer; //Final form of the geometry data to draw (see below how this is constructed).
 
 public:
     meshvfn(const char *obj_path)
@@ -127,7 +127,7 @@ public:
 
         float x,y,z;
         float nx,ny,nz;
-        unsigned int i11,i12, i21,i22, i31,i32;
+        unsigned int vi1,ni1, vi2,ni2, vi3,ni3;
         std::string line;
         while (getline(fp, line))
         {
@@ -146,33 +146,34 @@ public:
             else if (line[0] == 'f') //Then we have an index line.
             {
                 const char *temp_line = line.c_str();
-                sscanf(temp_line, "f %u//%u %u//%u %u//%u", &i11,&i12, &i21,&i22, &i31,&i32);
+                sscanf(temp_line, "f %u//%u %u//%u %u//%u", &vi1,&ni1, &vi2,&ni2, &vi3,&ni3);
                 //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
-                inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
+                inds.push_back({vi1-1, ni1-1, vi2-1, ni2-1, vi3-1, ni3-1});
             }
         }
 
-        //Now combine verts[][], norms[][] and inds[][] to construct the main buffer main_buffer[],
+        //Now combine verts[][], norms[][] and inds[][] to construct the interleaved_buffer[],
         //which will have everything needed in the correct order for rendering.
         for (size_t i = 0; i < inds.size(); ++i)
         {
             for (int j = 0; j < 3; ++j)
             {
-                main_buffer.push_back( verts[ inds[i][2*j] ][0] );
-                main_buffer.push_back( verts[ inds[i][2*j] ][1] );
-                main_buffer.push_back( verts[ inds[i][2*j] ][2] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][0] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][1] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][2] );
 
-                main_buffer.push_back( norms[ inds[i][2*j+1] ][0] );
-                main_buffer.push_back( norms[ inds[i][2*j+1] ][1] );
-                main_buffer.push_back( norms[ inds[i][2*j+1] ][2] );
+                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][0] );
+                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][1] );
+                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][2] );
             }
         }
-        //main_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }.
+        //interleaved_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }.
+        
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
@@ -191,18 +192,21 @@ public:
     void draw_triangles()
     {
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)main_buffer.size()/6);
+        glDrawArrays(GL_TRIANGLES, 0, (int)interleaved_buffer.size()/6);
         glBindVertexArray(0);
     }
 };
 
-/*
+
+
 class meshvfn_ebo
 {
 private:
-    unsigned int vao, vbo, ebo; // Vertex Array, Vertex Buffer, and Element Buffer Objects
-    std::vector<float> main_buffer; // Interleaved vertex and normal data
-    std::vector<unsigned int> indices; // Element buffer indices
+    unsigned int vao, vbo, ebo;
+    std::vector<std::vector<float>> verts;
+    std::vector<std::vector<float>> norms;
+    std::vector<unsigned int> inds;
+    std::vector<float> interleaved_buffer; //Interleaved vertex and normal coordinates.
 
 public:
     meshvfn_ebo(const char *obj_path)
@@ -215,62 +219,47 @@ public:
             exit(EXIT_FAILURE);
         }
 
-        // Temporary storage for vertices, normals, and indices
-        std::vector<std::vector<float>> verts; // {x, y, z}
-        std::vector<std::vector<float>> norms; // {nx, ny, nz}
-        std::unordered_map<std::string, unsigned int> uniqueVertexMap; // To store unique vertex-normal combos
-
-        float x, y, z;
-        float nx, ny, nz;
-        unsigned int vi1, vi2, vi3, ni1, ni2, ni3;
+        std::unordered_map<std::string, unsigned int> combo_map; //Map to store unique vertex-normal pairs. Let's call them combos.
+        float x,y,z;
+        float nx,ny,nz;
+        unsigned int vi1,ni1, vi2,ni2, vi3,ni3;
         std::string line;
-
         while (getline(fp, line))
         {
-            if (line[0] == 'v' && line[1] == ' ') // Vertex line
+            if (line[0] == 'v' && line[1] == ' ')
             {
-                sscanf(line.c_str(), "v %f %f %f", &x, &y, &z);
-                verts.push_back({x, y, z});
+                sscanf(line.c_str(), "v %f %f %f", &x,&y,&z);
+                verts.push_back({x,y,z});
             }
-            else if (line[0] == 'v' && line[1] == 'n') // Normal line
+            else if (line[0] == 'v' && line[1] == 'n')
             {
-                sscanf(line.c_str(), "vn %f %f %f", &nx, &ny, &nz);
-                norms.push_back({nx, ny, nz});
+                sscanf(line.c_str(), "vn %f %f %f", &nx,&ny,&nz);
+                norms.push_back({nx,ny,nz});
             }
-            else if (line[0] == 'f') // Face line
+            else if (line[0] == 'f')
             {
-                sscanf(line.c_str(), "f %u//%u %u//%u %u//%u", &vi1, &ni1, &vi2, &ni2, &vi3, &ni3);
-
-                processVertex(verts, norms, vi1-1, ni1-1, uniqueVertexMap); // vi1, ni1
-                processVertex(verts, norms, vi2-1, ni2-1, uniqueVertexMap); // vi2, ni2
-                processVertex(verts, norms, vi3-1, ni3-1, uniqueVertexMap); // vi3, ni3
+                sscanf(line.c_str(), "f %u//%u %u//%u %u//%u", &vi1,&ni1, &vi2,&ni2, &vi3,&ni3);
+                process_inds_and_push_back(vi1-1, ni1-1, combo_map);
+                process_inds_and_push_back(vi2-1, ni2-1, combo_map);
+                process_inds_and_push_back(vi3-1, ni3-1, combo_map);
             }
         }
 
-        // Generate VAO, VBO, and EBO
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
-
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, main_buffer.size() * sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
-
+        glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
         glGenBuffers(1, &ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), &indices[0], GL_STATIC_DRAW);
-
-        // Position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size()*sizeof(unsigned int), &inds[0], GL_STATIC_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
-
-        // Normal attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
         glEnableVertexAttribArray(1);
-
-        glBindVertexArray(0); // Unbind VAO
+        glBindVertexArray(0);
     }
 
-    // Destructor to cleanup OpenGL resources
     ~meshvfn_ebo()
     {
         glDeleteVertexArrays(1, &vao);
@@ -278,46 +267,42 @@ public:
         glDeleteBuffers(1, &ebo);
     }
 
-    // Draw the mesh using glDrawElements
+    void process_inds_and_push_back(unsigned int vindex, unsigned int nindex, std::unordered_map<std::string, unsigned int> &combo_map)
+    {
+        //Create a key for the current vertex-normal pair.
+        std::string key = std::to_string(vindex) + "//" + std::to_string(nindex);
+        if (combo_map.find(key) == combo_map.end())
+        {
+            //This is a new vertex-normal combination, so store it.
+            interleaved_buffer.push_back(verts[vindex][0]);
+            interleaved_buffer.push_back(verts[vindex][1]);
+            interleaved_buffer.push_back(verts[vindex][2]);
+
+            interleaved_buffer.push_back(norms[nindex][0]);
+            interleaved_buffer.push_back(norms[nindex][1]);
+            interleaved_buffer.push_back(norms[nindex][2]);
+
+            //Assign a new index for this unique vertex-normal combo.
+            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/6 - 1);
+            combo_map[key] = new_index;
+            inds.push_back(new_index);
+        }
+        else
+        {
+            //This vertex-normal pair already exists, so use its existing index.
+            inds.push_back(combo_map[key]);
+        }
+    }
+
     void draw_triangles()
     {
         glBindVertexArray(vao);
-        glDrawElements(GL_TRIANGLES, (int)indices.size(), GL_UNSIGNED_INT, 0);
-        glBindVertexArray(0); // Unbind VAO
-    }
-
-private:
-    // Helper function to process each vertex-normal pair
-    void processVertex(
-        const std::vector<std::vector<float>>& verts,
-        const std::vector<std::vector<float>>& norms,
-        unsigned int vertexIndex,
-        unsigned int normalIndex,
-        std::unordered_map<std::string, unsigned int>& uniqueVertexMap)
-    {
-        // Create a key for the current vertex-normal pair
-        std::string key = std::to_string(vertexIndex) + "//" + std::to_string(normalIndex);
-
-        if (uniqueVertexMap.find(key) == uniqueVertexMap.end()) {
-            // This is a new vertex-normal combination, so store it
-            main_buffer.push_back(verts[vertexIndex][0]);
-            main_buffer.push_back(verts[vertexIndex][1]);
-            main_buffer.push_back(verts[vertexIndex][2]);
-            main_buffer.push_back(norms[normalIndex][0]);
-            main_buffer.push_back(norms[normalIndex][1]);
-            main_buffer.push_back(norms[normalIndex][2]);
-
-            // Assign a new index for this unique vertex-normal combo
-            unsigned int newIndex = (unsigned int)(main_buffer.size() / 6 - 1);
-            uniqueVertexMap[key] = newIndex;
-            indices.push_back(newIndex);
-        } else {
-            // This vertex-normal pair already exists, use its existing index
-            indices.push_back(uniqueVertexMap[key]);
-        }
+        glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
     }
 };
-*/
+
+
 
 class meshvft
 {
@@ -325,11 +310,10 @@ private:
     unsigned int vao, vbo, tao; //Vertex array, buffer and texture 'array object' (there's no tao officialy, but the name suits well to vao and vbo).
     std::vector<std::vector<float>> verts; //Vertices (format : v x y z)
     std::vector<std::vector<float>> uvs; //Texture (format : vt u v).
-    std::vector<std::vector<unsigned int>> inds; //Indices (format : f i11/i12 i21/i22 i31/i32.
-    std::vector<float> main_buffer; //Final form of the geometry data to draw.
+    std::vector<std::vector<unsigned int>> inds; //Indices (format : f vi1/ti1 vi2/ti2 vi3/ti3.
+    std::vector<float> interleaved_buffer; //Final form of the geometry data to draw (see below how this is constructed).
 
 public:
-
     meshvft(const char *obj_path, const char *img_path)
     {
         std::ifstream fp;
@@ -342,7 +326,7 @@ public:
 
         float x,y,z;
         float u,v;
-        unsigned int i11,i12, i21,i22, i31,i32;
+        unsigned int vi1,ti1, vi2,ti2, vi3,ti3;
         std::string line;
         while (getline(fp, line))
         {
@@ -361,34 +345,34 @@ public:
             else if (line[0] == 'f') //Then we have a index line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &i11,&i12, &i21,&i22, &i31,&i32);
+                sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &vi1,&ti1, &vi2,&ti2, &vi3,&ti3);
                 //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
-                inds.push_back({i11-1, i12-1, i21-1, i22-1, i31-1, i32-1});
+                inds.push_back({vi1-1, ti1-1, vi2-1, ti2-1, vi3-1, ti3-1});
             }
         }
 
-        //Now combine verts[][], uvs[][] and inds[][] to construct the main buffer main_buffer[]
-        //which will have all the main_buffer needed for drawing.
+        //Now combine verts[][], uvs[][] and inds[][] to construct the interleaved_buffer[]
+        //which will have everything needed for drawing the mesh with its texture.
         for (size_t i = 0; i < inds.size(); ++i)
         {
             for (int j = 0; j < 3; ++j)
             {
-                main_buffer.push_back( verts[ inds[i][2*j] ][0] );
-                main_buffer.push_back( verts[ inds[i][2*j] ][1] );
-                main_buffer.push_back( verts[ inds[i][2*j] ][2] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][0] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][1] );
+                interleaved_buffer.push_back( verts[ inds[i][2*j] ][2] );
 
-                main_buffer.push_back( uvs[ inds[i][2*j+1] ][0] );
-                main_buffer.push_back( uvs[ inds[i][2*j+1] ][1] );
+                interleaved_buffer.push_back( uvs[ inds[i][2*j+1] ][0] );
+                interleaved_buffer.push_back( uvs[ inds[i][2*j+1] ][1] );
             }
         }
-        //main_buffer[] has now the form : {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2 ... }
+        //interleaved_buffer[] has now the form : {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2 ... }
 
         //Tell OpenGL how to process the mesh data in the gpu.
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, main_buffer.size()*sizeof(float), &main_buffer[0], GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
@@ -442,7 +426,7 @@ public:
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tao);
         glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)main_buffer.size()/5);
+        glDrawArrays(GL_TRIANGLES, 0, (int)interleaved_buffer.size()/5);
         glBindVertexArray(0);
         glBindTexture(GL_TEXTURE_2D, 0);
     }
@@ -586,20 +570,20 @@ public:
     quadtex()
     {
         //Procedural.
-        float main_buffer[] = {  //Positions.         //UVs.
-                                 -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-                                 -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
-                                  1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-                                  
-                                 -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
-                                  1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
-                                  1.0f,  1.0f, 0.0f,  1.0f, 1.0f };
+        float interleaved_buffer[] = {  //Positions.         //UVs.
+                                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                                        -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
+                                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+                                         
+                                        -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
+                                         1.0f, -1.0f, 0.0f,  1.0f, 0.0f,
+                                         1.0f,  1.0f, 0.0f,  1.0f, 1.0f };
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(main_buffer), &main_buffer, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(interleaved_buffer), &interleaved_buffer, GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0); //Positions.
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float))); //UVs.

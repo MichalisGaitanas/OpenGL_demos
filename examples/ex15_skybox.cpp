@@ -61,14 +61,14 @@ void event_tick(GLFWwindow *win)
 }
 
 //For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow* window, int button, int action, int /*mods*/)
 {
     //Toggle cursor visibility via the mouse right click.
     if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
@@ -85,7 +85,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 //When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+void cursor_pos_callback(GLFWwindow */*win*/, double xpos, double ypos)
 {
     if (cursor_visible)
         return;
@@ -106,8 +106,10 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
     cam.rotate(xoffset, yoffset);
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
@@ -160,7 +162,7 @@ int main()
     shadsuz.set_vec3_uniform("mesh_col", mesh_col);
 
     //Make sure that the images have all the same size in pixels (e.g. 2048x2048, 500x500, etc..) AND channels.
-    skybox sb("../images/skyboxes/landscape_2k/untitled.jpg",.
+    skybox sb("../images/skyboxes/landscape_2k/right.jpg",
               "../images/skyboxes/landscape_2k/left.jpg",
               "../images/skyboxes/landscape_2k/top.jpg",
               "../images/skyboxes/landscape_2k/bottom.jpg",

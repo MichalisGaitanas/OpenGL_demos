@@ -12,15 +12,17 @@
 int win_width = 900, win_height = 900;
 
 //When a keyboard key is pressed :
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When the framebuffer is resized :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
@@ -45,7 +47,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Directional lighting", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Point light", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -73,9 +75,9 @@ int main()
  
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 lamp_col = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 lamp_pos = glm::vec3(3.0f,-3.0f,2.0f);
+    glm::vec3 lamp_pos = glm::vec3(2.0f,0.0f,2.0f);
     glm::vec3 cube_col = glm::vec3(0.8f,0.4f,0.0f);
-    glm::vec3 cam_pos = glm::vec3(7.0f,3.0f,4.0f);
+    glm::vec3 cam_pos = glm::vec3(-3.0f,-4.0f,5.0f);
     glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f);
     glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f);
     
@@ -113,7 +115,7 @@ int main()
         //Lamp :
         lamp_shad.use();
         model = glm::translate(glm::mat4(1.0f), lamp_pos);
-        model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f)); //Scale down uniformy the size of the lamp mesh.
+        model = glm::scale(model, glm::vec3(0.5f,0.5f,0.5f)); //Scale down uniformly the size of the lamp mesh.
         lamp_shad.set_mat4_uniform("projection", projection);
         lamp_shad.set_mat4_uniform("model", model);
         lamp_mesh.draw_triangles();

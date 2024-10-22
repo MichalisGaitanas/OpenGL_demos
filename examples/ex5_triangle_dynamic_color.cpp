@@ -23,7 +23,7 @@ const char *fsource = "#version 330 core\n"
                       "}";
 
 
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
@@ -31,7 +31,7 @@ void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
     }
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
     win_width = w;
     win_height = h;

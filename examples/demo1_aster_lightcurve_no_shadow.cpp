@@ -32,7 +32,7 @@ void omp_setup_threads()
 }
 
 //Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
-float calculate_brightness(unsigned int tex, int width_pix, int height_pix)
+float get_brightness(unsigned int tex, int width_pix, int height_pix)
 {
     glBindTexture(GL_TEXTURE_2D, tex);
     std::vector<float> pixels(width_pix*height_pix);
@@ -263,7 +263,7 @@ int main()
 
             //The scene is now rendered in the hidden framebuffer. It will not be displayed on the monitor.
             //With that scene rendered, let's calculate the lightcurve data :
-            brightness_vector.push_back(calculate_brightness(tex, win_width, win_height));
+            brightness_vector.push_back(get_brightness(tex, win_width, win_height));
             //The calculation of the lightvurve is over for this frame. The 'backend' hidden framebuffer holds the important info.
 
             //If we want to display the scene in the monitor as well (the default framebuffer), then :

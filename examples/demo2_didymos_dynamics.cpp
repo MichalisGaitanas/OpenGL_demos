@@ -33,6 +33,7 @@ const double pi = 3.1415926535897932384626433832795;
 double G,M1,M2; //Gravity constant and asteroid masses.
 dmat3 I1,I2; //Moment of inertia tensors of the asteroids.
 double dt; //Integration step;
+const size_t plot_points_to_remember = 10000;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -798,7 +799,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f,0.1f,0.1f,1.0f);
 
-    double t1 = 0.0, tfps = 0.0, ms_per_frame = 1000.0;
+    double t0 = 0.0, tfps = 0.0, ms_per_frame = 1000.0;
     double tnow;
     int frame = 0, frames_per_sec;
     while (!glfwWindowShouldClose(window))
@@ -806,8 +807,8 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         tnow = glfwGetTime(); //Elapsed time [sec] since glfwInit().
-        time_tick = tnow - t1;
-        t1 = tnow;
+        time_tick = tnow - t0;
+        t0 = tnow;
 
         //Custom algorithm for FPS measurement. Just to check if it is the same with ImGui's ImGui::GetIO().Framerate
         ++frame;
@@ -958,7 +959,7 @@ int main()
         energy_data.push_back(fabs( (energy_momentum[0] - ener0_mom0[0])/ener0_mom0[0] ));
         momentum_data.push_back(fabs( (energy_momentum[1] - ener0_mom0[1])/ener0_mom0[1] ));
 
-        r_data.push_back(sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2]));
+        r_data.push_back(sqrt(state[0]*state[0] + state[1]*state[1] + state[2]*state[2])); //r = sqrt(x^2 + y^2 + z^2)
         z_data.push_back(state[2]);
         thita_data.push_back(atan2(state[1],state[0])*180.0/pi); //[deg]
 
@@ -971,7 +972,6 @@ int main()
         yaw2_data.push_back(rpy2[2]*180.0/pi);
 
         time_data.push_back(simulated_duration);
-        static std::size_t plot_points_to_remember = 10000;
         if (time_data.size() > plot_points_to_remember)
         {
             time_data.erase(time_data.begin());

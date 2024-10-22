@@ -1,4 +1,3 @@
-
 //Include imgui headers first.
 #include"../imgui/imgui.h"
 #include"../imgui/imgui_impl_glfw.h"
@@ -9,7 +8,7 @@
 
 #include<cstdio>
 
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);

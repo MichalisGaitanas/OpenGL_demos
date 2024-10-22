@@ -18,7 +18,7 @@ const char *fsource = "#version 330 core\n"
                       "   frag_color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
                       "}";
 
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
@@ -27,7 +27,7 @@ void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
 }
 
 //When the window size changes, the framebuffer size also changes. When this happens, do the following :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
     glViewport(0,0,w,h); //Set the viewport to cover the new window dimensions (entire window).
 }
@@ -125,10 +125,10 @@ int main()
         //have placed the following command outside the while loop.
         glUseProgram(shader_prog);
 
-        //Bind the vao. Automatically binds the associated vbo and vertex attribute setup. Basically we
+        //Bind the vao before drawing : Automatically binds the associated vbo and vertex attribute setup. Basically we
         //tell OpenGL which mesh to render. Remember The core info is stored in the vbo. The vao is used to remember the configuration of the vbo.
-        //Since we only have 1 mesh, we could have placed the following command outside the while loop (besides we already binded the vao above).
-        glBindVertexArray(vao);
+        //Since we only have 1 mesh, we could have skipped the following command because we already binded the vao above, when we generated it.
+        //glBindVertexArray(vao); //Optional.
         
         //Actually plot the mesh.
         glDrawArrays(GL_TRIANGLES, 0, 3);

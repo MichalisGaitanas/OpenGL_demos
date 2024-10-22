@@ -7,7 +7,7 @@
 const int win_width = 800, win_height = 700;
 const char *win_label = "Triangle shader class";
 
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int, int action, int)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
@@ -15,10 +15,13 @@ void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
     }
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
 {
     glViewport(0,0,w,h);
-    printf("[w,h] = [%d,%d]\n",w,h);
+    printf("[w,h] = [%d,%d] ",w,h);
+    if (w == 0 || h == 0)
+        printf("(Dangerous)");
+    printf("\n");
 }
 
 int main()
@@ -60,6 +63,7 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
     glVertexAttribPointer( 0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0 );
     glEnableVertexAttribArray(0);
+    glBindVertexArray(0); //Unbind vao. We will bind again when necessary.
     
     //Create a shader object.
     shader shad("../shaders/vertex/trans_nothing.vert","../shaders/fragment/monochromatic.frag");
@@ -72,8 +76,9 @@ int main()
 
         shad.use(); //Use the "shad" shader object ( same as glUseProgram(shad_ID) )
         shad.set_vec3_uniform("mesh_col",triangle_col);// Inform the shader about this variable.
-        glBindVertexArray(vao);
+        glBindVertexArray(vao); //Now bind coz we will render.
         glDrawArrays(GL_TRIANGLES, 0, 3);
+        glBindVertexArray(0); //Now unbind.
         
         glfwSwapBuffers(win);
         glfwPollEvents();

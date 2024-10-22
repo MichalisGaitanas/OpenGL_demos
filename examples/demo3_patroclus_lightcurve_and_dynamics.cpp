@@ -45,6 +45,7 @@ const double pi = 3.1415926535897932384626433832795;
 double G,M1,M2; //Gravity constant and asteroid masses.
 dmat3 I1,I2; //Moment of inertia tensors of the asteroids.
 double dt; //Integration step;
+const size_t plot_points_to_remember = 10000;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -55,8 +56,8 @@ camera cam(glm::vec3(0.0f, -10000.0f, 0.0f),
            glm::vec3(0.0f,0.0f,1.0f),
            90.0f,
            0.0f,
-           100.0f,
-           300.0f,
+           200.0f,
+           400.0f,
            0.05f,
            60.0f );
 
@@ -66,9 +67,8 @@ double xpos_previous, ypos_previous;
 bool first_time_entered_the_window = true;
 bool cursor_visible = false;
 
-int win_width = 1200, win_height = 900; //Window's dimensions.
-
-unsigned int hidden_framebuffer, rbo, rendered_texture;
+int win_width = 1200, win_height = 900; //Initial window's dimensions.
+unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -568,18 +568,18 @@ void rk4_do_step(dvec20 &state)
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-//Calculate brightness (lightcurve) from the rendered scene of the hidden framebuffer.
-float calculate_brightness(unsigned int texture_id, int width, int height)
+//Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
+float get_brightness(unsigned int tex, int width_pix, int height_pix)
 {
-    glBindTexture(GL_TEXTURE_2D, texture_id);
-    std::vector<float> pixels(width*height);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    std::vector<float> pixels(width_pix*height_pix);
     
     //Read the pixels from the texture (only the red channel, i.e. grayscale color).
     glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
     
     //Sum up the intensity values stored in the red channel.
 #ifdef _OPENMP
-    size_t i, total_pixels = width*height;
+    int i, total_pixels = width_pix*height_pix;
     float brightness = 0.0f;
     #pragma omp parallel for firstprivate(total_pixels)\
                              private(i)\
@@ -590,49 +590,48 @@ float calculate_brightness(unsigned int texture_id, int width, int height)
         brightness += pixels[i];
 #else
     float brightness = 0.0f;
-    for (int i = 0; i < width*height; ++i)
+    for (int i = 0; i < width_pix*height_pix; ++i)
         brightness += pixels[i];
 #endif
 
-
-    return brightness/(width*height); //Normalize the brightness.
+    return brightness/(width_pix*height_pix); //Normalize the brightness.
 }
 
-//Create a new auxiliary hidden framebuffer, that we will use to perform the lightcurve calculation.
-void setup_hidden_framebuffer(int width, int height)
+//Create a new auxiliary hidden framebuffer (fbo), that we will use to perform the lightcurve calculation.
+void setup_fbo(int width_pix, int height_pix)
 {
-    //If the hidden framebuffer was already created, delete it first.
-    if (hidden_framebuffer)
+    //If memory resources are already allocated, delete them first.
+    if (fbo)
     {
-        glDeleteFramebuffers(1, &hidden_framebuffer);
-        glDeleteTextures(1, &rendered_texture);
+        glDeleteFramebuffers(1, &fbo);
+        glDeleteTextures(1, &tex);
         glDeleteRenderbuffers(1, &rbo);
     }
 
     //Create a framebuffer object (fbo). This is basically similar as the process of creating vbo, vao, ebo, etc...
-    glGenFramebuffers(1, &hidden_framebuffer);
-    glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+    glGenFramebuffers(1, &fbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-    //Create a texture to render to.
-    glGenTextures(1, &rendered_texture);
-    glBindTexture(GL_TEXTURE_2D, rendered_texture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
+    //Create a texture (tex) to render to.
+    glGenTextures(1, &tex);
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
     //Attach the texture to the hidden framebuffer.
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, rendered_texture, 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
     
     //Create a renderbuffer for depth and stencil.
     glGenRenderbuffers(1, &rbo);
     glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_pix, height_pix);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        printf("Hidden framebuffer not complete!\n");
+        printf("Warning : Framebuffer (fbo) is not completed.\n");
 
-    //The hidden framebuffer is now created. We refer to it from now via binding or unbinding.
+    //The hidden framebuffer is now created. We refer to it from now by binding/unbinding.
 
     //Unbind the hidden framebuffer to render to the default one (0).
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -679,14 +678,14 @@ void event_tick(GLFWwindow *win)
 }
 
 //For discrete keyboard events.
-void key_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
         glfwSetWindowShouldClose(window, true);
 }
 
 //When a mouse button is pressed, do the following :
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
+void mouse_button_callback(GLFWwindow *window, int button, int action, int /*mods*/)
 {
     //Toggle cursor visibility via the mouse middle click.
     if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
@@ -703,7 +702,7 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 }
 
 //When the mouse moves, do the following :
-void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
+void cursor_pos_callback(GLFWwindow */*win*/, double xpos, double ypos)
 {
     if (cursor_visible)
         return;
@@ -725,19 +724,19 @@ void cursor_pos_callback(GLFWwindow *win, double xpos, double ypos)
 }
 
 //When the mouse scrolls, do the following :
-void scroll_callback(GLFWwindow *win, double xoffset, double yoffset)
+void scroll_callback(GLFWwindow */*win*/, double /*xoffset*/, double yoffset)
 {
     if (!cursor_visible)
         cam.zoom((double)yoffset);
 }
 
 //When the framebuffer resizes, do the following :
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
-    setup_hidden_framebuffer(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
+    setup_fbo(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
 void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plot_func, std::vector<double> &plot_data, std::vector<double> &time_data, double simulated_duration)
@@ -760,7 +759,7 @@ void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plo
 
 int main()
 {
-    omp_setup_threads(); //Occupy half of the machine's threads for the calculation of the lightcurve  at each frame.
+    omp_setup_threads();
 
     //Set physical parameters and initial conditions.
     G = 4.9823382527999985e8;
@@ -851,12 +850,10 @@ int main()
 
     //const unsigned char *gpu_vendor = glGetString(GL_VENDOR);
 
-    //Asteroid 1.
+    //Asteroids 1 and 2.
     meshvfn aster1("../obj/vfn/asteroids/patroclus/pri_patroclus_ellipsoid.obj");
-    //Asteroid 2.
     meshvfn aster2("../obj/vfn/asteroids/patroclus/sec_menoetius_ellipsoid.obj");
-
-    //We use 1 shader only throughout the whole app.
+    //Shader setup
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
 
@@ -870,17 +867,17 @@ int main()
     glm::mat4 projection, view, model;
 
     //Create the (clean) hidden framebuffer.
-    setup_hidden_framebuffer(win_width, win_height);
+    setup_fbo(win_width, win_height);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE); //Enable face culling.
     glClearColor(0.0f,0.0f,0.0f,1.0f);
 
-    double t1 = 0.0, tnow;
+    double t0 = 0.0, tnow;
     while (!glfwWindowShouldClose(window))
     {
         tnow = glfwGetTime(); //Elapsed time [sec] since glfwInit().
-        time_tick = tnow - t1;
-        t1 = tnow;
+        time_tick = tnow - t0;
+        t0 = tnow;
 
         event_tick(window);
 
@@ -891,7 +888,7 @@ int main()
         shad.set_mat4_uniform("projection", projection);
         shad.set_mat4_uniform("view", view);
 
-        glBindFramebuffer(GL_FRAMEBUFFER, hidden_framebuffer);
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         //Asteroid 1.
         model = glm::mat4(1.0f);
@@ -1023,11 +1020,9 @@ int main()
         pitch2_data.push_back(rpy2[1]*180.0/pi);
         yaw2_data.push_back(rpy2[2]*180.0/pi);
 
-        brightness_data.push_back(calculate_brightness(rendered_texture, win_width, win_height));
+        brightness_data.push_back(get_brightness(tex, win_width, win_height));
 
         time_data.push_back(simulated_duration);
-
-        static std::size_t plot_points_to_remember = 10000;
         if (time_data.size() > plot_points_to_remember)
         {
             time_data.erase(time_data.begin());

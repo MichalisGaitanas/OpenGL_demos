@@ -9,7 +9,7 @@
 
 #include"../include/shader.hpp"
 
-void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
+void key_callback(GLFWwindow *win, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
     {
@@ -17,9 +17,13 @@ void key_callback(GLFWwindow *win, int key, int scancode, int action, int mods)
     }
 }
 
-void framebuffer_size_callback(GLFWwindow *win, int w, int h)
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
     glViewport(0,0,w,h);
+    printf("[w,h] = [%d,%d] ",w,h);
+    if (w == 0 || h == 0)
+        printf("(Dangerous)");
+    printf("\n");
 }
 
 int main()
