@@ -206,7 +206,7 @@ int main()
         shadsb.set_mat4_uniform("projection", projection);
         shadsb.set_mat4_uniform("view", view);
         shadsb.set_mat4_uniform("model", model);
-        sb.draw_elements();
+        sb.draw_triangles();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

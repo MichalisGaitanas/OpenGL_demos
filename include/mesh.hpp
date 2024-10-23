@@ -16,7 +16,7 @@ class meshvf
 private:
     unsigned int vao, vbo, ebo; //Vertex array object, vertex buffer object, element (index) buffer object.
     std::vector<float> verts; //Mesh's vertices {x1,y1,z1, x2,y2,z2, ...}.
-    std::vector<unsigned int> inds; //Mesh's indices {i11,i12,i13, i21,i22,i23, ...}.
+    std::vector<unsigned int> inds; //Mesh's indices {vi1,vi2,vi3, vi4,vi5,vi6, ...}.
 
 public:
     meshvf(const char *obj_path)
@@ -36,16 +36,14 @@ public:
         {
             if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
             {
-                const char *temp_line = line.c_str();
-                sscanf(temp_line, "v %f %f %f", &x,&y,&z);
+                sscanf(line.c_str(), "v %f %f %f", &x,&y,&z);
                 verts.push_back(x);
                 verts.push_back(y);
                 verts.push_back(z);
             }
             else if (line[0] == 'f') //Then we have an index line.
             {
-                const char *temp_line = line.c_str();
-                sscanf(temp_line, "f %u %u %u", &vi1,&vi2,&vi3);
+                sscanf(line.c_str(), "f %u %u %u", &vi1,&vi2,&vi3); //This must be the faces format of the obj file, so that everything works.
                 //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
                 inds.push_back(vi1-1);
                 inds.push_back(vi2-1);
@@ -56,7 +54,7 @@ public:
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
         glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo); //OpenGL expects the indices stored in the ebo to reference positions in the vertex buffer.
+        glGenBuffers(1, &ebo); //OpenGL expects the indices stored in the ebo to reference positions in the verts buffer.
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0], GL_STATIC_DRAW);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -74,7 +72,7 @@ public:
         glDeleteBuffers(1, &ebo);
     }
 
-    //Draw the mesh in the form of individual triangles.
+    //Draw the mesh in the form of individual triangles (filled).
     void draw_triangles()
     {
         glBindVertexArray(vao); //Bind the mesh's vao.
@@ -108,108 +106,14 @@ public:
 class meshvfn
 {
 private:
-    unsigned int vao, vbo; //Vertex array and buffer object.
-    std::vector<std::vector<float>> verts; //Vertices (format : v x y z).
-    std::vector<std::vector<float>> norms; //Normals (format : vn nx ny nz).
-    std::vector<std::vector<unsigned int>> inds; //Indices (format : f vi1//ni1 vi2//ni2 vi3//ni3).
-    std::vector<float> interleaved_buffer; //Final form of the geometry data to draw (see below how this is constructed).
-
-public:
-    meshvfn(const char *obj_path)
-    {
-        std::ifstream fp;
-        fp.open(obj_path);
-        if (!fp.is_open())
-        {
-            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
-            exit(EXIT_FAILURE);
-        }
-
-        float x,y,z;
-        float nx,ny,nz;
-        unsigned int vi1,ni1, vi2,ni2, vi3,ni3;
-        std::string line;
-        while (getline(fp, line))
-        {
-            if (line[0] == 'v' && line[1] == ' ') //Then we have a vertex line.
-            {
-                const char *temp_line = line.c_str();
-                sscanf(temp_line, "v %f %f %f", &x,&y,&z);
-                verts.push_back({x,y,z});
-            }
-            else if (line[0] == 'v' && line[1] == 'n') //Then we have a normal line.
-            {
-                const char *temp_line = line.c_str();
-                sscanf(temp_line, "vn %f %f %f", &nx,&ny,&nz);
-                norms.push_back({nx,ny,nz});
-            }
-            else if (line[0] == 'f') //Then we have an index line.
-            {
-                const char *temp_line = line.c_str();
-                sscanf(temp_line, "f %u//%u %u//%u %u//%u", &vi1,&ni1, &vi2,&ni2, &vi3,&ni3);
-                //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
-                inds.push_back({vi1-1, ni1-1, vi2-1, ni2-1, vi3-1, ni3-1});
-            }
-        }
-
-        //Now combine verts[][], norms[][] and inds[][] to construct the interleaved_buffer[],
-        //which will have everything needed in the correct order for rendering.
-        for (size_t i = 0; i < inds.size(); ++i)
-        {
-            for (int j = 0; j < 3; ++j)
-            {
-                interleaved_buffer.push_back( verts[ inds[i][2*j] ][0] );
-                interleaved_buffer.push_back( verts[ inds[i][2*j] ][1] );
-                interleaved_buffer.push_back( verts[ inds[i][2*j] ][2] );
-
-                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][0] );
-                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][1] );
-                interleaved_buffer.push_back( norms[ inds[i][2*j+1] ][2] );
-            }
-        }
-        //interleaved_buffer[] has now the form : {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2 ... }.
-        
-        glGenVertexArrays(1, &vao);
-        glBindVertexArray(vao);
-        glGenBuffers(1, &vbo);
-        glBindBuffer(GL_ARRAY_BUFFER, vbo);
-        glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
-        glEnableVertexAttribArray(1);
-        glBindVertexArray(0);
-    }
-
-    //Delete the mesh's memory resources.
-    ~meshvfn()
-    {
-        glDeleteVertexArrays(1, &vao);
-        glDeleteBuffers(1, &vbo);
-    }
-
-    //Draw the mesh (triangles).
-    void draw_triangles()
-    {
-        glBindVertexArray(vao);
-        glDrawArrays(GL_TRIANGLES, 0, (int)interleaved_buffer.size()/6);
-        glBindVertexArray(0);
-    }
-};
-
-
-
-class meshvfn_ebo
-{
-private:
     unsigned int vao, vbo, ebo;
     std::vector<std::vector<float>> verts;
     std::vector<std::vector<float>> norms;
     std::vector<unsigned int> inds;
-    std::vector<float> interleaved_buffer; //Interleaved vertex and normal coordinates.
+    std::vector<float> interleaved_buffer; //Interleaved vertex and normal coordinates (attributes).
 
 public:
-    meshvfn_ebo(const char *obj_path)
+    meshvfn(const char *obj_path)
     {
         std::ifstream fp;
         fp.open(obj_path);
@@ -238,7 +142,7 @@ public:
             }
             else if (line[0] == 'f')
             {
-                sscanf(line.c_str(), "f %u//%u %u//%u %u//%u", &vi1,&ni1, &vi2,&ni2, &vi3,&ni3);
+                sscanf(line.c_str(), "f %u//%u %u//%u %u//%u", &vi1,&ni1, &vi2,&ni2, &vi3,&ni3); //This must be the faces format of the obj file, so that everything works.
                 process_inds_and_push_back(vi1-1, ni1-1, combo_map);
                 process_inds_and_push_back(vi2-1, ni2-1, combo_map);
                 process_inds_and_push_back(vi3-1, ni3-1, combo_map);
@@ -260,7 +164,7 @@ public:
         glBindVertexArray(0);
     }
 
-    ~meshvfn_ebo()
+    ~meshvfn()
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
@@ -296,6 +200,7 @@ public:
 
     void draw_triangles()
     {
+        //Remember : glDrawElements() uses 1 index to reference all attributes like positions, normals, UVs, etc...
         glBindVertexArray(vao);
         glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
@@ -307,7 +212,7 @@ public:
 class meshvft
 {
 private:
-    unsigned int vao, vbo, tao; //Vertex array, buffer and texture 'array object' (there's no tao officialy, but the name suits well to vao and vbo).
+    unsigned int vao, vbo, tex; //Vertex array object, vertex buffer object and texture ID.
     std::vector<std::vector<float>> verts; //Vertices (format : v x y z)
     std::vector<std::vector<float>> uvs; //Texture (format : vt u v).
     std::vector<std::vector<unsigned int>> inds; //Indices (format : f vi1/ti1 vi2/ti2 vi3/ti3.
@@ -345,7 +250,7 @@ public:
             else if (line[0] == 'f') //Then we have a index line.
             {
                 const char *tmp_line = line.c_str();
-                sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &vi1,&ti1, &vi2,&ti2, &vi3,&ti3);
+                sscanf(tmp_line, "f %u/%u %u/%u %u/%u", &vi1,&ti1, &vi2,&ti2, &vi3,&ti3); //This must be the faces format of the obj file, so that everything works.
                 //Append indices to inds and subtract 1 from each, to convert to 0-based indexing. Obj files are 1-based.
                 inds.push_back({vi1-1, ti1-1, vi2-1, ti2-1, vi3-1, ti3-1});
             }
@@ -380,8 +285,8 @@ public:
         glBindVertexArray(0);
 
         //Tell OpenGL how to apply the texture on the mesh.
-        glGenTextures(1, &tao);
-        glBindTexture(GL_TEXTURE_2D, tao);
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
@@ -417,14 +322,14 @@ public:
     {
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
-        glDeleteTextures(1, &tao);
+        glDeleteTextures(1, &tex);
     }
 
     //Draw the mesh (triangles).
     void draw_triangles()
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, tao);
+        glBindTexture(GL_TEXTURE_2D, tex);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, (int)interleaved_buffer.size()/5);
         glBindVertexArray(0);
@@ -437,7 +342,7 @@ public:
 class skybox
 {
 private:
-    unsigned int vao, vbo, ebo, tao;
+    unsigned int vao, vbo, ebo, tex;
 
 public:
     //Make sure that the images have all the same size in pixels (e.g. 2048x2048, 500x500, etc...) AND channels.
@@ -487,8 +392,8 @@ public:
         glBindVertexArray(0);
 
         //Create the skybox's texture.
-        glGenTextures(1, &tao);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -542,14 +447,14 @@ public:
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &ebo);
         glDeleteBuffers(1, &vbo);
-        glDeleteTextures(1, &tao);
+        glDeleteTextures(1, &tex);
     }
 
     //Draw the skybox cube mesh.
-    void draw_elements()
+    void draw_triangles()
     {
         glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, tao);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, tex);
         glBindVertexArray(vao);
         glDepthFunc(GL_LEQUAL); //Ensures that the skybox fragments will render behind everything else. (A bit dangerous to place it here. Be cautious.)
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
@@ -569,7 +474,7 @@ private:
 public:
     quadtex()
     {
-        //Procedural.
+        //Procedural quad.
         float interleaved_buffer[] = {  //Positions.         //UVs.
                                         -1.0f,  1.0f, 0.0f,  0.0f, 1.0f,
                                         -1.0f, -1.0f, 0.0f,  0.0f, 0.0f,
@@ -599,10 +504,10 @@ public:
     }
 
     //Draw the quadtex mesh (triangles).
-    void draw_triangles(unsigned int framebuffer_tao)
+    void draw_triangles(unsigned int fbo_tex)
     {
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, framebuffer_tao);
+        glBindTexture(GL_TEXTURE_2D, fbo_tex);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);

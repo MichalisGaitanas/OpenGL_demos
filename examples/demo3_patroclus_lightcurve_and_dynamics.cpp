@@ -761,16 +761,16 @@ int main()
 {
     omp_setup_threads();
 
-    //Set physical parameters and initial conditions.
-    G = 4.9823382527999985e8;
+    //Set physical parameters and initial conditions. (1 [kgstar] = 10^18 [kg], time is measured in [days] and length in [km])
+    G = 4.9823382527999985e8; //[km^3/(kgstar*day^2]
     M1 = 0.669656; //[kgstar]
     M2 = 0.522984; //[kgstar]
     dvec3 semiaxes1 = {63.5, 58.5, 49.0}; //[km]
     dvec3 semiaxes2 = {58.5, 54.0, 45.0}; //[km]
-    dvec3 r   = {664.6, 0.0, 10.0}; //[km]
+    dvec3 r   = {664.6, 0.0, 0.0}; //[km]
     dvec3 v   = {0.0, r[0]*2*pi/4.41, 0.0}; //[km/day]
     dvec4 q1  = {1.0, 0.0, 0.0, 0.0}; //[ ]
-    dvec3 w1i = {0.0, 4.0, 2*pi/4.41}; //[rad/day]
+    dvec3 w1i = {0.0, 0.0, 2*pi/4.41*1.1}; //[rad/day]
     dvec4 q2  = {1.0, 0.0, 0.0, 0.0}; // [ ]
     dvec3 w2i = {0.0, 0.0, 2*pi/4.41}; //[rad/day]
 
@@ -954,7 +954,7 @@ int main()
         static bool show_roll2 = false;
         static bool show_pitch2 = false;
         static bool show_yaw2 = false;
-
+        
         static bool show_brightness = false;
 
         static bool gui_is_closable = true;
