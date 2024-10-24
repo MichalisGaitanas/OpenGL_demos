@@ -11,6 +11,8 @@
 #define STB_IMAGE_IMPLEMENTATION //This must happen only once.
 #include"stb_image.h"
 
+
+
 class meshvf
 {
 private:
@@ -19,6 +21,7 @@ private:
     std::vector<unsigned int> inds; //Mesh's indices {vi1,vi2,vi3, vi4,vi5,vi6, ...}.
 
 public:
+    //Load the obj file, construct the mesh vectors and do the gpu memory setup.
     meshvf(const char *obj_path)
     {
         std::ifstream fp;
@@ -53,14 +56,18 @@ public:
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
+
         glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo); //OpenGL expects the indices stored in the ebo to reference positions in the verts buffer.
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, verts.size()*sizeof(float), &verts[0], GL_STATIC_DRAW);
+
+        glGenBuffers(1, &ebo); //OpenGL expects the indices stored in the ebo to reference positions in the verts[] buffer.
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size()*sizeof(unsigned int), &inds[0], GL_STATIC_DRAW);
+        
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
+        
         glBindVertexArray(0);
     }
 
@@ -106,13 +113,14 @@ public:
 class meshvfn
 {
 private:
-    unsigned int vao, vbo, ebo;
-    std::vector<std::vector<float>> verts;
-    std::vector<std::vector<float>> norms;
-    std::vector<unsigned int> inds;
-    std::vector<float> interleaved_buffer; //Interleaved vertex and normal coordinates (attributes).
+    unsigned int vao, vbo, ebo; //Vertex array object, vertex buffer object, element (index) buffer object.
+    std::vector<std::vector<float>> verts; //Mesh's vertices {{x1,y1,z1}, {x2,y2,z2}, ...}.
+    std::vector<std::vector<float>> norms; //Mesh's normals {{nx1,ny1,nz1}, {nx2,ny2,nz2}, ...}.
+    std::vector<unsigned int> inds; //Mesh's indices. Every index is used to reference BOTH vertex and normal attributes.
+    std::vector<float> interleaved_buffer; //Interleaved buffer that contains vertex and normal coordinates as pairs {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2, ...}.
 
 public:
+    //Load the obj file, construct the mesh vectors and do the gpu memory setup.
     meshvfn(const char *obj_path)
     {
         std::ifstream fp;
@@ -124,8 +132,7 @@ public:
         }
 
         std::unordered_map<std::string, unsigned int> combo_map; //Map to store unique vertex-normal pairs. Let's call them combos.
-        float x,y,z;
-        float nx,ny,nz;
+        float x,y,z, nx,ny,nz;
         unsigned int vi1,ni1, vi2,ni2, vi3,ni3;
         std::string line;
         while (getline(fp, line))
@@ -151,19 +158,24 @@ public:
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
+
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
+        
         glGenBuffers(1, &ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size()*sizeof(unsigned int), &inds[0], GL_STATIC_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0);
+        
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)0); //For vertices.
         glEnableVertexAttribArray(0);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(float), (void*)(3*sizeof(float)));  //For normals.
         glEnableVertexAttribArray(1);
+        
         glBindVertexArray(0);
     }
 
+    //Free resources.
     ~meshvfn()
     {
         glDeleteVertexArrays(1, &vao);
@@ -209,6 +221,149 @@ public:
 
 
 
+class meshvft
+{
+private:
+    unsigned int vao, vbo, ebo, tex; //Vertex array object, vertex buffer object, element (index) buffer object and texture ID.
+    std::vector<std::vector<float>> verts; //Mesh's vertices {{x1,y1,z1}, {x2,y2,z2}, ...}.
+    std::vector<std::vector<float>> uvs; //Mesh's texture coords (u,v) {{u1,v1}, {u2,v2}, ...}.
+    std::vector<unsigned int> inds; //Mesh's indices. Every index is used to reference BOTH vertex and uv attributes.
+    std::vector<float> interleaved_buffer; //Interleaved buffer that contains vertex and uv coordinates as pairs {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2, ...}.
+
+public:
+    //Load the obj file, construct the mesh vectors and do the gpu memory setup regarding both the mesh data and the image attached to the mesh.
+    meshvft(const char *obj_path, const char * img_path)
+    {
+        std::ifstream fp;
+        fp.open(obj_path);
+        if (!fp.is_open())
+        {
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", obj_path);
+            exit(EXIT_FAILURE);
+        }
+
+        std::unordered_map<std::string, unsigned int> combo_map; //Map to store unique vertex-uv pairs. Let's call them combos.
+        float x,y,z, u,v;
+        unsigned int vi1,ti1, vi2,ti2, vi3,ti3;
+        std::string line;
+        while (getline(fp, line))
+        {
+            if (line[0] == 'v' && line[1] == ' ')
+            {
+                sscanf(line.c_str(), "v %f %f %f", &x,&y,&z);
+                verts.push_back({x,y,z});
+            }
+            else if (line[0] == 'v' && line[1] == 't')
+            {
+                sscanf(line.c_str(), "vt %f %f", &u,&v);
+                uvs.push_back({u,v});
+            }
+            else if (line[0] == 'f')
+            {
+                sscanf(line.c_str(), "f %u/%u %u/%u %u/%u", &vi1,&ti1, &vi2,&ti2, &vi3,&ti3); //This must be the faces format of the obj file, so that everything works.
+                process_inds_and_push_back(vi1-1, ti1-1, combo_map);
+                process_inds_and_push_back(vi2-1, ti2-1, combo_map);
+                process_inds_and_push_back(vi3-1, ti3-1, combo_map);
+            }
+        }
+
+        glGenVertexArrays(1, &vao);
+        glBindVertexArray(vao);
+
+        glGenBuffers(1, &vbo);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, interleaved_buffer.size()*sizeof(float), &interleaved_buffer[0], GL_STATIC_DRAW);
+
+        glGenBuffers(1, &ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, inds.size()*sizeof(unsigned int), &inds[0], GL_STATIC_DRAW);
+        
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0); //For vertices.
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float))); //For uvs.
+        glEnableVertexAttribArray(1);
+        glBindVertexArray(0);
+
+        //Tell OpenGL how to apply the texture on the mesh.
+        glGenTextures(1, &tex);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1); //This is useful for textures with non-standard widths or single-channel textures.
+
+        //Load the image texture.
+        int img_width, img_height, img_channels;
+        stbi_set_flip_vertically_on_load(true);
+        unsigned char *img_data = stbi_load(img_path, &img_width, &img_height, &img_channels, 0);
+        if (!img_data)
+        {
+            fprintf(stderr, "Error : File '%s' was not found. Exiting...\n", img_path);
+            exit(EXIT_FAILURE);
+        }
+
+        //Determine the correct format based on the number of channels (img_channels).
+        GLenum format;
+        if (img_channels == 1)
+            format = GL_RED; //Single-channel (grayscale image).
+        else if (img_channels == 3)
+            format = GL_RGB; //Classical 3-channel image (e.g. jpg).
+        else if (img_channels == 4)
+            format = GL_RGBA; //4-channel image, i.e. RGB + alpha channel for opacity (e.g. png).
+
+        glTexImage2D(GL_TEXTURE_2D, 0, format, img_width, img_height, 0, format, GL_UNSIGNED_BYTE, img_data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+        stbi_image_free(img_data); //Free image resources.
+    }
+
+    //Free resources.
+    ~meshvft()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
+        glDeleteTextures(1, &tex);
+    }
+
+    void process_inds_and_push_back(unsigned int vindex, unsigned int tindex, std::unordered_map<std::string, unsigned int> &combo_map)
+    {
+        //Create a key for the current vertex-uv pair.
+        std::string key = std::to_string(vindex) + "/" + std::to_string(tindex);
+        if (combo_map.find(key) == combo_map.end())
+        {
+            //This is a new vertex-normal combination, so store it.
+            interleaved_buffer.push_back(verts[vindex][0]);
+            interleaved_buffer.push_back(verts[vindex][1]);
+            interleaved_buffer.push_back(verts[vindex][2]);
+
+            interleaved_buffer.push_back(uvs[tindex][0]);
+            interleaved_buffer.push_back(uvs[tindex][1]);
+
+            //Assign a new index for this unique vertex-normal combo.
+            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/5 - 1);
+            combo_map[key] = new_index;
+            inds.push_back(new_index);
+        }
+        else
+        {
+            //This vertex-uv pair already exists, so use its existing index.
+            inds.push_back(combo_map[key]);
+        }
+    }
+
+    void draw_triangles()
+    {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glBindVertexArray(vao);
+        glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
+        glBindVertexArray(0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+    }
+};
+
+/*
 class meshvft
 {
 private:
@@ -336,20 +491,21 @@ public:
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 };
+*/
 
 
 
 class skybox
 {
 private:
-    unsigned int vao, vbo, ebo, tex;
+    unsigned int vao, vbo, ebo, tex; //Vertex array object, vertex buffer object, element (index) buffer object and texture ID.
 
 public:
-    //Make sure that the images have all the same size in pixels (e.g. 2048x2048, 500x500, etc...) AND channels.
+    //Construct the mesh procedurally (i.e. no geometry data like vertices or uvs are read from a file), setup the mesh in the gpu memory, load the 6 images and tell how to wrap them.
+    //Note : Make sure that all 6 images have the same size in pixels (e.g. 2048x2048, 500x500, etc...) AND the same type of extensions (e.g. jpg, png, bmp, ...).
     skybox(const char *right_img_path, const char *left_img_path, const char *top_img_path, const char *bottom_img_path, const char *front_img_path, const char *back_img_path)
     {   
-        /* Basically a cube, procedurally generated. */
-
+        //Cube vertices. This is basically the interleaved buffer itself.
         float verts[] = { -1.0f, -1.0f,  1.0f,
                            1.0f, -1.0f,  1.0f,
                            1.0f, -1.0f, -1.0f,
@@ -358,7 +514,8 @@ public:
                            1.0f,  1.0f,  1.0f,
                            1.0f,  1.0f, -1.0f,
                           -1.0f,  1.0f, -1.0f };
-      
+
+        //Cube indices.
         unsigned int inds[] = { //Right.
                                 1, 2, 6,
                                 6, 5, 1,
@@ -381,12 +538,15 @@ public:
         //Setup skybox's data in the memory.
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
+
         glGenBuffers(1, &vbo);
-        glGenBuffers(1, &ebo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(verts), &verts, GL_STATIC_DRAW);
+
+        glGenBuffers(1, &ebo);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(inds), &inds, GL_STATIC_DRAW);
+
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
         glBindVertexArray(0);
@@ -450,7 +610,7 @@ public:
         glDeleteTextures(1, &tex);
     }
 
-    //Draw the skybox cube mesh.
+    //Draw the skybox.
     void draw_triangles()
     {
         glActiveTexture(GL_TEXTURE0);
@@ -486,9 +646,11 @@ public:
 
         glGenVertexArrays(1, &vao);
         glBindVertexArray(vao);
+
         glGenBuffers(1, &vbo);
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
         glBufferData(GL_ARRAY_BUFFER, sizeof(interleaved_buffer), &interleaved_buffer, GL_STATIC_DRAW);
+
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0); //Positions.
         glEnableVertexAttribArray(0);
         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float))); //UVs.
@@ -503,7 +665,7 @@ public:
         glDeleteBuffers(1, &vbo);
     }
 
-    //Draw the quadtex mesh (triangles).
+    //Draw the quadtex mesh (2 triangles).
     void draw_triangles(unsigned int fbo_tex)
     {
         glActiveTexture(GL_TEXTURE0);
