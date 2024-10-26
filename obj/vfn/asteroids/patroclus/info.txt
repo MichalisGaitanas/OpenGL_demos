@@ -1,21 +1,20 @@
 Info obtained at 2024 via available papers, wikipedia, etc.
 
 Shape files :
-Currently they are unknown, so we model them as triaxial ellipsoids with their semi-axes
-obtained from occultation observations.
+Currently they are unknown, so we model them as triaxial ellipsoids with their semi-axes values obtained from occultation observations.
 
-Patroclus semi-axes :
+Patroclus (primary) semi-axes :
 a1 = 63.5 [km]
 b1 = 58.5 [km]
 c1 = 49.0 [km]
 
-Menoetius semi-axes (semi-extents) :
+Menoetius (secondary) semi-axes :
 a2 = 58.5 [km]
 b2 = 54.0 [km]
 c2 = 45.0 [km]
 
 Mutual separation :
-r = 664.6 [km] (Assuming tidal locking.)
+r = 664.6 [km] (Assuming equilibrium state, i.e. circular orbits and tidal locking.)
 
 Orbital period :
 T = 4.41 [days]

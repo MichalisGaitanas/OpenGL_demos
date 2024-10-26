@@ -334,7 +334,7 @@ int main()
         glActiveTexture(GL_TEXTURE0); //Activate texture unit 0.
         glBindTexture(GL_TEXTURE_2D, tex_depth); //Bind tex_depth to texture unit 0.
         shad_dir_light_with_shadow.set_int_uniform("sample_shadow", 0); //Set sampler to use texture unit 0. This is handled automatically by OpenGL in case only 1 texture unit is used.
-        //Now transform the models and render to the fbo_depth.
+        //Now transform the models and render to the monitor.
         model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f,12.0f,3.0f));
             shad_dir_light_with_shadow.set_mat4_uniform("model", model);
             didymain.draw_triangles();
