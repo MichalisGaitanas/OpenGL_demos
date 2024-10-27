@@ -733,6 +733,8 @@ void scroll_callback(GLFWwindow */*win*/, double /*xoffset*/, double yoffset)
 //When the framebuffer resizes, do the following :
 void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);

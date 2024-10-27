@@ -15,14 +15,14 @@ private:
 
 public:
 
-    //Constructor.
+    //Parse and read the vertex and fragment shader source files. Then compile both. Then link.
     shader(const char *vpath, const char *fpath)
     {
         //Read the vertex shader source code from its file.
         std::ifstream fpvertex(vpath);
         if (!fpvertex.is_open())
         {
-            printf("'%s' not found. Exiting...\n",vpath);
+            fprintf(stderr, "Error : '%s' not found. Exiting...\n",vpath);
             exit(EXIT_FAILURE);
         }
         std::string vtemp;
@@ -39,15 +39,15 @@ public:
         if (!success)
         {
             glGetShaderInfoLog(vshader, 1024, NULL, infolog);
-            printf("Error while compiling '%s'.\n",vpath);
-            printf("%s\n",infolog);
+            fprintf(stderr, "Error while compiling '%s'.\n",vpath);
+            fprintf(stderr, "%s\n",infolog);
         }
         
         //Read the fragment shader source code from its file.
         std::ifstream fpfragment(fpath);
         if (!fpfragment.is_open())
         {
-            printf("'%s' not found. Exiting...\n",fpath);
+            fprintf(stderr, "'%s' not found. Exiting...\n",fpath);
             exit(EXIT_FAILURE);
         }
         std::string ftemp;
@@ -62,8 +62,8 @@ public:
         if (!success)
         {
             glGetShaderInfoLog(fshader, 1024, NULL, infolog);
-            printf("Error while compiling '%s'.\n",fpath);
-            printf("%s\n",infolog);
+            fprintf(stderr, "Error while compiling '%s'.\n",fpath);
+            fprintf(stderr, "%s\n",infolog);
         }
         
         //Handle linking.
@@ -75,8 +75,8 @@ public:
         if (!success)
         {
             glGetProgramInfoLog(ID, 1024, NULL, infolog);
-            printf("Error while linking shader program ('%s' || '%s').\n",vpath,fpath);
-            printf("%s\n",infolog);
+            fprintf(stderr, "Error while linking shader program ('%s' || '%s').\n",vpath,fpath);
+            fprintf(stderr, "%s\n",infolog);
         }
         
         //We no longer need the vshader and fshader, so let's delete them from now.

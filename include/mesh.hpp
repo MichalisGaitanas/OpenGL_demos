@@ -232,7 +232,7 @@ private:
 
 public:
     //Load the obj file, construct the mesh vectors and do the gpu memory setup regarding both the mesh data and the image attached to the mesh.
-    meshvft(const char *obj_path, const char * img_path)
+    meshvft(const char *obj_path, const char *img_path)
     {
         std::ifstream fp;
         fp.open(obj_path);
