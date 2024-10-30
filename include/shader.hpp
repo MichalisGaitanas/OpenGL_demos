@@ -14,17 +14,14 @@ private:
     unsigned int ID; //Shader program ID. With this, we recognize which shader to use.
 
 public:
-
     //Parse and read the vertex and fragment shader source files. Then compile both. Then link.
     shader(const char *vpath, const char *fpath)
     {
         //Read the vertex shader source code from its file.
         std::ifstream fpvertex(vpath);
         if (!fpvertex.is_open())
-        {
-            fprintf(stderr, "Error : '%s' not found. Exiting...\n",vpath);
-            exit(EXIT_FAILURE);
-        }
+            fprintf(stderr, "Error : '%s' not found. Exiting...\n", vpath);
+
         std::string vtemp;
         vtemp.assign( (std::istreambuf_iterator<char>(fpvertex)), (std::istreambuf_iterator<char>()) );
         const char *vsource = vtemp.c_str();
@@ -39,17 +36,15 @@ public:
         if (!success)
         {
             glGetShaderInfoLog(vshader, 1024, NULL, infolog);
-            fprintf(stderr, "Error while compiling '%s'.\n",vpath);
-            fprintf(stderr, "%s\n",infolog);
+            fprintf(stderr, "Error while compiling '%s'.\n", vpath);
+            fprintf(stderr, "%s\n", infolog);
         }
         
         //Read the fragment shader source code from its file.
         std::ifstream fpfragment(fpath);
         if (!fpfragment.is_open())
-        {
-            fprintf(stderr, "'%s' not found. Exiting...\n",fpath);
-            exit(EXIT_FAILURE);
-        }
+            fprintf(stderr, "Error : '%s' not found. Exiting...\n", fpath);
+
         std::string ftemp;
         ftemp.assign( (std::istreambuf_iterator<char>(fpfragment)), (std::istreambuf_iterator<char>()) );
         const char *fsource = ftemp.c_str();
@@ -62,8 +57,8 @@ public:
         if (!success)
         {
             glGetShaderInfoLog(fshader, 1024, NULL, infolog);
-            fprintf(stderr, "Error while compiling '%s'.\n",fpath);
-            fprintf(stderr, "%s\n",infolog);
+            fprintf(stderr, "Error while compiling '%s'.\n", fpath);
+            fprintf(stderr, "%s\n", infolog);
         }
         
         //Handle linking.
@@ -75,8 +70,8 @@ public:
         if (!success)
         {
             glGetProgramInfoLog(ID, 1024, NULL, infolog);
-            fprintf(stderr, "Error while linking shader program ('%s' || '%s').\n",vpath,fpath);
-            fprintf(stderr, "%s\n",infolog);
+            fprintf(stderr, "Error while linking shader program ('%s' || '%s').\n", vpath, fpath);
+            fprintf(stderr, "%s\n", infolog);
         }
         
         //We no longer need the vshader and fshader, so let's delete them from now.
