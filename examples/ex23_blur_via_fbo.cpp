@@ -173,20 +173,21 @@ int main()
         plant_pot.draw_triangles();
         plant_leaves.draw_triangles();
 
-        /* Second rendering pass : Render only 1 windowed-fullscreen quad in the displayed fbo. The whole 3D scene however is
-           visible in the second rendering pass because the quad’s texture is the rendered scene itself. The quad essentially acts as a
-           canvas for displaying the pre-rendered scene. Since the quad covers the entire screen and the texture it uses
-           is the complete scene, it looks like we are rendering the scene again, but really we are just displaying the
-           result of the first pass. We do this to apply apply the blur effect. But why not directly in the "texture.frag" shader? Why
-           do we write another shader? Well, because the first fragment shader only deals with local information related to the mesh.
-           For a blur effect (or other effects), we need to operate on scene as whole image, because we have to take into account
-           neighboring pixels everywhere in the renered scene. The classical fragment shader of a mesh doesn't have access to
-           information about other pixels outside the mesh that is drawing. Even though one could perhaps modify the fragment shader of
-           a mesh in a way that a blur (or other) effect is achieved, it is not recommended. What if you have 4 different fragment shaders
-           in your rendered scene? Would you alter all 4 shaders (much code, poor performance)? What about the seperating scene regions
-           where one mesh gets in front of another (those regions will not be blurred)? However operating on the scene as an image-globally,
-           yields global scene effects, which is the desired. Enough for a code comment...
-         */
+        /*
+        Second rendering pass : Render only 1 windowed-fullscreen quad in the displayed fbo. The whole 3D scene however is
+        visible in the second rendering pass because the quad’s texture is the rendered scene itself. The quad essentially acts as a
+        canvas for displaying the pre-rendered scene. Since the quad covers the entire screen and the texture it uses
+        is the complete scene, it looks like we are rendering the scene again, but really we are just displaying the
+        result of the first pass. We do this to apply apply the blur effect. But why not directly in the "texture.frag" shader? Why
+        do we write another shader? Well, because the first fragment shader only deals with local information related to the mesh.
+        For a blur effect (or other effects), we need to operate on the scene as a whole image, because we have to take into account
+        neighboring pixels everywhere in the renered scene. The classical fragment shader of a mesh doesn't have access to
+        information about other pixels outside the mesh that is drawing. Even though one could perhaps modify the fragment shader of
+        a mesh in a way that a blur (or other) effect is achieved, it is not recommended. What if you have 4 different fragment shaders
+        in your rendered scene? Would you alter all 4 shaders (much code, poor performance)? What about the seperating scene regions
+        where one mesh gets in front of another (those regions will not be blurred)? However operating on the scene as an image-globally,
+        yields global scene effects, which is the desired. Enough for a code comment...
+        */
 
         blurshad.use();
         glBindFramebuffer(GL_FRAMEBUFFER, 0); //Bind to the default framebuffer (the one we will see in the monitor).
