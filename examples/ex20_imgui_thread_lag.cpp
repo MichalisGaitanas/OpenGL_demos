@@ -13,9 +13,12 @@
 
 int win_width = 800, win_height = 600;
 
-//Flag to indicate if func1 is running. DON'T use simple boolean variable for this job!
+//Flag to indicate if func is running. DON'T use simple boolean variable for this job!
 //Atomic bool will prevent race conditions, whereas simple bool will not.
 std::atomic<bool> is_func_running(false);
+
+//Atomic float to track progress of func.
+std::atomic<float> progress(0.0f);
 
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
@@ -23,13 +26,25 @@ void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int
         glfwSetWindowShouldClose(window, true);
 }
 
+void framebuffer_size_callback(GLFWwindow *, int w, int h)
+{
+    if (w < 1) w = 1;
+    if (h < 1) h = 1;
+    win_width = w;
+    win_height = h;
+    glViewport(0,0,w,h);
+}
+
 void func()
 {
     is_func_running = true;
-    for (double z = 0.0; z < 20000.0; z += 0.001)
+    progress = 0.0f;
+    for (float z = 0.0f; z <= 20000.0f; z += 0.001f)
+    {
         (void)exp(sin(sqrt(z*fabs(z)+ cos(z))));
+        progress = z/20000.0f; //Update progress.
+    }
     is_func_running = false;
-    return;
 }
 
 void glfw_center_window(GLFWwindow *win)
@@ -81,7 +96,7 @@ int main()
 
     std::thread func_thread;
 
-    glClearColor(0.0f, 0.0f, 0.2f, 1.0f);
+    glClearColor(0.1f,0.1f,0.1f, 1.0f);
     while (!glfwWindowShouldClose(window))
     {
 		glClear(GL_COLOR_BUFFER_BIT);
@@ -94,24 +109,19 @@ int main()
 		ImGui::Begin("Menu");
 
         if(ImGui::Button("Button 1"))
-        {
             func();
-        }
 
-        if (ImGui::Button("Button 2"))
+        if (ImGui::Button("Button 2") && !is_func_running)
         {
-            if (!is_func_running)
-            {
-                func_thread = std::thread(func);
-                func_thread.detach();
-            }
+            func_thread = std::thread(func);
+            func_thread.detach();
         }
 
         ImGui::SameLine();
         if (!is_func_running)
         {
             ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-            ImGui::Text("func() is not running...");
+            ImGui::Text("func() is not running.");
             ImGui::PopStyleColor();
         }
         else
@@ -120,6 +130,14 @@ int main()
             ImGui::Text("func() is running...");
             ImGui::PopStyleColor();
         }
+
+        //Display progressbar.
+        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f,0.7f,0.0f, 1.0f)); //Green.
+        ImGui::ProgressBar(progress, ImVec2(150.0f,20.0f));
+        ImGui::PopStyleColor();
+        ImGui::SameLine();
+        if(ImGui::Button("Reset"))
+            progress = 0.0f;
 
         ImGui::End();
         ImGui::Render();
