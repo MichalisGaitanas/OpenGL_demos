@@ -13,13 +13,6 @@
 
 int win_width = 800, win_height = 600;
 
-//Flag to indicate if func is running. DON'T use simple boolean variable for this job!
-//Atomic bool will prevent race conditions, whereas simple bool will not.
-std::atomic<bool> is_func_running(false);
-
-//Atomic float to track progress of func.
-std::atomic<float> progress(0.0f);
-
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
@@ -35,16 +28,20 @@ void framebuffer_size_callback(GLFWwindow *, int w, int h)
     glViewport(0,0,w,h);
 }
 
-void func()
+void simulation(std::atomic<bool> &is_running, std::atomic<bool> &abort_requested, std::atomic<float> &progress)
 {
-    is_func_running = true;
-    progress = 0.0f;
+    is_running.store(true);
+    abort_requested.store(false);
+    progress.store(0.0f);
     for (float z = 0.0f; z <= 20000.0f; z += 0.001f)
     {
-        (void)exp(sin(sqrt(z*fabs(z)+ cos(z))));
-        progress = z/20000.0f; //Update progress.
+        if (abort_requested.load())
+            break;
+
+        (void)exp(sin(sqrt(z*fabs(z) + cos(z))));
+        progress.store(z/20000.0f); //Update progress.
     }
-    is_func_running = false;
+    is_running.store(false);
 }
 
 void glfw_center_window(GLFWwindow *win)
@@ -52,14 +49,14 @@ void glfw_center_window(GLFWwindow *win)
     GLFWmonitor *monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode *mode = glfwGetVideoMode(monitor);
     glfwGetWindowSize(win, &win_width, &win_height);
-    int centx = (mode->width - win_width)/2;
-    int centy = (mode->height - win_height)/2;
+    int centx = (mode->width - win_width) / 2;
+    int centy = (mode->height - win_height) / 2;
     glfwSetWindowPos(win, centx, centy);
 }
 
 int main()
 {
-	glfwInit();
+    glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -83,8 +80,8 @@ int main()
         return 0;
     }
 
-    //Setup ImGui.
-	IMGUI_CHECKVERSION();
+    // Setup ImGui.
+    IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
@@ -93,51 +90,77 @@ int main()
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    ImGuiStyle &imstyle = ImGui::GetStyle();
+    imstyle.FrameRounding = 6.0f;
+    imstyle.WindowRounding = 6.0f;
 
-    std::thread func_thread;
+    //Flags to indicate if simulation() is running and if an abort has been requested.
+    std::atomic<bool> is_running(false);
+    std::atomic<bool> abort_requested(false);
+    std::atomic<float> progress(0.0f); //Atomic float to track progress of simulation().
 
-    glClearColor(0.1f,0.1f,0.1f, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
     while (!glfwWindowShouldClose(window))
     {
-		glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT);
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::SetNextWindowSize(ImVec2(300.0f,300.0f), ImGuiCond_FirstUseEver); 
-		ImGui::Begin("Menu");
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 300.0f), ImGuiCond_FirstUseEver);
+        ImGui::Begin("Menu");
 
-        if(ImGui::Button("Button 1"))
-            func();
-
-        if (ImGui::Button("Button 2") && !is_func_running)
+        //This button will freeze the execution. However the OS will queue any requests like button presses, etc..
+        if (ImGui::Button("Run (lag)", ImVec2(85.0f, 25.0f)))
         {
-            func_thread = std::thread(func);
-            func_thread.detach();
+            simulation(is_running, abort_requested, progress);
+            printf("Done.\n");
         }
 
-        ImGui::SameLine();
-        if (!is_func_running)
+
+        if (!is_running.load()) //In this case the simulation is NOT currently running, hence "Run (thread)" can be pressed (to start), but "Abort", cannot be pressed (nothing to abort).
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255,0,0,255));
-            ImGui::Text("func() is not running.");
-            ImGui::PopStyleColor();
+            if (ImGui::Button("Run (thread)", ImVec2(85.0f, 25.0f)))
+            {
+                std::thread simulation_thread = std::thread(simulation, std::ref(is_running), std::ref(abort_requested), std::ref(progress));
+                simulation_thread.detach();
+            }
+            ImGui::SameLine();
+            ImGui::BeginDisabled();
+            ImGui::Button("Abort", ImVec2(85.0f, 25.0f));
+            ImGui::EndDisabled();
+        }
+        else //Now the opposite happens. "Run (thread)" is disabled coz the simulation is running and "Abort" is enabled, so that one may stop the running.
+        {
+            ImGui::BeginDisabled();
+            ImGui::Button("Run (thread)", ImVec2(85.0f, 25.0f));
+            ImGui::EndDisabled();
+            ImGui::SameLine();
+            if (ImGui::Button("Abort", ImVec2(85.0f, 25.0f)))
+                abort_requested.store(true);
+        }
+
+        //Display progress bar with different colors based on 'abort_requested' state.
+        if (abort_requested.load())
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.7f, 0.0f, 0.0f, 1.0f));
+        else
+            ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f, 0.7f, 0.0f, 1.0f));
+        ImGui::ProgressBar(progress, ImVec2(180.0f, 20.0f));
+        ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+        if (!is_running.load())
+        {
+            if (ImGui::Button("Reset %"))
+                progress.store(0.0f);
         }
         else
         {
-            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0,255,0,255));
-            ImGui::Text("func() is running...");
-            ImGui::PopStyleColor();
+            ImGui::BeginDisabled();
+            ImGui::Button("Reset %");
+            ImGui::EndDisabled();
         }
-
-        //Display progressbar.
-        ImGui::PushStyleColor(ImGuiCol_PlotHistogram, ImVec4(0.0f,0.7f,0.0f, 1.0f)); //Green.
-        ImGui::ProgressBar(progress, ImVec2(150.0f,20.0f));
-        ImGui::PopStyleColor();
-        ImGui::SameLine();
-        if(ImGui::Button("Reset"))
-            progress = 0.0f;
 
         ImGui::End();
         ImGui::Render();
@@ -153,5 +176,5 @@ int main()
 
     glfwTerminate();
 
-	return 0;
+    return 0;
 }
