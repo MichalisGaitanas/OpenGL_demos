@@ -24,7 +24,7 @@ void main()
     
     //Specular color component (shininess).
     vec3 view_dir_norm = normalize(cam_pos - frag_pos); //Camera's direction with respect to the fragment.
-    vec3 reflect_dir_norm = reflect(-light_dir_norm, norm); //"Ray's" reflection direction with respect to the fragment. There's no real ray casting of course...
+    vec3 reflect_dir_norm = reflect(-light_dir_norm, norm); //"Ray's" reflection direction with respect to the fragment.
     float specular = 0.5f*pow(max(dot(view_dir_norm, reflect_dir_norm), 0.0f), 128);
     
     frag_col = vec4((ambient + diffuse + specular)*mesh_col*light_col, 1.0f);

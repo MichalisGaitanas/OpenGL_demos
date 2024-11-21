@@ -119,6 +119,33 @@ private:
     std::vector<unsigned int> inds; //Mesh's indices. Every index is used to reference BOTH vertex and normal attributes.
     std::vector<float> interleaved_buffer; //Interleaved buffer that contains vertex and normal coordinates as pairs {x1,y1,z1, nx1,ny1,nz1, x2,y2,z2, nx2,ny2,nz2, ...}.
 
+    void process_inds_and_push_back(unsigned int vindex, unsigned int nindex, std::unordered_map<std::string, unsigned int> &combo_map)
+    {
+        //Create a key for the current vertex-normal pair.
+        std::string key = std::to_string(vindex) + "//" + std::to_string(nindex);
+        if (combo_map.find(key) == combo_map.end())
+        {
+            //This is a new vertex-normal combination, so store it.
+            interleaved_buffer.push_back(verts[vindex][0]);
+            interleaved_buffer.push_back(verts[vindex][1]);
+            interleaved_buffer.push_back(verts[vindex][2]);
+
+            interleaved_buffer.push_back(norms[nindex][0]);
+            interleaved_buffer.push_back(norms[nindex][1]);
+            interleaved_buffer.push_back(norms[nindex][2]);
+
+            //Assign a new index for this unique vertex-normal combo.
+            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/6 - 1);
+            combo_map[key] = new_index;
+            inds.push_back(new_index);
+        }
+        else
+        {
+            //This vertex-normal pair already exists, so use its existing index.
+            inds.push_back(combo_map[key]);
+        }
+    }
+
 public:
     //Load the obj file, construct the mesh vectors and do the gpu memory setup.
     meshvfn(const char *obj_path)
@@ -183,33 +210,6 @@ public:
         glDeleteBuffers(1, &ebo);
     }
 
-    void process_inds_and_push_back(unsigned int vindex, unsigned int nindex, std::unordered_map<std::string, unsigned int> &combo_map)
-    {
-        //Create a key for the current vertex-normal pair.
-        std::string key = std::to_string(vindex) + "//" + std::to_string(nindex);
-        if (combo_map.find(key) == combo_map.end())
-        {
-            //This is a new vertex-normal combination, so store it.
-            interleaved_buffer.push_back(verts[vindex][0]);
-            interleaved_buffer.push_back(verts[vindex][1]);
-            interleaved_buffer.push_back(verts[vindex][2]);
-
-            interleaved_buffer.push_back(norms[nindex][0]);
-            interleaved_buffer.push_back(norms[nindex][1]);
-            interleaved_buffer.push_back(norms[nindex][2]);
-
-            //Assign a new index for this unique vertex-normal combo.
-            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/6 - 1);
-            combo_map[key] = new_index;
-            inds.push_back(new_index);
-        }
-        else
-        {
-            //This vertex-normal pair already exists, so use its existing index.
-            inds.push_back(combo_map[key]);
-        }
-    }
-
     void draw_triangles()
     {
         //Remember : glDrawElements() uses 1 index to reference all attributes like positions, normals, UVs, etc...
@@ -229,6 +229,32 @@ private:
     std::vector<std::vector<float>> uvs; //Mesh's texture coords (u,v) {{u1,v1}, {u2,v2}, ...}.
     std::vector<unsigned int> inds; //Mesh's indices. Every index is used to reference BOTH vertex and uv attributes.
     std::vector<float> interleaved_buffer; //Interleaved buffer that contains vertex and uv coordinates as pairs {x1,y1,z1, u1,v1, x2,y2,z2, u2,v2, ...}.
+
+    void process_inds_and_push_back(unsigned int vindex, unsigned int tindex, std::unordered_map<std::string, unsigned int> &combo_map)
+    {
+        //Create a key for the current vertex-uv pair.
+        std::string key = std::to_string(vindex) + "/" + std::to_string(tindex);
+        if (combo_map.find(key) == combo_map.end())
+        {
+            //This is a new vertex-normal combination, so store it.
+            interleaved_buffer.push_back(verts[vindex][0]);
+            interleaved_buffer.push_back(verts[vindex][1]);
+            interleaved_buffer.push_back(verts[vindex][2]);
+
+            interleaved_buffer.push_back(uvs[tindex][0]);
+            interleaved_buffer.push_back(uvs[tindex][1]);
+
+            //Assign a new index for this unique vertex-normal combo.
+            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/5 - 1);
+            combo_map[key] = new_index;
+            inds.push_back(new_index);
+        }
+        else
+        {
+            //This vertex-uv pair already exists, so use its existing index.
+            inds.push_back(combo_map[key]);
+        }
+    }
 
 public:
     //Load the obj file, construct the mesh vectors and do the gpu memory setup regarding both the mesh data and the image attached to the mesh.
@@ -324,32 +350,6 @@ public:
         glDeleteBuffers(1, &vbo);
         glDeleteBuffers(1, &ebo);
         glDeleteTextures(1, &tex);
-    }
-
-    void process_inds_and_push_back(unsigned int vindex, unsigned int tindex, std::unordered_map<std::string, unsigned int> &combo_map)
-    {
-        //Create a key for the current vertex-uv pair.
-        std::string key = std::to_string(vindex) + "/" + std::to_string(tindex);
-        if (combo_map.find(key) == combo_map.end())
-        {
-            //This is a new vertex-normal combination, so store it.
-            interleaved_buffer.push_back(verts[vindex][0]);
-            interleaved_buffer.push_back(verts[vindex][1]);
-            interleaved_buffer.push_back(verts[vindex][2]);
-
-            interleaved_buffer.push_back(uvs[tindex][0]);
-            interleaved_buffer.push_back(uvs[tindex][1]);
-
-            //Assign a new index for this unique vertex-normal combo.
-            unsigned int new_index = (unsigned int)(interleaved_buffer.size()/5 - 1);
-            combo_map[key] = new_index;
-            inds.push_back(new_index);
-        }
-        else
-        {
-            //This vertex-uv pair already exists, so use its existing index.
-            inds.push_back(combo_map[key]);
-        }
     }
 
     void draw_triangles()
