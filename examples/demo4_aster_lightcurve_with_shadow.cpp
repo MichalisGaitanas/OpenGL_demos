@@ -19,7 +19,6 @@
 int win_width = 800, win_height = 600; //Initial glfw window size.
 unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
 
-
 //Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
 float get_brightness(unsigned int tex, int width_pix, int height_pix)
 {
@@ -133,19 +132,17 @@ int main()
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(win, true);
     ImGui_ImplOpenGL3_Init("#version 330");
-    ImGuiStyle &imstyle = ImGui::GetStyle();
-    imstyle.WindowMinSize = ImVec2(200.0f,200.0f);
-    imstyle.FrameRounding = 5.0f;
-    imstyle.WindowRounding = 5.0f;
 
     meshvfn aster("../obj/vfn/asteroids/gerasimenko256k.obj");
 
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
 
+    float ang_vel_z = 1.0f; //[rad/sec]
+
     //Directional light parameters.
     float angle = 180.0f; //Exposed in the gui.
-    glm::vec3 light_dir = glm::vec3(cos(glm::radians(angle)), 0.0f, sin(glm::radians(angle))); //Light direction in 'world' coordinates.
+    glm::vec3 light_dir = glm::vec3(cos(glm::radians(angle)), sin(glm::radians(angle)), 0.0f); //Light direction in 'world' coordinates.
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color (white).
     glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f); //Asteroid color (white).
 
@@ -179,18 +176,10 @@ int main()
     glEnable(GL_CULL_FACE); //Enable face culling (better performance).
     glClearColor(0.0f,0.0f,0.0f,1.0f); //Black background color.
 
-    float t_delay_due_to_initializations = (float)glfwGetTime();
-    while (!glfwWindowShouldClose(win))
+    float t = 0.0f, dt = 0.01f, tmax = 200.0f; //[sec]
+    while (t <= tmax)
     {
-        //This t_now value will be used for all time calculations AT THIS frame.
-        float t_now = (float)glfwGetTime() - t_delay_due_to_initializations;
-
-        //Now we do the following :
-        //1) We render the whole scene in the hidden framebuffer and then we calculate
-        //   the lightcurve. This framebuffer is invisble to us. It will not be rendered in the monitor.
-        //2) We render again the same scene in the default framebuffer, just to visualize it interactively.
-
-        projection = glm::infinitePerspective(glm::radians(fov), (float)win_width/win_height, 1.0f);
+        projection = glm::infinitePerspective(glm::radians(fov), (float)win_width/win_height, 1.0f); //1.0f = znear
         shad.set_mat4_uniform("projection", projection);
 
         view = glm::lookAt(cam_pos, cam_aim, cam_up);
@@ -199,14 +188,15 @@ int main()
         //Bind the hidden framebuffer and render the scene there.
         glBindFramebuffer(GL_FRAMEBUFFER, fbo);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        model = glm::rotate(glm::mat4(1.0f), glm::radians(20.0f*t_now), glm::vec3(0.0f,0.0f,1.0f));
+        model = glm::rotate(glm::mat4(1.0f), ang_vel_z*t, glm::vec3(0.0f,0.0f,1.0f));
         shad.set_mat4_uniform("model", model);
         aster.draw_triangles();
 
         //The scene is now rendered in the hidden framebuffer. It will not be displayed on the monitor.
         //With that scene rendered, let's calculate the lightcurve data (time and brightness) :
-        time_vector.push_back(t_now);
+        time_vector.push_back(t);
         brightness_vector.push_back(get_brightness(tex, win_width, win_height));
+        t += dt;
         //The calculation of the lightvurve is over for this frame. The 'backend' hidden framebuffer holds the important info.
         //You may print the results in a file.
 
@@ -214,14 +204,6 @@ int main()
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         aster.draw_triangles();
-
-        //Prevent the data will not grow unstopably. When the vectors reach the desired capacity (max_size),
-        //then for every new data point entering the vectors, the 'firstest' one shall be deleted, maintaining a constant size.
-        if (time_vector.size() > max_size)
-        {
-            time_vector.erase(time_vector.begin());
-            brightness_vector.erase(brightness_vector.begin());
-        }
 
         //Render gui stuff.
 
@@ -236,7 +218,7 @@ int main()
         ImGui::SliderFloat("[deg]##angle", &angle, 0.0f, 360.0f);
         ImGui::Separator();
         light_dir.x = cos(glm::radians(angle));
-        light_dir.z = sin(glm::radians(angle));
+        light_dir.y = sin(glm::radians(angle));
         shad.set_vec3_uniform("light_dir", light_dir);
 
         ImGui::Text("Camera y-coord");
@@ -266,7 +248,7 @@ int main()
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
             ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t_now-70.0f, t_now, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
+            ImPlot::SetupAxisLimits(ImAxis_X1, t-70.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
             ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
             ImPlot::PopStyleColor();
             ImPlot::EndPlot();
@@ -279,6 +261,11 @@ int main()
         glfwSwapBuffers(win);
         glfwPollEvents();
     }
+
+    FILE *fp_lightcurve = fopen("lightcurve.txt","w");
+    for (size_t i = 0; i < time_vector.size(); ++i)
+        fprintf(fp_lightcurve,"%.6f  %.6f\n",time_vector[i], brightness_vector[i]);
+    fclose(fp_lightcurve);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
