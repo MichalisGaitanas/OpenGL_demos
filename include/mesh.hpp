@@ -217,6 +217,32 @@ public:
         glDrawElements(GL_TRIANGLES, (int)inds.size(), GL_UNSIGNED_INT, 0);
         glBindVertexArray(0);
     }
+
+    //Farthest vertex distance with respect to the local coordinate system.
+    float get_farthest_vertex_distance()
+    {
+        float farthest = std::sqrt(verts[0][0]*verts[0][0] + verts[0][1]*verts[0][1] + verts[0][2]*verts[0][2]); //Assume that the farthest vertex distance is the first one.
+        for (size_t i = 1; i < verts.size(); ++i)
+        {
+            float dist = std::sqrt(verts[i][0]*verts[i][0] + verts[i][1]*verts[i][1] + verts[i][2]*verts[i][2]);
+            if (dist > farthest)
+                farthest = dist;
+        }
+        return farthest;
+    }
+
+    //Nearest vertex distance with respect to the local coordinate system.
+    float get_nearest_vertex_distance()
+    {
+        float nearest = std::sqrt(verts[0][0]*verts[0][0] + verts[0][1]*verts[0][1] + verts[0][2]*verts[0][2]); //Assume that the nearest vertex distance is the first one.
+        for (size_t i = 1; i < verts.size(); ++i)
+        {
+            float dist = std::sqrt(verts[i][0]*verts[i][0] + verts[i][1]*verts[i][1] + verts[i][2]*verts[i][2]);
+            if (dist < nearest)
+                nearest = dist;
+        }
+        return nearest;
+    }
 };
 
 

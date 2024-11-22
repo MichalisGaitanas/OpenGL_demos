@@ -16,7 +16,7 @@
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
 
-int win_width = 800, win_height = 600; //Initial glfw window size.
+int win_width = 1000, win_height = 1000; //Initial glfw window size.
 unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
 
 //Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
@@ -138,7 +138,7 @@ int main()
     shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
     shad.use();
 
-    float ang_vel_z = 1.0f; //[rad/sec]
+    float ang_vel_z = 0.01f; //[rad/sec]
 
     //Directional light parameters.
     float angle = 180.0f; //Exposed in the gui.
@@ -155,15 +155,9 @@ int main()
     //Actual lightcure data.
     std::vector<float> time_vector;
     std::vector<float> brightness_vector;
-    const size_t max_size = 4000; //Set the maximum number of lightcurve points to retain.
 
     //Transformation matrices that take us from the 3D 'world' coordsys to the 2D monitor pixeled coordsys.
     glm::mat4 projection, view, model;
-    //Imagine a point (vertex) in the 3D space with position vector v = [x,y,z] with respect to what we call 'world' origin.
-    //model*v transforms v into v' = [x',y',z'], depending on the model matrix content (translation, rotation, scale).
-    //view*v' transforms v' into v'' = [x'',y'',z'']. This transformation is applied because we want to view v' from the camera's perspective.
-    //projection*v'' transforms v'' into v''' = [x''',y''',z''']. This transformation transforms the (with respect to the camera) scene to clip space (still 3D).
-    //This final transformation (in the case of perspective projection) makes distant objects smaller and near objects larger, mimicking how we perceive the real world.
 
     //Now inform the shader about the uniforms that are NOT going to change in the rendering loop.
     shad.set_vec3_uniform("light_col", light_col);
@@ -172,12 +166,12 @@ int main()
     //Create the (clean) hidden framebuffer.
     setup_fbo(win_width, win_height);
 
-    glEnable(GL_DEPTH_TEST); //Depth test.
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE); //Enable face culling (better performance).
-    glClearColor(0.0f,0.0f,0.0f,1.0f); //Black background color.
+    glClearColor(0.0f,0.0f,0.0f,1.0f);
 
-    float t = 0.0f, dt = 0.01f, tmax = 200.0f; //[sec]
-    while (t <= tmax)
+    float t = 0.0f, dt = 1.0f, tmax = 200.0f; //[sec]
+    while (!glfwWindowShouldClose(win) && t <= tmax)
     {
         projection = glm::infinitePerspective(glm::radians(fov), (float)win_width/win_height, 1.0f); //1.0f = znear
         shad.set_mat4_uniform("projection", projection);
@@ -262,7 +256,7 @@ int main()
         glfwPollEvents();
     }
 
-    FILE *fp_lightcurve = fopen("lightcurve.txt","w");
+    FILE *fp_lightcurve = fopen("demo4_lightcurve.txt","w");
     for (size_t i = 0; i < time_vector.size(); ++i)
         fprintf(fp_lightcurve,"%.6f  %.6f\n",time_vector[i], brightness_vector[i]);
     fclose(fp_lightcurve);
