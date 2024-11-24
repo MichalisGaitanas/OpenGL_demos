@@ -1,25 +1,91 @@
 #include"../imgui/imgui.h"
 #include"../imgui/imgui_impl_glfw.h"
 #include"../imgui/imgui_impl_opengl3.h"
-#include"../imgui/implot.h"
 
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
-
 #include<cstdio>
-#include<cmath>
-#include<vector>
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
+#include"../include/camera.hpp"
 
-int win_width = 1000, win_height = 1000; //Initial glfw window size.
-unsigned int fbo, rbo, tex; //Framebuffer object, renderbuffer object and texture ID.
+int win_width = 500, win_height = 500;
 
-//Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
+const int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution.
+
+unsigned int fbo_depth, tex_depth; //IDs to hold the depth fbo and the depth texture (shadow map).
+unsigned int fbo_lightcurve, rbo_lightcurve, tex_lightcurve; //IDs to hold the fbo, renderbuffer, and texture of the lightcurve.
+
+camera cam(glm::vec3(0.0f, -5.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f), 90.0f);
+
+void setup_fbo_depth()
+{
+    glGenFramebuffers(1, &fbo_depth); //Create fbo and assign ID.
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth); //This means that all subsequent fb operations affect the fbo_depth.
+    glGenTextures(1, &tex_depth); //Create tex and assign ID.
+    glBindTexture(GL_TEXTURE_2D, tex_depth); //This means that all subsequent tex operations affect the tex_depth.
+    //Actually create the depth texture with the specified resolution. Stored as floats and initialized as NULL because no data is provided yet.
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, shadow_tex_reso_x, shadow_tex_reso_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    //The following ensures that when texture coordinates go outside [0,1] range, the border_col is used as depth-color.
+    float border_col[] = {1.0f, 1.0f, 1.0f, 1.0f}; //Pure white that is, coz white color corresponds to maximum depth.
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);  
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_col);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth, 0);
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        fprintf(stderr, "Shadow framebuffer is not completed!\n");
+
+    //Since shadow mapping only requires depth information and needs no colors, the following commnads make sure that
+    //OpenGL avoids any (unnecessary) color buffer operations.
+    glDrawBuffer(GL_NONE);
+    glReadBuffer(GL_NONE);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void setup_fbo_lightcurve(int width_pix, int height_pix)
+{
+    //If memory resources are already allocated, delete them first.
+    if (fbo_lightcurve)
+    {
+        glDeleteFramebuffers(1, &fbo_lightcurve);
+        glDeleteTextures(1, &tex_lightcurve);
+        glDeleteRenderbuffers(1, &rbo_lightcurve);
+    }
+
+    //Create a framebuffer object (fbo). This is basically similar as the process of creating vbo, vao, ebo, etc...
+    glGenFramebuffers(1, &fbo_lightcurve);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve);
+
+    //Create a texture (tex) to render to.
+    glGenTextures(1, &tex_lightcurve);
+    glBindTexture(GL_TEXTURE_2D, tex_lightcurve);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    //Attach the texture to the hidden framebuffer.
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_lightcurve, 0);
+    
+    //Create a renderbuffer for depth and stencil.
+    glGenRenderbuffers(1, &rbo_lightcurve);
+    glBindRenderbuffer(GL_RENDERBUFFER, rbo_lightcurve);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_pix, height_pix);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo_lightcurve);
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+        fprintf(stderr, "Lightcurve framebuffer is not completed!\n");
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 float get_brightness(unsigned int tex, int width_pix, int height_pix)
 {
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -31,67 +97,26 @@ float get_brightness(unsigned int tex, int width_pix, int height_pix)
     return brightness/(width_pix*height_pix); //Normalize the brightness.
 }
 
-//Create a new auxiliary hidden framebuffer (fbo), that we will use to perform the lightcurve calculation.
-void setup_fbo(int width_pix, int height_pix)
-{
-    //If memory resources are already allocated, delete them first.
-    if (fbo)
-    {
-        glDeleteFramebuffers(1, &fbo);
-        glDeleteTextures(1, &tex);
-        glDeleteRenderbuffers(1, &rbo);
-    }
-
-    //Create a framebuffer object (fbo). This is basically similar as the process of creating vbo, vao, ebo, etc...
-    glGenFramebuffers(1, &fbo);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
-
-    //Create a texture (tex) to render to.
-    glGenTextures(1, &tex);
-    glBindTexture(GL_TEXTURE_2D, tex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    //Attach the texture to the hidden framebuffer.
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-    
-    //Create a renderbuffer for depth and stencil.
-    glGenRenderbuffers(1, &rbo);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width_pix, height_pix);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        printf("Warning : Framebuffer (fbo) is not completed.\n");
-
-    //The hidden framebuffer is now created. We refer to it from now by binding/unbinding.
-
-    //Unbind the hidden framebuffer to render to the default one (0).
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-//When a keyboard key is pressed, do the following :
-void key_callback(GLFWwindow *win, int key, int, int action, int)
+//For discrete keyboard events.
+void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
-        glfwSetWindowShouldClose(win, true); //Kill the game loop when 'esc' is released.
+        glfwSetWindowShouldClose(window, true);
 }
 
-//When the framebuffer is resized, do the following :
-void framebuffer_size_callback(GLFWwindow *, int w, int h)
+//When the framebuffer resizes, do the following :
+void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 {
     if (w < 1) w = 1;
     if (h < 1) h = 1;
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
-    setup_fbo(w,h); //Re-setup the hidden framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
 int main()
 {
-    //Setup glfw stuff.
+    //Setup glfw.
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -99,160 +124,153 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    GLFWwindow *win = glfwCreateWindow(win_width, win_height, "Lightcurve generation", NULL, NULL);
-    if (win == NULL)
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Real time shadow", NULL, NULL);
+    if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
-    glfwMakeContextCurrent(win);
+    glfwMakeContextCurrent(window);
+    glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
-    glfwSetWindowSizeLimits(win, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
-    glfwSetFramebufferSizeCallback(win, framebuffer_size_callback);
-    glfwSetKeyCallback(win, key_callback);
-    glfwGetWindowSize(win, &win_width, &win_height);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetKeyCallback(window, key_callback);
+
+    glfwGetWindowSize(window, &win_width, &win_height);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
         printf("Failed to initialize glew. Exiting...\n");
-        glfwTerminate();
         return 0;
     }
 
-    //Setup gui stuff.
+    //Setup gui stuff. 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImPlot::CreateContext(); //strictly AFTER Imgui::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL; //Fucking .ini file!
     io.Fonts->AddFontFromFileTTF("../fonts/Arial.ttf", 15.0f);
     (void)io;
     ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(win, true);
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
     ImGui_ImplOpenGL3_Init("#version 330");
+    ImGuiStyle &imstyle = ImGui::GetStyle();
+    imstyle.WindowMinSize = ImVec2(200.0f,200.0f);
+    imstyle.FrameRounding = 5.0f;
+    imstyle.WindowRounding = 5.0f;
 
-    meshvfn aster("../obj/vfn/asteroids/gerasimenko256k.obj");
+    meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj");
+    float fc = 1.1f, fl = 1.2;
+    float rc = asteroid.get_farthest_vertex_distance();
+    float ang_vel_z = glm::pi<float>()/20.0f;
 
-    shader shad("../shaders/vertex/trans_mvpn.vert","../shaders/fragment/dir_light_d.frag");
-    shad.use();
+    //Shaders : 1 for the scene as perceived by the directional light and 1 for the scene as perceived by the camera. The first shader is gonna
+    //be used to calculate a special info only (depth). The second shader is gonna use that info to compute all the fragment colors (ambient, diffuse, etc... AND shadows).
+    shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
+    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow.frag");
 
-    float ang_vel_z = 0.01f; //[rad/sec]
+    setup_fbo_depth();
+    setup_fbo_lightcurve(win_width, win_height);
 
-    //Directional light parameters.
-    float angle = 180.0f; //Exposed in the gui.
-    glm::vec3 light_dir = glm::vec3(cos(glm::radians(angle)), sin(glm::radians(angle)), 0.0f); //Light direction in 'world' coordinates.
-    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f); //Light color (white).
-    glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f); //Asteroid color (white).
+    //Constant mesh and light colors. We pass them to the shader from now to avoid doing it in the while loop...
+    glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f);
+    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
+    shad_dir_light_with_shadow.use();
+    shad_dir_light_with_shadow.set_vec3_uniform("mesh_col", mesh_col);
+    shad_dir_light_with_shadow.set_vec3_uniform("light_col", light_col);
 
-    //Camera parameters.
-    glm::vec3 cam_pos = glm::vec3(0.0f,-10.0f,0.0f); //Camera's position in 'world' coordinates. Exposed in the gui.
-    glm::vec3 cam_aim = glm::vec3(0.0f,0.0f,0.0f); //Camera aims at the origin of our 'world' coordsys.
-    glm::vec3 cam_up = glm::vec3(0.0f,0.0f,1.0f); //Camera's local up direction vector (+z).
-    float fov = 45.0f; //Camera's field of view. Exposed in the gui.
+    glm::mat4 dir_light_projection, dir_light_view, dir_light_pv; //Directional light's matrices.
+
+    glm::mat4 projection, view, model; //Camera's matrices. The 'model' matrix is common.
 
     //Actual lightcure data.
     std::vector<float> time_vector;
     std::vector<float> brightness_vector;
 
-    //Transformation matrices that take us from the 3D 'world' coordsys to the 2D monitor pixeled coordsys.
-    glm::mat4 projection, view, model;
-
-    //Now inform the shader about the uniforms that are NOT going to change in the rendering loop.
-    shad.set_vec3_uniform("light_col", light_col);
-    shad.set_vec3_uniform("mesh_col", mesh_col);
-
-    //Create the (clean) hidden framebuffer.
-    setup_fbo(win_width, win_height);
-
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE); //Enable face culling (better performance).
+    glEnable(GL_CULL_FACE);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
+    float t0 = 0.0f, tnow;
+    while (!glfwWindowShouldClose(window))
+    {   
 
-    float t = 0.0f, dt = 1.0f, tmax = 200.0f; //[sec]
-    while (!glfwWindowShouldClose(win) && t <= tmax)
-    {
-        projection = glm::infinitePerspective(glm::radians(fov), (float)win_width/win_height, 1.0f); //1.0f = znear
-        shad.set_mat4_uniform("projection", projection);
+        static float dir_light_lon = 80.0f, dir_light_lat = 50.0f;
+        glm::vec3 light_dir = fl*rc*glm::vec3(cos(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
+                                              sin(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
+                                              cos(glm::radians(dir_light_lat)));
+        glm::vec3 norm_light_dir = glm::normalize(light_dir);
+        float dir_light_up_x = 0.0f, dir_light_up_y = 0.0f, dir_light_up_z = 1.0f;
+        if (glm::abs(norm_light_dir.z) > 0.999f)
+        {
+            dir_light_up_y = 1.0f;
+            dir_light_up_z = 0.0f;
+        }
 
-        view = glm::lookAt(cam_pos, cam_aim, cam_up);
-        shad.set_mat4_uniform("view", view);
+        dir_light_projection = glm::ortho(-fc*rc,fc*rc, -fc*rc,fc*rc, (fl-fc)*rc, 2.0f*fc*rc);
+        dir_light_view = glm::lookAt(light_dir, glm::vec3(0.0f), glm::vec3(dir_light_up_x, dir_light_up_y, dir_light_up_z));
+        dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
-        //Bind the hidden framebuffer and render the scene there.
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+        //Camera's updated parameters.
+        projection = glm::infinitePerspective(glm::radians(cam.fov), (float)win_width/win_height, 0.05f);
+        view = cam.view();
+
+        //Bind the fbo_depth to render the shadow map.
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
+        glViewport(0,0, shadow_tex_reso_x,shadow_tex_reso_y);
+        glClear(GL_DEPTH_BUFFER_BIT); //Clear only depth, coz we write only depth in this buffer. There's no color attachment.
+        shad_depth.use();
+        shad_depth.set_mat4_uniform("dir_light_pv", dir_light_pv);
+        //Now transform the models and render to the fbo_depth.
+        model = glm::rotate(glm::mat4(1.0f), ang_vel_z*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        shad_depth.set_mat4_uniform("model", model);
+        asteroid.draw_triangles();
+
+        // Render to lightcurve framebuffer.
+        glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve);
+        glViewport(0, 0, win_width, win_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        model = glm::rotate(glm::mat4(1.0f), ang_vel_z*t, glm::vec3(0.0f,0.0f,1.0f));
-        shad.set_mat4_uniform("model", model);
-        aster.draw_triangles();
-
-        //The scene is now rendered in the hidden framebuffer. It will not be displayed on the monitor.
-        //With that scene rendered, let's calculate the lightcurve data (time and brightness) :
+        shad_dir_light_with_shadow.use();
+        shad_dir_light_with_shadow.set_mat4_uniform("projection", dir_light_projection);
+        shad_dir_light_with_shadow.set_mat4_uniform("view", dir_light_view);
+        shad_dir_light_with_shadow.set_vec3_uniform("light_dir", light_dir);
+        shad_dir_light_with_shadow.set_mat4_uniform("dir_light_pv", dir_light_pv);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, tex_depth);
+        shad_dir_light_with_shadow.set_int_uniform("sample_shadow", 0);
+        shad_dir_light_with_shadow.set_mat4_uniform("model", model);
+        asteroid.draw_triangles();
+        brightness_vector.push_back(get_brightness(tex_lightcurve, win_width, win_height));
         time_vector.push_back(t);
-        brightness_vector.push_back(get_brightness(tex, win_width, win_height));
         t += dt;
-        //The calculation of the lightvurve is over for this frame. The 'backend' hidden framebuffer holds the important info.
-        //You may print the results in a file.
 
-        //If we want to display the scene in the monitor as well (the default framebuffer), then :
+        //Bind the default fbo to render the scene to the window.
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        aster.draw_triangles();
-
-        //Render gui stuff.
+        glViewport(0,0, win_width, win_height);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Now we have both depth and color (unlike to the fbo_depth).
+        asteroid.draw_triangles();        
 
         ImGui_ImplOpenGL3_NewFrame();
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
- 
-        ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Menu", nullptr);
 
-        ImGui::Text("Light direction");
-        ImGui::SliderFloat("[deg]##angle", &angle, 0.0f, 360.0f);
-        ImGui::Separator();
-        light_dir.x = cos(glm::radians(angle));
-        light_dir.y = sin(glm::radians(angle));
-        shad.set_vec3_uniform("light_dir", light_dir);
+        ImGui::SetNextWindowSize(ImVec2(300.0f, 600.0f), ImGuiCond_FirstUseEver);
+        static bool popen = true;
+        ImGui::Begin("Controls", &popen); //Imgui window with title and a close button.
+        if (!popen)
+            glfwSetWindowShouldClose(window, true);
 
-        ImGui::Text("Camera y-coord");
-        ImGui::SliderFloat("[km]", &cam_pos.y, -250.0f,-1.0f);
-        ImGui::Separator();
-        shad.set_vec3_uniform("cam_pos", cam_pos);
-        view = glm::lookAt(cam_pos, cam_aim, cam_up);
-        shad.set_mat4_uniform("view", view);
+        ImGui::BulletText("Light's direction");
+        ImGui::SliderFloat("lon [deg]##dir_light_lon", &dir_light_lon, 0.0f, 360.0f);
+        ImGui::SliderFloat("lat [deg]##dir_light_lat", &dir_light_lat, 0.0f, 180.0f);
 
-        ImGui::Text("Camera f.o.v.");
-        ImGui::SliderFloat("[deg]##fov", &fov, 1.0f, 45.0f);
-        ImGui::Separator();
-        projection = glm::perspective(glm::radians(fov), (float)win_width/win_height, 0.01f, 3000.0f);
-        shad.set_mat4_uniform("projection", projection);
-
-        ImGui::Dummy(ImVec2(0.0f,15.0f));
-
-        ImGui::Text("FPS [ %.0f ] ", ImGui::GetIO().Framerate);
-
-        ImGui::End(); 
-
-        ImGui::SetNextWindowPos(ImVec2(0.0f, 5.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(5.0f*ImGui::GetIO().DisplaySize.x/7.0f, 1.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Real-time lightcurve", nullptr);
-        ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-        if (ImPlot::BeginPlot("Lightcurve", plot_win_size))
-        {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
-            ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t-70.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
-            ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
-            ImPlot::PopStyleColor();
-            ImPlot::EndPlot();
-        }
         ImGui::End();
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(win);
+       
+        glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
@@ -263,10 +281,8 @@ int main()
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
-    ImPlot::DestroyContext(); //Strictly BEFORE Imgui::DestroyContext();
     ImGui::DestroyContext();
 
     glfwTerminate();
-
     return 0;
 }

@@ -55,7 +55,7 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
 
 
     //Shadow acne fix : This is basically an effort to balance shadow acne (self shadowing) and Peter-shitty-Panning. Find your balance.
-    float min_bias = 0.0004f, amplifier = 0.004f;
+    float min_bias = 0.0008f, amplifier = 0.008f;
     float bias = max(amplifier*(1.0f - max(dot(norm, light_dir_norm), 0.0f)), min_bias);
 
     vec2 texel_size = 1.0f/textureSize(sample_shadow, 0);
