@@ -7,8 +7,8 @@ int main()
 {
     glfwInit(); //Always the first glfw function. It initializes glfw.
 
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3); //Version 3.x
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3); //Version x.3
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4); //Version 4.x
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5); //Version x.5
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); //Core OpenGL.
 
     //Create window object (pointer to struct) at default position.

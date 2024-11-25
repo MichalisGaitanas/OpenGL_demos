@@ -124,13 +124,13 @@ int main()
 
     //Setup glfw stuff.
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
 
-    GLFWwindow *win = glfwCreateWindow(win_width, win_height, "Lightcurve generation", NULL, NULL);
+    GLFWwindow *win = glfwCreateWindow(win_width, win_height, "Lightcurve generation (no shadow)", NULL, NULL);
     if (win == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -162,7 +162,7 @@ int main()
     (void)io;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(win, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init("#version 450");
     ImGuiStyle &imstyle = ImGui::GetStyle();
     imstyle.WindowMinSize = ImVec2(200.0f,200.0f);
     imstyle.FrameRounding = 5.0f;
@@ -363,7 +363,7 @@ int main()
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.0f, 0.0f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));
-        if (ImGui::Button("Lightcurve", ImVec2(70.0f,50.0f)))
+        if (ImGui::Button("Lightcurve", ImVec2(70.0f,30.0f)))
             show_realtime_lightcurve = !show_realtime_lightcurve;
         ImGui::PopStyleColor(3);
 

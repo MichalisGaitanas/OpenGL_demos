@@ -13,8 +13,6 @@
 #include"../include/mesh.hpp"
 #include"../include/camera.hpp"
 
-#define PI 3.1415926535897932384626433832795
-
 camera cam(glm::vec3(0.0f, -20.0f, 3.0f), glm::vec3(0.0f, 0.0f, 1.0f), 90.0f); //Set the camera.
 
 float time_tick; //Elapsed time per frame update.
@@ -168,8 +166,8 @@ int main()
 {
     //Setup glfw.
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
@@ -210,7 +208,7 @@ int main()
     (void)io;
     ImGui::StyleColorsDark();
     ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 330");
+    ImGui_ImplOpenGL3_Init("#version 450");
     ImGuiStyle &imstyle = ImGui::GetStyle();
     imstyle.WindowMinSize = ImVec2(200.0f,200.0f);
     imstyle.FrameRounding = 5.0f;

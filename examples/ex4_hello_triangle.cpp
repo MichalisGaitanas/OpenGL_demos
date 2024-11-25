@@ -3,7 +3,7 @@
 #include<cstdio>
 
 //Vertex shader source code.
-const char *vsource = "#version 330 core\n"
+const char *vsource = "#version 450 core\n"
                       "layout (location = 0) in vec3 pos;\n"
                       "void main()\n"
                       "{\n"
@@ -11,7 +11,7 @@ const char *vsource = "#version 330 core\n"
                       "}";
 
 //Fragment shader source code.
-const char *fsource = "#version 330 core\n"
+const char *fsource = "#version 450 core\n"
                       "out vec4 frag_color;\n"
                       "void main()\n"
                       "{\n"
@@ -35,8 +35,8 @@ void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
 int main()
 {
     glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     const int x_top_left = 100, y_top_left = 100;

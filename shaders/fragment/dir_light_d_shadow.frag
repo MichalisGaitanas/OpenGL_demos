@@ -1,4 +1,4 @@
-#version 330 core
+#version 450 core
 
 #define POISSON_SAMPLES 16
 
@@ -52,7 +52,6 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
     //values only). Then we compare this depth to the current fragment's depth (projected_coords.z), in order to decide if the fragment is in
     //shadow or not. This algorithm calculates the shadow but has 2 problems : 1) Shadow acne (see below), 2) Sharp shadow edges (see below).
     //We try to fix the acne via depth bias and the sharp edges via a smoothing algorithm.
-
 
     //Shadow acne fix : This is basically an effort to balance shadow acne (self shadowing) and Peter-shitty-Panning. Find your balance.
     float min_bias = 0.0008f, amplifier = 0.008f;
