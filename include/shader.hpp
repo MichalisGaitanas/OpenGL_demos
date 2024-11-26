@@ -172,4 +172,104 @@ public:
     }
 };
 
+
+//Compute shader.
+class cshader
+{
+private:
+    unsigned int ID; //Compute shader program ID.
+
+public:
+    //Constructor: Reads, compiles, and links the compute shader.
+    cshader(const char* cpath)
+    {
+        //Read the compute shader source code from the file.
+        std::ifstream fcompute(cpath);
+        if (!fcompute.is_open())
+        {
+            fprintf(stderr, "Error: '%s' not found. Exiting...\n", cpath);
+            exit(EXIT_FAILURE);
+        }
+
+        std::string ctemp;
+        ctemp.assign((std::istreambuf_iterator<char>(fcompute)), (std::istreambuf_iterator<char>()));
+        const char* csource = ctemp.c_str();
+
+        //Compile the compute shader.
+        unsigned cshader = glCreateShader(GL_COMPUTE_SHADER);
+        glShaderSource(cshader, 1, &csource, NULL);
+        glCompileShader(cshader);
+
+        //Check for compile errors.
+        int success;
+        char infolog[1024];
+        glGetShaderiv(cshader, GL_COMPILE_STATUS, &success);
+        if (!success)
+        {
+            glGetShaderInfoLog(cshader, 1024, NULL, infolog);
+            fprintf(stderr, "Error while compiling '%s'.\n", cpath);
+            fprintf(stderr, "%s\n", infolog);
+            exit(EXIT_FAILURE);
+        }
+
+        //Link the compute shader into a program.
+        ID = glCreateProgram();
+        glAttachShader(ID, cshader);
+        glLinkProgram(ID);
+
+        //Check for link errors.
+        glGetProgramiv(ID, GL_LINK_STATUS, &success);
+        if (!success)
+        {
+            glGetProgramInfoLog(ID, 1024, NULL, infolog);
+            fprintf(stderr, "Error while linking compute shader program ('%s').\n", cpath);
+            fprintf(stderr, "%s\n", infolog);
+            exit(EXIT_FAILURE);
+        }
+
+        //Delete the shader object after linking.
+        glDeleteShader(cshader);
+    }
+
+    //Destructor: Clean up the shader program.
+    ~cshader()
+    {
+        glDeleteProgram(ID);
+    }
+
+    //Activate (use) the compute shader.
+    void use()
+    {
+        glUseProgram(ID);
+    }
+
+    // Dispatch the compute shader.
+    void dispatch(unsigned int x, unsigned int y = 1, unsigned int z = 1)
+    {
+        glDispatchCompute(x,y,z);
+        glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT); //Ensure that all compute operations are completed before moving on.
+    }
+
+    //Pass 1 int uniform.
+    void set_int_uniform(const std::string &name, int value)
+    {
+        unsigned location = glGetUniformLocation(ID, name.c_str());
+        glUniform1i(location, value);
+    }
+
+    //Pass 1 float uniform.
+    void set_float_uniform(const std::string &name, float value)
+    {
+        unsigned location = glGetUniformLocation(ID, name.c_str());
+        glUniform1f(location, value);
+    }
+
+    // Pass 2-int vector uniform (ivec2)
+    void set_ivec2_uniform(const std::string &name, int x, int y)
+    {
+        unsigned int location = glGetUniformLocation(ID, name.c_str());
+        glUniform2i(location, x, y);
+    }
+};
+
 #endif

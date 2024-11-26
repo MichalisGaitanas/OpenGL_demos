@@ -12,7 +12,6 @@
 
 #include"../include/shader.hpp"
 #include"../include/mesh.hpp"
-#include"../include/camera.hpp"
 
 const float PI = glm::pi<float>();
 
@@ -59,6 +58,7 @@ void setup_fbo_lightcurve(int width_pix, int height_pix)
     glGenTextures(1, &tex_lightcurve);
     glBindTexture(GL_TEXTURE_2D, tex_lightcurve);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_R32UI, width_pix, height_pix, 0, GL_RED_INTEGER, GL_UNSIGNED_INT, NULL);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_lightcurve, 0);
@@ -72,7 +72,7 @@ void setup_fbo_lightcurve(int width_pix, int height_pix)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-float get_brightness(unsigned int tex, int width_pix, int height_pix)
+float get_brightness_cpu(unsigned int tex, int width_pix, int height_pix)
 {
     glBindTexture(GL_TEXTURE_2D, tex);
     std::vector<float> pixels(width_pix*height_pix);
@@ -82,6 +82,63 @@ float get_brightness(unsigned int tex, int width_pix, int height_pix)
         brightness += pixels[i];
     glBindTexture(GL_TEXTURE_2D, 0);
     return brightness/(width_pix*height_pix);
+}
+
+float get_brightness_gpu(unsigned int tex, int width_pix, int height_pix)
+{
+    static bool initialized = false;
+    static cshader brightness_compute("../shaders/compute/brightness.comp");
+    static unsigned int ssbo_sums;
+    static const unsigned int local_size_x = 16, local_size_y = 16;
+    static unsigned int num_groups_x, num_groups_y;
+    static int prev_width = 0, prev_height = 0;
+
+    if (!initialized || width_pix != prev_width || height_pix != prev_height)
+    {
+        num_groups_x = (width_pix + local_size_x - 1) / local_size_x;
+        num_groups_y = (height_pix + local_size_y - 1) / local_size_y;
+
+        unsigned int ssbo_size = num_groups_x * num_groups_y * sizeof(float);
+
+        if (initialized)
+        {
+            glDeleteBuffers(1, &ssbo_sums);
+        }
+
+        glGenBuffers(1, &ssbo_sums);
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_sums);
+        glBufferData(GL_SHADER_STORAGE_BUFFER, ssbo_size, NULL, GL_DYNAMIC_COPY);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_sums); // Binding point 1
+        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+        initialized = true;
+        prev_width = width_pix;
+        prev_height = height_pix;
+    }
+
+    brightness_compute.use();
+    brightness_compute.set_ivec2_uniform("image_size", width_pix, height_pix);
+
+    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
+
+    brightness_compute.dispatch(num_groups_x, num_groups_y, 1);
+
+    // Read back the partial sums
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_sums);
+    float* partial_sums = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+    float brightness = 0.0f;
+    int num_partial_sums = num_groups_x * num_groups_y;
+    for (int i = 0; i < num_partial_sums; ++i)
+        brightness += partial_sums[i];
+
+    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    // Divide by the total number of pixels
+    brightness /= (width_pix * height_pix);
+
+    return brightness;
 }
 
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
@@ -161,13 +218,14 @@ int main()
     float dir_light_dist = fl*rmax; //[km]
     float ang_vel_z = PI/20.0f; //[rad/sec]
     float fov = PI/4.0f; //[rad]
-    float t = 0.0f, dt = 5.0f; //[sec]
+    float t = 0.0f, dt = 0.5f; //[sec]
 
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
 
     //Lightcure data.
     std::vector<float> time_vector; //[sec]
-    std::vector<float> brightness_vector;
+    std::vector<float> brightness_vector_cpu;
+    std::vector<float> brightness_vector_gpu;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -237,12 +295,15 @@ int main()
         glBindTexture(GL_TEXTURE_2D, 0);
 
         time_vector.push_back(t); //[sec]
-        brightness_vector.push_back(get_brightness(tex_lightcurve, win_width, win_height));
+        brightness_vector_cpu.push_back(get_brightness_cpu(tex_lightcurve, win_width, win_height));
+        brightness_vector_gpu.push_back(get_brightness_gpu(tex_lightcurve, win_width, win_height));
         t += dt; //[sec]
-        if (time_vector.size() > 4000)
+        if (t >= 200.0f)
         {
+            break;
             time_vector.erase(time_vector.begin());
-            brightness_vector.erase(brightness_vector.begin());
+            brightness_vector_cpu.erase(brightness_vector_cpu.begin());
+            brightness_vector_gpu.erase(brightness_vector_gpu.begin());
         }
 
         //Render GUI :   
@@ -276,7 +337,7 @@ int main()
             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
             ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
             ImPlot::SetupAxisLimits(ImAxis_X1, t-70.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
-            ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
+            ImPlot::PlotLine("", time_vector.data(), brightness_vector_cpu.data(), time_vector.size());
             ImPlot::PopStyleColor();
             ImPlot::EndPlot();
         }
@@ -284,22 +345,20 @@ int main()
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        /////////////////////////////////////////////////////////////////////
        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    //FILE *fp_lightcurve = fopen("demo4_lightcurve.txt","w");
-    //for (size_t i = 0; i < time_vector.size(); ++i)
-    //    fprintf(fp_lightcurve,"%.6f  %.6f\n",time_vector[i], brightness_vector[i]);
-    //fclose(fp_lightcurve);
-
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImPlot::DestroyContext();
     ImGui::DestroyContext();
+
+    FILE *fp = fopen("lc.txt","w");
+    for (size_t i = 0; i < brightness_vector_cpu.size(); ++i)
+        fprintf(fp,"%f  %f  %f\n",time_vector[i], brightness_vector_cpu[i], brightness_vector_gpu[i]);
+    fclose(fp);
 
     glfwTerminate();
     return 0;
