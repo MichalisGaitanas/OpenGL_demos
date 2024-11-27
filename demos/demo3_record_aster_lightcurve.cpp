@@ -1,8 +1,3 @@
-#include"../imgui/imgui.h"
-#include"../imgui/imgui_impl_glfw.h"
-#include"../imgui/imgui_impl_opengl3.h"
-#include"../imgui/implot.h"
-
 #include<GL/glew.h>
 #include<GLFW/glfw3.h>
 #include<glm/glm.hpp>
@@ -10,8 +5,9 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/lightcurve.h"
 
 const float PI = glm::pi<float>();
 
@@ -72,75 +68,6 @@ void setup_fbo_lightcurve(int width_pix, int height_pix)
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-float get_brightness_cpu(unsigned int tex, int width_pix, int height_pix)
-{
-    glBindTexture(GL_TEXTURE_2D, tex);
-    std::vector<float> pixels(width_pix*height_pix);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data()); //Read the pixel RGB values from the lightcurve texture
-    float brightness = 0.0f;
-    for (int i = 0; i < width_pix*height_pix; ++i)
-        brightness += pixels[i];
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return brightness/(width_pix*height_pix);
-}
-
-float get_brightness_gpu(unsigned int tex, int width_pix, int height_pix)
-{
-    static bool initialized = false;
-    static cshader brightness_compute("../shaders/compute/brightness.comp");
-    static unsigned int ssbo_sums;
-    static const unsigned int local_size_x = 16, local_size_y = 16;
-    static unsigned int num_groups_x, num_groups_y;
-    static int prev_width = 0, prev_height = 0;
-
-    if (!initialized || width_pix != prev_width || height_pix != prev_height)
-    {
-        num_groups_x = (width_pix + local_size_x - 1) / local_size_x;
-        num_groups_y = (height_pix + local_size_y - 1) / local_size_y;
-
-        unsigned int ssbo_size = num_groups_x * num_groups_y * sizeof(float);
-
-        if (initialized)
-        {
-            glDeleteBuffers(1, &ssbo_sums);
-        }
-
-        glGenBuffers(1, &ssbo_sums);
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_sums);
-        glBufferData(GL_SHADER_STORAGE_BUFFER, ssbo_size, NULL, GL_DYNAMIC_COPY);
-        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, ssbo_sums); // Binding point 1
-        glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-        initialized = true;
-        prev_width = width_pix;
-        prev_height = height_pix;
-    }
-
-    brightness_compute.use();
-    brightness_compute.set_ivec2_uniform("image_size", width_pix, height_pix);
-
-    glBindImageTexture(0, tex, 0, GL_FALSE, 0, GL_READ_ONLY, GL_R32F);
-
-    brightness_compute.dispatch(num_groups_x, num_groups_y, 1);
-
-    // Read back the partial sums
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssbo_sums);
-    float* partial_sums = (float*)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-
-    float brightness = 0.0f;
-    int num_partial_sums = num_groups_x * num_groups_y;
-    for (int i = 0; i < num_partial_sums; ++i)
-        brightness += partial_sums[i];
-
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-    // Divide by the total number of pixels
-    brightness /= (width_pix * height_pix);
-
-    return brightness;
-}
-
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
@@ -173,7 +100,6 @@ int main()
         return 0;
     }
     glfwMakeContextCurrent(window);
-    glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
     glfwGetWindowSize(window, &win_width, &win_height);
@@ -185,27 +111,12 @@ int main()
         return 0;
     }
 
-    meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj");
+    meshvfn asteroid("../obj/vfn/asteroids/kleopatra4k.obj");
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
-    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow.frag");
+    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow_cheap.frag");
 
     setup_fbo_depth();
     setup_fbo_lightcurve(win_width, win_height);
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImPlot::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
-    io.IniFilename = NULL;
-    io.Fonts->AddFontFromFileTTF("../fonts/Arial.ttf", 15.0f);
-    (void)io;
-    ImGui::StyleColorsDark();
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
-    ImGui_ImplOpenGL3_Init("#version 450");
-    ImGuiStyle &imstyle = ImGui::GetStyle();
-    imstyle.WindowMinSize = ImVec2(200.0f,200.0f);
-    imstyle.FrameRounding = 5.0f;
-    imstyle.WindowRounding = 5.0f;
 
     glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f);
     glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
@@ -216,21 +127,22 @@ int main()
     float fc = 1.1f, fl = 1.2; //Scale factors : fc is for the ortho cube size and fl for the directional light dummy distance.
     float rmax = asteroid.get_farthest_vertex_distance(); //[km]
     float dir_light_dist = fl*rmax; //[km]
-    float ang_vel_z = PI/20.0f; //[rad/sec]
+    float ang_vel_z = PI/40.0f; //[rad/sec]
     float fov = PI/4.0f; //[rad]
-    float t = 0.0f, dt = 0.5f; //[sec]
 
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
 
     //Lightcure data.
-    std::vector<float> time_vector; //[sec]
-    std::vector<float> brightness_vector_cpu;
-    std::vector<float> brightness_vector_gpu;
+    float t0 = 0.0f, tmax = 1000.0f, dt = 1.0f;
+    size_t i = 0;
+    size_t sz = static_cast<int>((tmax - t0)/dt) + 1;
+    std::vector<float> time_vector(sz); //[sec]
+    std::vector<float> brightness_vector(sz);
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
-    while (!glfwWindowShouldClose(window))
+    for (float t = t0; t <= tmax; t += dt, ++i)
     {
         //Essential calculation needed for rendering :
 
@@ -249,7 +161,7 @@ int main()
         glm::mat4 dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
         glm::mat4 projection = glm::infinitePerspective(fov, (float)win_width/win_height, 0.05f);
-        static float cam_dist = 10.0f, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/2.0f;
+        static float cam_dist = 5.0f*rmax, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/2.0f;
         glm::vec3 cam_pos = cam_dist*glm::vec3(cos(cam_lon)*sin(cam_lat),
                                                sin(cam_lon)*sin(cam_lat),
                                                cos(cam_lat));
@@ -285,79 +197,19 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex_depth);
         shad_dir_light_with_shadow.set_int_uniform("sample_shadow", 0);
-        asteroid.draw_triangles();
-
-        //3) Render to the default framebuffer (monitor window).
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0,0, win_width, win_height);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Again both depth and color values are present in this framebuffer.
-        asteroid.draw_triangles();     
+        asteroid.draw_triangles(); 
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        time_vector.push_back(t); //[sec]
-        brightness_vector_cpu.push_back(get_brightness_cpu(tex_lightcurve, win_width, win_height));
-        brightness_vector_gpu.push_back(get_brightness_gpu(tex_lightcurve, win_width, win_height));
-        t += dt; //[sec]
-        if (t >= 200.0f)
-        {
-            break;
-            time_vector.erase(time_vector.begin());
-            brightness_vector_cpu.erase(brightness_vector_cpu.begin());
-            brightness_vector_gpu.erase(brightness_vector_gpu.begin());
-        }
-
-        //Render GUI :   
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        ImGui::SetNextWindowSize(ImVec2(300.0f, 600.0f), ImGuiCond_FirstUseEver);
-        static bool popen = true;
-        ImGui::Begin("Controls", &popen); //Imgui window with title and a close button.
-        if (!popen)
-            glfwSetWindowShouldClose(window, true);
-        ImGui::BulletText("Light's direction");
-        ImGui::SliderFloat("lon [deg]##dir_light_lon", &dir_light_lon, 0.0f, 2.0f*PI);
-        ImGui::SliderFloat("lat [deg]##dir_light_lat", &dir_light_lat, 0.0f, PI);
-        ImGui::BulletText("Camera's position");
-        ImGui::SliderFloat("dist [km]##cam_dist", &cam_dist, 2.0f*rmax, 50.0f*rmax); //The camera distance ranges from 2 to 50 times the distance of the farthest vertex of the mesh.
-        ImGui::SliderFloat("lon [deg]##cam_lon", &cam_lon, 0.0f, 2.0f*PI);
-        ImGui::SliderFloat("lat [deg]##cam_lat", &cam_lat, 0.0f, PI);
-        ImGui::BulletText("Performance");
-        ImGui::Text("FPS : [%.0f] ",ImGui::GetIO().Framerate);
-        ImGui::End();
-
-        ImGui::SetNextWindowPos(ImVec2(0.0f, 5.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(5.0f*ImGui::GetIO().DisplaySize.x/7.0f, 1.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Real-time lightcurve", nullptr);
-        ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-        if (ImPlot::BeginPlot("Lightcurve", plot_win_size))
-        {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
-            ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t-70.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
-            ImPlot::PlotLine("", time_vector.data(), brightness_vector_cpu.data(), time_vector.size());
-            ImPlot::PopStyleColor();
-            ImPlot::EndPlot();
-        }
-        ImGui::End();
-
-        ImGui::Render();
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+        time_vector[i] = t; //[sec]
+        brightness_vector[i] = get_brightness_gpu(tex_lightcurve, win_width, win_height);
        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    ImGui_ImplOpenGL3_Shutdown();
-    ImGui_ImplGlfw_Shutdown();
-    ImPlot::DestroyContext();
-    ImGui::DestroyContext();
-
-    FILE *fp = fopen("lc.txt","w");
-    for (size_t i = 0; i < brightness_vector_cpu.size(); ++i)
-        fprintf(fp,"%f  %f  %f\n",time_vector[i], brightness_vector_cpu[i], brightness_vector_gpu[i]);
+    FILE *fp = fopen("lightcurve.txt","w");
+    for (size_t i = 0; i < sz; ++i)
+        fprintf(fp,"%f  %f\n",time_vector[i], brightness_vector[i]);
     fclose(fp);
 
     glfwTerminate();

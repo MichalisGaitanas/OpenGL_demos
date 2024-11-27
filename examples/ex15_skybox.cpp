@@ -5,9 +5,9 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-#include"../include/camera.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/camera.h"
 
 camera cam(glm::vec3(0.0f, -10.0f, 0.0f));
 

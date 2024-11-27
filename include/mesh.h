@@ -1,5 +1,5 @@
-#ifndef MESH_HPP
-#define MESH_HPP
+#ifndef MESH_H
+#define MESH_H
 
 #include<GL/glew.h>
 #include<iostream>

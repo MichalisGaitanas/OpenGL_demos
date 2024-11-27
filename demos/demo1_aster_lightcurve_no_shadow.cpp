@@ -13,8 +13,8 @@
 #include<cmath>
 #include<vector>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
 
 #ifdef _OPENMP
 #include<omp.h>
@@ -308,7 +308,7 @@ int main()
         ImGui::SetNextWindowPos(ImVec2(0.0f, ImGui::GetIO().DisplaySize.y), ImGuiCond_FirstUseEver, ImVec2(0.0f, 1.0f));
         ImGui::Begin("Menu");
 
-        ImGui::Text("Light direction");
+        ImGui::Text("Light direction (plane x-z)");
         ImGui::SliderFloat("[deg]##angle", &angle, 0.0f, 360.0f);
         ImGui::Separator();
         light_dir.x = cos(glm::radians(angle));
@@ -329,6 +329,7 @@ int main()
         shad.set_mat4_uniform("projection", projection);
 
         //Choose asteroid algorithm.
+        ImGui::Text("Asteroids");
         if (ImGui::Checkbox("Gerasimenko", &show_gerasimenko))
             show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_eros = show_kleopatra = false;
         if (ImGui::Checkbox("Bennu", &show_bennu))
@@ -345,6 +346,7 @@ int main()
             show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_kleopatra = false;
         if (ImGui::Checkbox("Kleopatra", &show_kleopatra))
             show_gerasimenko = show_bennu = show_didymain = show_itokawa = show_ryugu = show_toutatis = show_eros = false;
+        ImGui::Separator();
 
         if (!show_gerasimenko && !show_bennu && !show_didymain && !show_itokawa && !show_ryugu && !show_toutatis && !show_eros && !show_kleopatra)
         {
@@ -354,11 +356,9 @@ int main()
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         }
 
-        ImGui::Dummy(ImVec2(0.0f,15.0f));
-
+        ImGui::Text("Performance ");
         ImGui::Text("FPS [ %.0f ] ", ImGui::GetIO().Framerate);
-
-        ImGui::Dummy(ImVec2(0.0f,15.0f));
+        ImGui::Separator();
 
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f, 0.0f, 0.0f, 1.0f));
         ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(1.0f, 0.0f, 0.0f, 1.0f));

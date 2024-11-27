@@ -1,5 +1,5 @@
-#ifndef CAMERA_HPP
-#define CAMERA_HPP
+#ifndef CAMERA_H
+#define CAMERA_H
 
 #include<GL/glew.h>
 #include<glm/glm.hpp>

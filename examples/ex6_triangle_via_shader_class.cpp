@@ -2,7 +2,7 @@
 #include<GLFW/glfw3.h>
 #include<cstdio>
 
-#include"../include/shader.hpp"
+#include"../include/shader.h"
 
 const int win_width = 800, win_height = 700;
 const char *win_label = "Triangle shader class";

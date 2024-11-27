@@ -5,8 +5,8 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
 
 int win_width = 1000, win_height = 800;
 const char *win_label = "Mesh loading";

@@ -11,7 +11,7 @@
 #include<cstdio>
 #include<cmath>
 
-#include"../include/shader.hpp"
+#include"../include/shader.h"
 
 int win_width = 1000, win_height = 800;
 

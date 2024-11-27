@@ -7,7 +7,7 @@
 #include<cstdio>
 #include<cmath>
 
-#include"../include/shader.hpp"
+#include"../include/shader.h"
 
 void key_callback(GLFWwindow *win, int key, int /*scancode*/, int action, int /*mods*/)
 {

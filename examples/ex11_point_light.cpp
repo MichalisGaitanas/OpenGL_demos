@@ -6,8 +6,8 @@
 
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
 
 int win_width = 900, win_height = 900;
 

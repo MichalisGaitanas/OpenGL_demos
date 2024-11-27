@@ -4,7 +4,8 @@ layout(local_size_x = 16, local_size_y = 16) in;
 
 layout(r32f, binding = 0) uniform readonly image2D img_input;
 
-layout(std430, binding = 1) buffer Sums {
+layout(std430, binding = 1) buffer Sums
+{
     float partial_sums[];
 };
 
@@ -12,40 +13,41 @@ uniform ivec2 image_size;
 
 const uint LOCAL_SIZE_X = 16u;
 const uint LOCAL_SIZE_Y = 16u;
-const uint LOCAL_SIZE = LOCAL_SIZE_X * LOCAL_SIZE_Y;
+const uint LOCAL_SIZE = LOCAL_SIZE_X*LOCAL_SIZE_Y;
 
-shared float local_sums[LOCAL_SIZE]; // 16x16 workgroup size
+shared float local_sums[LOCAL_SIZE]; //16x16 workgroup size.
 
-void main() {
+void main()
+{
     uint local_idx = gl_LocalInvocationIndex;
     ivec2 pixel_coords = ivec2(gl_GlobalInvocationID.xy);
 
     float pixel_value = 0.0;
-    if (pixel_coords.x < image_size.x && pixel_coords.y < image_size.y) {
+    if (pixel_coords.x < image_size.x && pixel_coords.y < image_size.y)
         pixel_value = imageLoad(img_input, pixel_coords).r;
-    }
 
-    // Store pixel value in shared memory
+    //Store pixel value in shared memory.
     local_sums[local_idx] = pixel_value;
 
-    // Synchronize threads in the workgroup
+    //Synchronize threads in the workgroup.
     memoryBarrierShared();
     barrier();
 
-    // Parallel reduction within the workgroup
-    uint stride = LOCAL_SIZE / 2;
-    while (stride > 0) {
-        if (local_idx < stride) {
+    //Parallel reduction within the workgroup.
+    uint stride = LOCAL_SIZE/2;
+    while (stride > 0)
+    {
+        if (local_idx < stride)
             local_sums[local_idx] += local_sums[local_idx + stride];
-        }
         memoryBarrierShared();
         barrier();
         stride = stride >> 1;
     }
 
-    // The first thread writes the partial sum to the SSBO
-    if (local_idx == 0) {
-        uint group_idx = gl_WorkGroupID.x + gl_WorkGroupID.y * gl_NumWorkGroups.x;
+    //The first thread writes the partial sum to the SSBO.
+    if (local_idx == 0)
+    {
+        uint group_idx = gl_WorkGroupID.x + gl_WorkGroupID.y*gl_NumWorkGroups.x;
         partial_sums[group_idx] = local_sums[0];
     }
 }

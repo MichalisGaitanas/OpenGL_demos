@@ -15,21 +15,10 @@
 #include<string>
 #include<array>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-#include"../include/camera.hpp"
-
-#ifdef _OPENMP
-#include<omp.h>
-#endif
-
-void omp_setup_threads()
-{
-#ifdef _OPENMP
-    omp_set_dynamic(false);  //Obey to my following thread number request.
-    omp_set_num_threads(omp_get_max_threads()/2);  //Set threads to half of the max available of the machine.
-#endif
-}
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/camera.h"
+#include"../include/lightcurve.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -566,37 +555,6 @@ void rk4_do_step(dvec20 &state)
 
 /* End of integration method. */
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//Calculate brightness (lightcurve) from the rendered scene in the hidden framebuffer (fbo).
-float get_brightness(unsigned int tex, int width_pix, int height_pix)
-{
-    glBindTexture(GL_TEXTURE_2D, tex);
-    std::vector<float> pixels(width_pix*height_pix);
-    
-    //Read the pixels from the texture (only the red channel, i.e. grayscale color).
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data());
-    
-    //Sum up the intensity values stored in the red channel.
-#ifdef _OPENMP
-    int i, total_pixels = width_pix*height_pix;
-    float brightness = 0.0f;
-    #pragma omp parallel for firstprivate(total_pixels)\
-                             private(i)\
-                             shared(pixels)\
-                             schedule(static)\
-                             reduction(+:brightness)
-    for (i = 0; i < total_pixels; ++i)
-        brightness += pixels[i];
-#else
-    float brightness = 0.0f;
-    for (int i = 0; i < width_pix*height_pix; ++i)
-        brightness += pixels[i];
-#endif
-
-    return brightness/(width_pix*height_pix); //Normalize the brightness.
-}
-
 //Create a new auxiliary hidden framebuffer (fbo), that we will use to perform the lightcurve calculation.
 void setup_fbo(int width_pix, int height_pix)
 {
@@ -761,8 +719,6 @@ void common_plot(const char *plot_label, const char *yaxis_label, bool &bool_plo
 
 int main()
 {
-    omp_setup_threads();
-
     //Set physical parameters and initial conditions. (1 [kgstar] = 10^18 [kg], time is measured in [days] and length in [km])
     G = 4.9823382527999985e8; //[km^3/(kgstar*day^2]
     M1 = 0.669656; //[kgstar]
@@ -781,7 +737,7 @@ int main()
     q2 = quat2unit(q2);
 
     double simulated_duration = 0.0; //Simulated duration.
-    dt = 0.001; //Numerical method's integration step in [days] (RK4).
+    dt = 0.004; //Numerical method's integration step in [days] (RK4).
     //Calculate inertia tensors.
     I1 = ell_inertia(M1, semiaxes1);
     I2 = ell_inertia(M2, semiaxes2);
@@ -1022,7 +978,7 @@ int main()
         pitch2_data.push_back(rpy2[1]*180.0/pi);
         yaw2_data.push_back(rpy2[2]*180.0/pi);
 
-        brightness_data.push_back(get_brightness(tex, win_width, win_height));
+        brightness_data.push_back(get_brightness_gpu(tex, win_width, win_height));
 
         time_data.push_back(simulated_duration);
         if (time_data.size() > plot_points_to_remember)

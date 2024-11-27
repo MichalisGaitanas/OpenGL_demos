@@ -15,9 +15,9 @@
 #include<string>
 #include<array>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-#include"../include/camera.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/camera.h"
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

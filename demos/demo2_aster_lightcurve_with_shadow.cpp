@@ -10,9 +10,10 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-#include"../include/camera.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/camera.h"
+#include"../include/lightcurve.h"
 
 const float PI = glm::pi<float>();
 
@@ -70,18 +71,6 @@ void setup_fbo_lightcurve(int width_pix, int height_pix)
         fprintf(stderr, "Lightcurve framebuffer is not completed!\n");
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-float get_brightness(unsigned int tex, int width_pix, int height_pix)
-{
-    glBindTexture(GL_TEXTURE_2D, tex);
-    std::vector<float> pixels(width_pix*height_pix);
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_FLOAT, pixels.data()); //Read the pixel RGB values from the lightcurve texture
-    float brightness = 0.0f;
-    for (int i = 0; i < width_pix*height_pix; ++i)
-        brightness += pixels[i];
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return brightness/(width_pix*height_pix);
 }
 
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
@@ -159,9 +148,9 @@ int main()
     float fc = 1.1f, fl = 1.2; //Scale factors : fc is for the ortho cube size and fl for the directional light dummy distance.
     float rmax = asteroid.get_farthest_vertex_distance(); //[km]
     float dir_light_dist = fl*rmax; //[km]
-    float ang_vel_z = PI/20.0f; //[rad/sec]
+    float ang_vel_z = PI/40.0f; //[rad/sec]
     float fov = PI/4.0f; //[rad]
-    float t = 0.0f, dt = 5.0f; //[sec]
+    float t = 0.0f, dt = 0.1f; //[sec]
 
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
 
@@ -191,7 +180,7 @@ int main()
         glm::mat4 dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
         glm::mat4 projection = glm::infinitePerspective(fov, (float)win_width/win_height, 0.05f);
-        static float cam_dist = 10.0f, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/2.0f;
+        static float cam_dist = 5.0f*rmax, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/2.0f;
         glm::vec3 cam_pos = cam_dist*glm::vec3(cos(cam_lon)*sin(cam_lat),
                                                sin(cam_lon)*sin(cam_lat),
                                                cos(cam_lat));
@@ -237,7 +226,12 @@ int main()
         glBindTexture(GL_TEXTURE_2D, 0);
 
         time_vector.push_back(t); //[sec]
-        brightness_vector.push_back(get_brightness(tex_lightcurve, win_width, win_height));
+        static bool lightcurve_at_cpu = true, lightcurve_at_gpu = false;
+        if (lightcurve_at_cpu)
+            brightness_vector.push_back(get_brightness_cpu(tex_lightcurve, win_width, win_height));
+        else //At gpu.
+            brightness_vector.push_back(get_brightness_gpu(tex_lightcurve, win_width, win_height));
+
         t += dt; //[sec]
         if (time_vector.size() > 4000)
         {
@@ -263,6 +257,13 @@ int main()
         ImGui::SliderFloat("dist [km]##cam_dist", &cam_dist, 2.0f*rmax, 50.0f*rmax); //The camera distance ranges from 2 to 50 times the distance of the farthest vertex of the mesh.
         ImGui::SliderFloat("lon [deg]##cam_lon", &cam_lon, 0.0f, 2.0f*PI);
         ImGui::SliderFloat("lat [deg]##cam_lat", &cam_lat, 0.0f, PI);
+        ImGui::BulletText("Compute brightness at");
+        if (ImGui::Checkbox("CPU", &lightcurve_at_cpu))
+            lightcurve_at_gpu = !lightcurve_at_cpu;
+        ImGui::SameLine();
+        if (ImGui::Checkbox("GPU", &lightcurve_at_gpu))
+            lightcurve_at_cpu = !lightcurve_at_gpu;
+
         ImGui::BulletText("Performance");
         ImGui::Text("FPS : [%.0f] ",ImGui::GetIO().Framerate);
         ImGui::End();
@@ -284,17 +285,10 @@ int main()
 
         ImGui::Render();
         ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        /////////////////////////////////////////////////////////////////////
        
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    //FILE *fp_lightcurve = fopen("demo4_lightcurve.txt","w");
-    //for (size_t i = 0; i < time_vector.size(); ++i)
-    //    fprintf(fp_lightcurve,"%.6f  %.6f\n",time_vector[i], brightness_vector[i]);
-    //fclose(fp_lightcurve);
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();

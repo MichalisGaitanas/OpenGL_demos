@@ -5,9 +5,9 @@
 #include<glm/gtc/type_ptr.hpp>
 #include<cstdio>
 
-#include"../include/shader.hpp"
-#include"../include/mesh.hpp"
-#include"../include/camera.hpp"
+#include"../include/shader.h"
+#include"../include/mesh.h"
+#include"../include/camera.h"
 
 //Camera object instantiation. We make it global so that the glfw callback 'cursor_pos_callback()' (see later) can
 //have access to it. This is just for demo. At a bigger project, we would use glfwSetWindowUserPointer(...) to encapsulate
