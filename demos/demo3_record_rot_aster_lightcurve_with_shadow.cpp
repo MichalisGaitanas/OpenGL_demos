@@ -65,7 +65,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //Hide the window.
 
-    int win_width = 500, win_height = 500;
+    int win_width = 800, win_height = 800;
     GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Off-screen rendering", NULL, NULL);
     if (window == NULL)
     {
@@ -86,7 +86,7 @@ int main()
     glEnable(GL_CULL_FACE);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
 
-    int shadow_tex_reso_x = 1024, shadow_tex_reso_y = 1024; //Shadow image resolution. Prefer 2k. 
+    int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution. Prefer 2k. 
     setup_fbo_depth(shadow_tex_reso_x, shadow_tex_reso_y);
     setup_fbo_lightcurve(win_width, win_height);
 
@@ -101,10 +101,9 @@ int main()
     float fov = PI/4.0f; //[rad]
 
     glm::mat4 projection = glm::infinitePerspective(fov, (float)win_width/win_height, 0.05f);
-
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
 
-    float dir_light_lon = 0.0f, dir_light_lat = PI/4.0f;
+    float dir_light_lon = 0.0f, dir_light_lat = PI/2.0f;
     glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(dir_light_lon)*sin(dir_light_lat),
                                                    sin(dir_light_lon)*sin(dir_light_lat),
                                                    cos(dir_light_lat));
@@ -114,10 +113,11 @@ int main()
         dir_light_up_y = 1.0f;
         dir_light_up_z = 0.0f;
     }
+
     glm::mat4 dir_light_view = glm::lookAt(light_dir, glm::vec3(0.0f), glm::vec3(dir_light_up_x, dir_light_up_y, dir_light_up_z));
     glm::mat4 dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
-    float cam_dist = 10.0f*rmax, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/2.0f;
+    float cam_dist = 10.0f*rmax, cam_lon = 3.0f*PI/2.0f, cam_lat = PI/1.5f;
     glm::vec3 cam_pos = cam_dist*glm::vec3(cos(cam_lon)*sin(cam_lat),
                                            sin(cam_lon)*sin(cam_lat),
                                            cos(cam_lat));
