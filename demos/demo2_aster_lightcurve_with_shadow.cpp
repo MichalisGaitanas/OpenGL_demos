@@ -108,7 +108,7 @@ int main()
     glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    glfwGetWindowSize(window, &win_width, &win_height);
+    //glfwGetWindowSize(window, &win_width, &win_height);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -169,9 +169,8 @@ int main()
         glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(dir_light_lon)*sin(dir_light_lat),
                                                        sin(dir_light_lon)*sin(dir_light_lat),
                                                        cos(dir_light_lat));
-        glm::vec3 norm_light_dir = glm::normalize(light_dir);
         float dir_light_up_x = 0.0f, dir_light_up_y = 0.0f, dir_light_up_z = 1.0f;
-        if (glm::abs(norm_light_dir.z) > 0.999f)
+        if (glm::abs(glm::normalize(light_dir).z) > 0.999f)
         {
             dir_light_up_y = 1.0f;
             dir_light_up_z = 0.0f;
@@ -276,7 +275,7 @@ int main()
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
             ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t-70.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
+            ImPlot::SetupAxisLimits(ImAxis_X1, t-100.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
             ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
             ImPlot::PopStyleColor();
             ImPlot::EndPlot();
