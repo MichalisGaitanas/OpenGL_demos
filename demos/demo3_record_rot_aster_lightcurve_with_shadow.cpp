@@ -9,10 +9,53 @@
 #include"../include/mesh.h"
 #include"../include/lightcurve.h"
 
+class file_inputs
+{
+public:
+
+};
+
 const float PI = glm::pi<float>();
 
 unsigned int fbo_depth, tex_depth; //IDs to hold the depth fbo and the depth texture (shadow map).
 unsigned int fbo_lightcurve, rbo_lightcurve, tex_lightcurve; //IDs to hold the fbo, renderbuffer, and texture of the lightcurve.
+
+bool find_file_assignment_operator(FILE *fp)
+{
+    int c = fgetc(fp);
+    while (c != EOF)
+    {
+        if (c == ':')
+        {
+            c = fgetc(fp);
+            if (c == '=')
+                return true;
+        }
+        else
+            c = fgetc(fp); //Update c when it is not ':'.
+    }
+    return false;
+}
+
+/*
+
+Use as : FILE *fp = fopen("input.txt", "r");
+         if (!fp)
+             fprintf(stderr, "Failed to open file.");
+
+         file_inputs inputs;
+
+         // Read values after finding the ':=' pattern
+         if (find_assignment_pattern(fp)) fscanf(fp, "%lf", &inputs.G);
+         if (find_assignment_pattern(fp)) fscanf(fp, "%d", &inputs.count);
+
+         fclose(fp);
+
+         // Print to verify the read values
+         printf("G: %lf\n", inputs.G);
+         printf("Count: %d\n", inputs.count);
+         
+*/
 
 void setup_fbo_depth(int shadow_tex_reso_x, int shadow_tex_reso_y)
 {
