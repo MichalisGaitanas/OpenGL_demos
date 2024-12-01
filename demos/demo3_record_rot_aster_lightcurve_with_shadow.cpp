@@ -137,7 +137,7 @@ int main()
     setup_fbo_depth(shadow_tex_reso_x, shadow_tex_reso_y);
     setup_fbo_lightcurve(win_width, win_height);
 
-    meshvfn asteroid("../obj/vfn/suzanne.obj");
+    meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj");
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
     shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow_cheap.frag");
 
