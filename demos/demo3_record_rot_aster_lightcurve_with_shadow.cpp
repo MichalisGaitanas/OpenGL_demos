@@ -12,7 +12,11 @@
 class file_inputs
 {
 public:
-
+    int win_width, win_height;
+    int shadow_tex_reso;
+    float ang_vel_z;
+    float fov;
+    float dir_light_lon, dir_light_lat;
 };
 
 const float PI = glm::pi<float>();
@@ -20,7 +24,7 @@ const float PI = glm::pi<float>();
 unsigned int fbo_depth, tex_depth; //IDs to hold the depth fbo and the depth texture (shadow map).
 unsigned int fbo_lightcurve, rbo_lightcurve, tex_lightcurve; //IDs to hold the fbo, renderbuffer, and texture of the lightcurve.
 
-bool find_file_assignment_operator(FILE *fp)
+bool find_assignment_operator(FILE *fp)
 {
     int c = fgetc(fp);
     while (c != EOF)
@@ -179,7 +183,7 @@ int main()
     shad_dir_light_with_shadow.set_vec3_uniform("light_dir", light_dir);
 
     //Lightcure data.
-    float t0 = 0.0f, tmax = 1000.0f, dt = 0.1f;
+    float t0 = 0.0f, tmax = 1000.0f, dt = 1.0f;
     size_t i = 0;
     size_t sz = static_cast<size_t>((tmax - t0) / dt) + 1;
     std::vector<float> time_vector(sz); //[sec]

@@ -1,19 +1,13 @@
 Input file for demo3_record_rot_aster_lightcurve_with_shadow.cpp
 
-cam_with := 500
-cam_height := 500
+camera with in pixels := 500
+camera height in pixels := 500
 
-shadow image reolution := 2048
+shadow image resolution := 2048
 
-aster_ang_vel := 0.078539
-M2 := 0.522984
-Body 1 semi-axes[km]
-a1 := 63.5
-b1 := 58.5    
- 
-         
+asteroid angular velocity := 0.078539 (pi/40)
 
-c1 := 49.0
-exists := 0
+camera fov := 0.78539 (pi/4)
 
-t =: 35
+light longitude angle := 0
+light latitude angle := 1.1
