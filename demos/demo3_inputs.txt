@@ -1,13 +1,20 @@
 Input file for demo3_record_rot_aster_lightcurve_with_shadow.cpp
 
-camera with in pixels := 500
-camera height in pixels := 500
+obj filename := "../obj/vfn/asteroids/gerasimenko256k.obj" Make sure that your obj shape is a manifold geometry!
 
-shadow image resolution := 2048
+light longitude := 0.0 [deg] (Make sure it ranges in [0.0, 360.0), otherwise it is clamped.)
+light latitude  := 0.0 [deg] (Make sure it ranges in [0.0, 180.0], otherwise it is clamped.)
 
-asteroid angular velocity := 0.078539 (pi/40)
+shadow resolution := 2048 [pix]
 
-camera fov := 0.78539 (pi/4)
+camera sensor with   := 3000 [pix]
+camera sensor height := 3000 [pix]
+camera vertical fov  := 45.0 [deg]
+camera distance from the origin := 10.0 [km] (Make sure that the camera is outside the asteroid!)
+camera longitude := 0.0 [deg] (Make sure it ranges in [0.0, 360.0), otherwise it is clamped.)
+camera latitude  := 0.0 [deg] (Make sure it ranges in [0.0, 180.0], otherwise it is clamped.)
 
-light longitude angle := 0
-light latitude angle := 1.1
+asteroid angular velocity z := 0.078539 [rad/sec]
+
+simulated duration := 1000.0 [sec]
+simulated step := 1.0 [sec]

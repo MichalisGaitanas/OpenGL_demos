@@ -3,15 +3,16 @@
 #include<glm/glm.hpp>
 #include<glm/gtc/matrix_transform.hpp>
 #include<glm/gtc/type_ptr.hpp>
+
 #include<cstdio>
+#include<iostream>
 
 #include"../include/shader.h"
 #include"../include/mesh.h"
 #include"../include/lightcurve.h"
 
-class file_inputs
+struct file_inputs
 {
-public:
     int win_width, win_height;
     int shadow_tex_reso;
     float ang_vel_z;
@@ -41,34 +42,14 @@ bool find_assignment_operator(FILE *fp)
     return false;
 }
 
-/*
-
-Use as : FILE *fp = fopen("input.txt", "r");
-         if (!fp)
-             fprintf(stderr, "Failed to open file.");
-
-         file_inputs inputs;
-
-         // Read values after finding the ':=' pattern
-         if (find_assignment_pattern(fp)) fscanf(fp, "%lf", &inputs.G);
-         if (find_assignment_pattern(fp)) fscanf(fp, "%d", &inputs.count);
-
-         fclose(fp);
-
-         // Print to verify the read values
-         printf("G: %lf\n", inputs.G);
-         printf("Count: %d\n", inputs.count);
-         
-*/
-
-void setup_fbo_depth(int shadow_tex_reso_x, int shadow_tex_reso_y)
+void setup_fbo_depth(int shadow_tex_reso)
 {
     glGenFramebuffers(1, &fbo_depth);
     glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
     glGenTextures(1, &tex_depth);
     glBindTexture(GL_TEXTURE_2D, tex_depth);
     //Shadow mapping is highly sensitive to depth precision, hence the 32 bits.
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, shadow_tex_reso_x, shadow_tex_reso_y, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL); //NULL because no texture data is provided yet.
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT32F, shadow_tex_reso, shadow_tex_reso, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL); //NULL because no texture data is provided yet.
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     float border_col[] = {1.0f, 1.0f, 1.0f, 1.0f}; //Pure white that is, coz white color corresponds to maximum depth.
@@ -106,17 +87,33 @@ void setup_fbo_lightcurve(int win_width, int win_height)
 
 int main()
 {
+    file_inputs inputs;
+    FILE *fpinputs = fopen("demo3_inputs.txt","r");
+    if (!fpinputs)
+    {
+        fprintf(stderr, "Error : Inputs file was not found. Exiting...\n");
+        exit(EXIT_FAILURE);
+    }
+    //Read values after finding the ':=' operator.
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%d", &inputs.win_width);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%d", &inputs.win_height);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%d", &inputs.shadow_tex_reso);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.ang_vel_z);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.fov);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.dir_light_lon);
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.dir_light_lat);
+    fclose(fpinputs);
+
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //Hide the window.
+    glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //Hide the window. This is an off-screen rendering app.
 
-    int win_width = 800, win_height = 800;
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Off-screen rendering", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(inputs.win_width, inputs.win_height, "Off-screen rendering", NULL, NULL);
     if (window == NULL)
     {
-        printf("Failed to create glfw window. Exiting...\n");
+        fprintf(stderr, "Failed to create glfw window. Exiting...\n");
         glfwTerminate();
         return 0;
     }
@@ -125,7 +122,7 @@ int main()
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
     {
-        printf("Failed to initialize glew. Exiting...\n");
+        fprintf(stderr, "Failed to initialize glew. Exiting...\n");
         return 0;
     }
 
@@ -133,9 +130,8 @@ int main()
     glEnable(GL_CULL_FACE);
     glClearColor(0.0f,0.0f,0.0f,1.0f);
 
-    int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution. Prefer 2k. 
-    setup_fbo_depth(shadow_tex_reso_x, shadow_tex_reso_y);
-    setup_fbo_lightcurve(win_width, win_height);
+    setup_fbo_depth(inputs.shadow_tex_reso);
+    setup_fbo_lightcurve(inputs.win_width, inputs.win_height);
 
     meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj");
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
@@ -144,13 +140,12 @@ int main()
     float fc = 1.1f, fl = 1.2; //Scale factors : fc is for the ortho cube size and fl for the directional light dummy distance.
     float rmax = asteroid.get_farthest_vertex_distance(); //[km]
     float dir_light_dist = fl*rmax; //[km]
-    float ang_vel_z = PI/40.0f; //[rad/sec]
-    float fov = PI/4.0f; //[rad]
+    float ang_vel_z = inputs.ang_vel_z; //[rad/sec]
 
-    glm::mat4 projection = glm::infinitePerspective(fov, (float)win_width/win_height, 0.05f);
+    glm::mat4 projection = glm::infinitePerspective(inputs.fov, (float)inputs.win_width/(float)inputs.win_height, 0.05f);
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
 
-    float dir_light_lon = 0.0f, dir_light_lat = PI/2.0f;
+    float dir_light_lon = inputs.dir_light_lon, dir_light_lat = inputs.dir_light_lat;
     glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(dir_light_lon)*sin(dir_light_lat),
                                                    sin(dir_light_lon)*sin(dir_light_lat),
                                                    cos(dir_light_lat));
@@ -195,7 +190,7 @@ int main()
 
         //1) Render to the depth framebuffer (used later for shadowing).
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
-        glViewport(0,0, shadow_tex_reso_x,shadow_tex_reso_y);
+        glViewport(0,0, inputs.shadow_tex_reso,inputs.shadow_tex_reso);
         glClear(GL_DEPTH_BUFFER_BIT); //Only depth values exist in this framebuffer.
         shad_depth.use();
         shad_depth.set_mat4_uniform("model", model);
@@ -203,7 +198,7 @@ int main()
 
         //2) Render to the lightcurve framebuffer.
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve); //Now we have both depth and color values (unlike to the fbo_depth).
-        glViewport(0,0, win_width,win_height);
+        glViewport(0,0, inputs.win_width,inputs.win_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shad_dir_light_with_shadow.use();
         shad_dir_light_with_shadow.set_mat4_uniform("model", model);
@@ -214,16 +209,16 @@ int main()
         glBindTexture(GL_TEXTURE_2D, 0);
 
         time_vector[i] = t; //[sec]
-        brightness_vector[i] = get_brightness_gpu(tex_lightcurve, win_width, win_height);
+        brightness_vector[i] = get_brightness_gpu(tex_lightcurve, inputs.win_width, inputs.win_height);
 
         //Note : glfwSwapBuffers() is not needed because we're doing off-screen rendering. There's no need to have smooth frame transistions or sth...
         //Also glfwPollEvents() is not needed as well coz there's no any user input or window events. This is not an interactive simulation...
     }
 
-    FILE *fp = fopen("lightcurve.txt","w");
+    FILE *fplightcurve = fopen("lightcurve.txt","w");
     for (size_t i = 0; i < sz; ++i)
-        fprintf(fp,"%f  %f\n",time_vector[i], brightness_vector[i]);
-    fclose(fp);
+        fprintf(fplightcurve,"%f  %f\n",time_vector[i], brightness_vector[i]);
+    fclose(fplightcurve);
 
     glfwTerminate();
     return 0;
