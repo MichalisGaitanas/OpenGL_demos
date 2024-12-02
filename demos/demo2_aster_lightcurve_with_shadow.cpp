@@ -17,7 +17,7 @@
 
 const float PI = glm::pi<float>();
 
-int win_width = 1920, win_height = 1080;
+int win_width = 500, win_height = 500;
 
 const int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution.
 
@@ -108,7 +108,6 @@ int main()
     glfwSetWindowSizeLimits(window, 400, 400, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    //glfwGetWindowSize(window, &win_width, &win_height);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)

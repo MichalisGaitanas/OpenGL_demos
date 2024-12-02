@@ -1,20 +1,38 @@
 Input file for demo3_record_rot_aster_lightcurve_with_shadow.cpp
 
-obj filename := "../obj/vfn/asteroids/gerasimenko256k.obj" Make sure that your obj shape is a manifold geometry!
 
-light longitude := 0.0 [deg] (Make sure it ranges in [0.0, 360.0), otherwise it is clamped.)
-light latitude  := 0.0 [deg] (Make sure it ranges in [0.0, 180.0], otherwise it is clamped.)
+
+light longitude := 0.0 [deg] 
+light latitude  := 0.0 [deg]
 
 shadow resolution := 2048 [pix]
 
-camera sensor with   := 3000 [pix]
-camera sensor height := 3000 [pix]
+camera sensor with   := 500 [pix]
+camera sensor height := 500 [pix]
 camera vertical fov  := 45.0 [deg]
-camera distance from the origin := 10.0 [km] (Make sure that the camera is outside the asteroid!)
-camera longitude := 0.0 [deg] (Make sure it ranges in [0.0, 360.0), otherwise it is clamped.)
-camera latitude  := 0.0 [deg] (Make sure it ranges in [0.0, 180.0], otherwise it is clamped.)
+camera distance from the tagret := 10.0 [km] 
+camera longitude := 0.0 [deg]
+camera latitude  := 0.0 [deg]
 
-asteroid angular velocity z := 0.078539 [rad/sec]
+asteroid (constant) rotation axis := 3
+asteroid angular velocity := 0.078539 [rad/sec]
 
 simulated duration := 1000.0 [sec]
 simulated step := 1.0 [sec]
+
+
+Notes :
+
+1)  The obj shape must be a manifold geometry. The higher the resolution (triangles), the higher the computational cost.
+2)  The light longitude must range in [0, 360).
+3)  The light latitude must range in [0, 180].
+4)  The shadow resolution must be a positive integer, preferably a power of 2 (e.g. 2^9 = 512, 2^10 = 1024, etc...). The higher the value, the higher the computational cost.
+5)  The camera sensor size (width and height) must be positive integers. The higher the values, the higher the computational cost.
+6)  The camera (vertical) field of view (fov) must be a positive real number in [1, 175]. Avoid the limits because they result in a very distorted view.
+7)  The camera distance from the target must be set, such that it is located outside the target's surface for obvious reasons... The Brillouin sphere is used as a metric to display a warning to the user if they place the camera inside.
+8)  The camera longitude must range in [0, 360).
+9)  The camera latitude must range in [0, 180].
+10) The asteroid rotation axis is constant and must be either 1, 2 or 3, corresponding to rotation around either x, y or z.
+11) The asteroid angular velocity must be a real number.
+12) The simulated duration must be a positive real number.
+13) The simulated step must be a positive real number.

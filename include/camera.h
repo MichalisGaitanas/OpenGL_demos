@@ -108,8 +108,8 @@ public:
         //Set bounds to the fov.
         if (fov <= 1.0f)
             fov = 1.0f;
-        else if (fov >= 150.0f)
-            fov = 150.0f; //This will cause a very distorted view.
+        else if (fov >= 175.0f)
+            fov = 175.0f; //This will cause a very distorted view.
     }
 
     void update_local_vectors()
