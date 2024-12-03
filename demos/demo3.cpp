@@ -17,7 +17,7 @@
 
 const float PI = glm::pi<float>();
 
-int win_width = 1920, win_height = 1080;
+int win_width = 1000, win_height = 1000;
 
 const int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution.
 
@@ -89,14 +89,24 @@ void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
     setup_fbo_lightcurve(w,h); //Re-setup the lightcurve framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
+void glfw_center_window(GLFWwindow *win)
+{
+    GLFWmonitor *monitor = glfwGetPrimaryMonitor();
+    const GLFWvidmode *mode = glfwGetVideoMode(monitor);
+    glfwGetWindowSize(win, &win_width, &win_height);
+    int centx = (mode->width - win_width)/2;
+    int centy = (mode->height - win_height)/2;
+    glfwSetWindowPos(win, centx, centy);
+}
+
 int main()
 {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_SAMPLES, 4);
-    glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    //glfwWindowHint(GLFW_SAMPLES, 4);
+    //glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
     GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Asteroid rotational lightcurve (with shadow)", NULL, NULL);
     if (window == NULL)
     {
@@ -107,7 +117,8 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    glfwGetWindowSize(window, &win_width, &win_height);
+    //glfwGetWindowSize(window, &win_width, &win_height);
+    glfw_center_window(window);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -116,9 +127,9 @@ int main()
         return 0;
     }
 
-    meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj");
+    meshvfn asteroid("../obj/vfn/asteroids/kleopatra4k.obj");
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
-    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow.frag");
+    shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow_cheap.frag");
 
     setup_fbo_depth();
     setup_fbo_lightcurve(win_width, win_height);
@@ -138,16 +149,10 @@ int main()
     imstyle.FrameRounding = 5.0f;
     imstyle.WindowRounding = 5.0f;
 
-    glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f);
-    glm::vec3 light_col = glm::vec3(1.0f,1.0f,1.0f);
-    shad_dir_light_with_shadow.use();
-    shad_dir_light_with_shadow.set_vec3_uniform("mesh_col", mesh_col);
-    shad_dir_light_with_shadow.set_vec3_uniform("light_col", light_col);
-
     float fc = 1.1f, fl = 1.2; //Scale factors : fc is for the ortho cube size and fl for the directional light dummy distance.
     float rmax = asteroid.get_farthest_vertex_distance(); //[km]
     float dir_light_dist = fl*rmax; //[km]
-    float ang_vel_z = 0.0078539f; //[rad/sec]
+    float ang_vel_z = 0.0f*0.0078539f; //[rad/sec]
     float fov = 45.0f; //[deg]
     float t = 0.0f, dt = 1.0f; //[sec]
 
@@ -165,7 +170,7 @@ int main()
     {
         //Essential calculation needed for rendering :
 
-        static float dir_light_lon = 0.0f, dir_light_lat = 90.0f;
+        static float dir_light_lon = 0.0f, dir_light_lat = 0.0f;
         glm::vec3 light_dir = dir_light_dist*glm::vec3(cos(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        sin(glm::radians(dir_light_lon))*sin(glm::radians(dir_light_lat)),
                                                        cos(glm::radians(dir_light_lat)));
@@ -179,7 +184,7 @@ int main()
         glm::mat4 dir_light_pv = dir_light_projection*dir_light_view; //Directional light's projection*view (total) matrix.
 
         glm::mat4 projection = glm::infinitePerspective(glm::radians(fov), (float)win_width/win_height, 0.05f);
-        static float cam_dist = 5.0f*rmax, cam_lon = 270.0f, cam_lat = 90.0f;
+        static float cam_dist = 5.0f*rmax, cam_lon = 0.0f, cam_lat = 00.0f;
         glm::vec3 cam_pos = cam_dist*glm::vec3(cos(glm::radians(cam_lon))*sin(glm::radians(cam_lat)),
                                                sin(glm::radians(cam_lon))*sin(glm::radians(cam_lat)),
                                                cos(glm::radians(cam_lat)));
@@ -232,7 +237,7 @@ int main()
             brightness_vector.push_back(get_brightness_gpu(tex_lightcurve, win_width, win_height));
 
         t += dt; //[sec]
-        if (time_vector.size() > 4000)
+        if (time_vector.size() > 5000)
         {
             time_vector.erase(time_vector.begin());
             brightness_vector.erase(brightness_vector.begin());
@@ -275,7 +280,7 @@ int main()
         {
             ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
             ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t-1000.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
+            ImPlot::SetupAxisLimits(ImAxis_X1, t-4000.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
             ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
             ImPlot::PopStyleColor();
             ImPlot::EndPlot();

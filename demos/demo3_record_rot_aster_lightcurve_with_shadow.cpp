@@ -5,7 +5,6 @@
 #include<glm/gtc/type_ptr.hpp>
 
 #include<cstdio>
-#include<iostream>
 
 #include"../include/shader.h"
 #include"../include/mesh.h"
@@ -61,7 +60,7 @@ void setup_fbo_depth(int shadow_tex_reso)
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, border_col);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, tex_depth, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fprintf(stderr, "Shadow framebuffer is not completed!\n");
+        fprintf(stderr, "Depth framebuffer is not completed!\n");
     glDrawBuffer(GL_NONE);
     glReadBuffer(GL_NONE);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -123,7 +122,7 @@ int main()
         fprintf(stderr, "Invalid light latitude. Exiting...\n");
         exit(EXIT_FAILURE);
     }
-    if (inputs.shadow_tex_reso < 1) //It makes no sense to assign very few pixels to the depth map though, so go for at least 1024...
+    if (inputs.shadow_tex_reso < 1)
     {
         fprintf(stderr, "Invalid shadow resolution. Exiting...\n");
         exit(EXIT_FAILURE);
@@ -138,8 +137,8 @@ int main()
         fprintf(stderr, "Invalid camera vertical fov. Exiting...\n");
         exit(EXIT_FAILURE);
     }
-    //Regarding the camera distance input, we cannot check its validity. First we need to load the shape file to compute the farthest vertex (Brillouin radius).
-    //This requires the gl* initializations because the constructor of the meshvfn class automatically calls some functions that first require the intialization ones. 
+    //Regarding the camera distance input, we cannot check its validity now. First we need to load the shape file to compute the farthest vertex (Brillouin radius).
+    //This requires the gl* initializations because the constructor of the meshvfn class automatically calls some functions that first require the intialization ones (I guess via glew).
     if (inputs.cam_lon < 0.0f || inputs.cam_lon >= 360.0f)
     {
         fprintf(stderr, "Invalid camera longitude. Exiting...\n");
@@ -170,6 +169,7 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_SAMPLES, 8);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //Hide the window. This is an off-screen rendering app.
 
     GLFWwindow *window = glfwCreateWindow(inputs.win_width, inputs.win_height, "Off-screen rendering", NULL, NULL);
@@ -195,7 +195,7 @@ int main()
     setup_fbo_depth(inputs.shadow_tex_reso);
     setup_fbo_lightcurve(inputs.win_width, inputs.win_height);
 
-    meshvfn asteroid("../obj/vfn/asteroids/gerasimenko256k.obj"); //obj filename := "../obj/vfn/asteroids/gerasimenko256k.obj" 
+    meshvfn asteroid("../obj/vfn/asteroids/kleopatra4k.obj"); //obj filename := "../obj/vfn/asteroids/gerasimenko256k.obj" 
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
     shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow_cheap.frag");
 
@@ -204,7 +204,7 @@ int main()
     float dir_light_dist = fl*rmax; //[km]
     if (inputs.cam_dist <= dir_light_dist)
     {
-        fprintf(stderr, "Bad camera distance (inside the Brillouin shpere of the obj shape). Exiting...");
+        fprintf(stderr, "Invalid camera distance (too close to the obj shape). Exiting...");
         exit(EXIT_FAILURE);
     }
 
