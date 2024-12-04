@@ -5,6 +5,7 @@
 #include<glm/gtc/type_ptr.hpp>
 
 #include<cstdio>
+#include<iostream>
 
 #include"../include/shader.h"
 #include"../include/mesh.h"
@@ -17,6 +18,7 @@ unsigned int fbo_lightcurve, rbo_lightcurve, tex_lightcurve; //IDs to hold the f
 
 struct file_inputs
 {
+    char filename[256];
     float dir_light_lon, dir_light_lat;
     int shadow_tex_reso;
     int win_width, win_height;
@@ -97,6 +99,7 @@ int main()
         exit(EXIT_FAILURE);
     }
     //Read one value at a time, after finding the ':=' operator.
+    if (find_assignment_operator(fpinputs)) fscanf(fpinputs, " \"%[^\"]\"", inputs.filename);
     if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.dir_light_lon);
     if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%f", &inputs.dir_light_lat);
     if (find_assignment_operator(fpinputs)) fscanf(fpinputs, "%d", &inputs.shadow_tex_reso);
@@ -169,7 +172,6 @@ int main()
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 5);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    //glfwWindowHint(GLFW_SAMPLES, 8);
     glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); //Hide the window. This is an off-screen rendering app.
 
     GLFWwindow *window = glfwCreateWindow(inputs.win_width, inputs.win_height, "Off-screen rendering", NULL, NULL);
@@ -195,7 +197,7 @@ int main()
     setup_fbo_depth(inputs.shadow_tex_reso);
     setup_fbo_lightcurve(inputs.win_width, inputs.win_height);
 
-    meshvfn asteroid("../obj/vfn/asteroids/kleopatra4k.obj"); //obj filename := "../obj/vfn/asteroids/gerasimenko256k.obj" 
+    meshvfn asteroid(inputs.filename); //The validity of the filename is being checked in the constructor of meshvfn.
     shader shad_depth("../shaders/vertex/trans_dir_light_mvp.vert","../shaders/fragment/nothing.frag");
     shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow_cheap.frag");
 
@@ -204,7 +206,7 @@ int main()
     float dir_light_dist = fl*rmax; //[km]
     if (inputs.cam_dist <= dir_light_dist)
     {
-        fprintf(stderr, "Invalid camera distance (too close to the obj shape). Exiting...");
+        fprintf(stderr, "Invalid camera distance (too close to the body). Exiting...");
         exit(EXIT_FAILURE);
     }
 
@@ -255,11 +257,12 @@ int main()
     else //Only z remains...
         axis = glm::vec3(0.0f,0.0f,1.0f); //Around z.
     
+    printf("Calculating lightcurve...\n");
     for (float t = 0.0f; t <= inputs.tmax; t += inputs.dt, ++i)
     {
         glm::mat4 model = glm::rotate(glm::mat4(1.0f), inputs.ang_vel*t, axis);
 
-        //1) Render to the depth framebuffer (used later for shadowing).
+        //1) Render the scene to the depth framebuffer (used later for shadowing).
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
         glViewport(0,0, inputs.shadow_tex_reso,inputs.shadow_tex_reso);
         glClear(GL_DEPTH_BUFFER_BIT); //Only depth values exist in this framebuffer.
@@ -267,7 +270,7 @@ int main()
         shad_depth.set_mat4_uniform("model", model);
         asteroid.draw_triangles();
 
-        //2) Render to the lightcurve framebuffer.
+        //2) Render the scene to the lightcurve framebuffer.
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve); //Now we have both depth and color values (unlike to the fbo_depth).
         glViewport(0,0, inputs.win_width,inputs.win_height);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

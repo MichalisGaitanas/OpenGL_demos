@@ -97,6 +97,7 @@ int main()
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
+    glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
     GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Asteroid rotational lightcurve (with shadow)", NULL, NULL);
     if (window == NULL)
     {
@@ -196,6 +197,7 @@ int main()
         //1) Render to the depth framebuffer (used later for shadowing).
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_depth);
         glViewport(0,0, shadow_tex_reso_x,shadow_tex_reso_y);
+        glDisable(GL_FRAMEBUFFER_SRGB);
         glClear(GL_DEPTH_BUFFER_BIT); //Only depth values exist in this framebuffer.
         shad_depth.use();
         shad_depth.set_mat4_uniform("dir_light_pv", dir_light_pv);
@@ -205,6 +207,7 @@ int main()
         //2) Render to the lightcurve framebuffer.
         glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve); //Now we have both depth and color values (unlike to the fbo_depth).
         glViewport(0,0, win_width,win_height);
+        //glDisable(GL_FRAMEBUFFER_SRGB);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shad_dir_light_with_shadow.use();
         shad_dir_light_with_shadow.set_mat4_uniform("projection", projection);
@@ -220,6 +223,10 @@ int main()
         //3) Render to the default framebuffer (monitor window).
         glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0,0, win_width, win_height);
+        //Enable or disable sRGB gamma correction based on the imgui checkbox.
+        static bool apply_gamma_correction = false;
+        if (apply_gamma_correction)
+            glEnable(GL_FRAMEBUFFER_SRGB);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Again both depth and color values are present in this framebuffer.
         asteroid.draw_triangles();     
         glBindTexture(GL_TEXTURE_2D, 0);
@@ -256,6 +263,8 @@ int main()
         ImGui::SliderFloat("dist [km]##cam_dist", &cam_dist, 2.0f*rmax, 50.0f*rmax); //The camera distance ranges from 2 to 50 times the distance of the farthest vertex of the mesh.
         ImGui::SliderFloat("lon [deg]##cam_lon", &cam_lon, 0.0f, 360.0f);
         ImGui::SliderFloat("lat [deg]##cam_lat", &cam_lat, 0.0f, 180.0f);
+        ImGui::BulletText("Gamma correction");
+        ImGui::Checkbox("Apply", &apply_gamma_correction);
         ImGui::BulletText("Compute brightness at");
         if (ImGui::Checkbox("CPU", &lightcurve_at_cpu))
             lightcurve_at_gpu = !lightcurve_at_cpu;

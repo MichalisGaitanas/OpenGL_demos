@@ -1,24 +1,24 @@
 Input file for demo3_record_rot_aster_lightcurve_with_shadow.cpp
 
+shape path file := "../obj/vfn/asteroids/toutatis3k_radar.obj"
 
+light longitude := 270.0 [deg] 
+light latitude  := 90.0 [deg]
 
-light longitude := 233.0 [deg] 
-light latitude  := 4.0 [deg]
+shadow resolution := 1024 [pix]
 
-shadow resolution := 2048 [pix]
-
-camera sensor width  := 600 [pix]
-camera sensor height := 700 [pix]
+camera sensor width  := 500 [pix]
+camera sensor height := 500 [pix]
 camera vertical fov  := 45.0 [deg]
-camera distance from the tagret := 569.838501 [km] 
-camera longitude := 0.0 [deg]
-camera latitude  := 0.0 [deg]
+camera distance from the tagret := 50.0 [km] 
+camera longitude := 250.0 [deg]
+camera latitude  := 80.0 [deg]
 
-asteroid (constant) rotation axis := 1
-asteroid angular velocity := 0.0078539 [rad/sec]
+asteroid (constant) rotation axis := 3
+asteroid angular velocity := 0.01 [rad/sec]
 
-simulated duration := 1000.0 [sec]
-simulated step := 1.0 [sec]
+simulated duration := 3600.0 [sec]
+simulated step := 4.0 [sec]
 
 
 Notes :
