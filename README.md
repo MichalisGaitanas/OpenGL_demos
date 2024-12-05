@@ -36,7 +36,7 @@ It is a good idea to (pre)compile it as a static library, so that you don't have
 
 Compile as a static library : Navigate to the imgui folder and then, in the cmd write :
 a) g++ -c *.cpp
-b) ar rcs libimgui.a *o
+b) ar rcs libimgui.a *.o
 Library is created.
 Then, for every new code : g++ example.cpp -o example.exe -L (PATH_TO_OPENGL_DEMOS)\imgui -limgui -lopengl32 -lglfw3 -lglew32
 
