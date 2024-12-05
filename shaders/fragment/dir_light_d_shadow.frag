@@ -54,7 +54,7 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
     //We try to fix the acne via depth bias and the sharp edges via a smoothing algorithm.
 
     //Shadow acne fix : This is basically an effort to balance shadow acne (self shadowing) and Peter-shitty-Panning. Find your balance.
-    float min_bias = 0.0006f, amplifier = 0.006f;
+    float min_bias = 0.0007f, amplifier = 0.007f;
     float bias = max(amplifier*(1.0f - max(dot(norm, light_dir_norm), 0.0f)), min_bias);
 
     vec2 texel_size = 1.0f/textureSize(sample_shadow, 0);
@@ -83,5 +83,5 @@ void main()
     //Shadow color component.
     float shadow = get_shadow(norm, light_dir_norm);
 
-    frag_col = vec4(((1.0f - shadow)*diffuse)*mesh_col*light_col, 1.0f);
+    frag_col = vec4((1.0f - shadow)*diffuse*mesh_col*light_col, 1.0f);
 }

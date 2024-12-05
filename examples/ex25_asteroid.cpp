@@ -13,16 +13,14 @@
 
 #include"../include/shader.h"
 #include"../include/mesh.h"
-#include"../include/lightcurve.h"
 
 const float PI = glm::pi<float>();
 
 int win_width = 1920, win_height = 1080;
 
-const int shadow_tex_reso_x = 2048, shadow_tex_reso_y = 2048; //Shadow image resolution.
+const int shadow_tex_reso_x = 4096, shadow_tex_reso_y = 4096; //Shadow image resolution.
 
 unsigned int fbo_depth, tex_depth; //IDs to hold the depth fbo and the depth texture (shadow map).
-unsigned int fbo_lightcurve, rbo_lightcurve, tex_lightcurve; //IDs to hold the fbo, renderbuffer, and texture of the lightcurve.
 
 void setup_fbo_depth()
 {
@@ -47,32 +45,6 @@ void setup_fbo_depth()
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
-void setup_fbo_lightcurve(int width_pix, int height_pix)
-{
-    if (fbo_lightcurve)
-    {
-        glDeleteFramebuffers(1, &fbo_lightcurve);
-        glDeleteTextures(1, &tex_lightcurve);
-        glDeleteRenderbuffers(1, &rbo_lightcurve);
-    }
-    glGenFramebuffers(1, &fbo_lightcurve);
-    glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve);
-    glGenTextures(1, &tex_lightcurve);
-    glBindTexture(GL_TEXTURE_2D, tex_lightcurve);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width_pix, height_pix, 0, GL_RED, GL_FLOAT, NULL); //Grayscale values only (red channel only that is).
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex_lightcurve, 0);
-    glGenRenderbuffers(1, &rbo_lightcurve);
-    glBindRenderbuffer(GL_RENDERBUFFER, rbo_lightcurve);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT24, width_pix, height_pix);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, rbo_lightcurve);
-    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-        fprintf(stderr, "Lightcurve framebuffer is not completed!\n");
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
 void key_callback(GLFWwindow *window, int key, int /*scancode*/, int action, int /*mods*/)
 {
     if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE)
@@ -86,7 +58,6 @@ void framebuffer_size_callback(GLFWwindow */*win*/, int w, int h)
     win_width = w;
     win_height = h;
     glViewport(0,0,w,h);
-    setup_fbo_lightcurve(w,h); //Re-setup the lightcurve framebuffer. This basically guarantees the re-creation of the texture and renderbuffer with new size.
 }
 
 int main()
@@ -98,7 +69,7 @@ int main()
     glfwWindowHint(GLFW_SAMPLES, 4);
     glfwWindowHint(GLFW_MAXIMIZED, GLFW_TRUE);
     glfwWindowHint(GLFW_SRGB_CAPABLE, GLFW_TRUE);
-    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Asteroid rotational lightcurve (with shadow)", NULL, NULL);
+    GLFWwindow *window = glfwCreateWindow(win_width, win_height, "Asteroid rendering", NULL, NULL);
     if (window == NULL)
     {
         printf("Failed to create glfw window. Exiting...\n");
@@ -108,7 +79,7 @@ int main()
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
     glfwSetKeyCallback(window, key_callback);
-    glfwGetWindowSize(window, &win_width, &win_height);
+    //glfwGetWindowSize(window, &win_width, &win_height);
 
     glewExperimental = GL_TRUE;
     if (glewInit() != GLEW_OK)
@@ -122,11 +93,9 @@ int main()
     shader shad_dir_light_with_shadow("../shaders/vertex/trans_mvpn_shadow.vert","../shaders/fragment/dir_light_d_shadow.frag");
 
     setup_fbo_depth();
-    setup_fbo_lightcurve(win_width, win_height);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImPlot::CreateContext();
     ImGuiIO &io = ImGui::GetIO();
     io.IniFilename = NULL;
     io.Fonts->AddFontFromFileTTF("../fonts/Arial.ttf", 15.0f);
@@ -148,15 +117,10 @@ int main()
     float fc = 1.1f, fl = 1.2; //Scale factors : fc is for the ortho cube size and fl for the directional light dummy distance.
     float rmax = asteroid.get_farthest_vertex_distance(); //[km]
     float dir_light_dist = fl*rmax; //[km]
-    float ang_vel_z = 0.0078539f; //[rad/sec]
     float fov = 45.0f; //[deg]
     float t = 0.0f, dt = 1.0f; //[sec]
 
     glm::mat4 dir_light_projection = glm::ortho(-fc*rmax,fc*rmax, -fc*rmax,fc*rmax, (fl-fc)*rmax, 2.0f*fc*rmax); //Precomputed.
-
-    //Lightcure data.
-    std::vector<float> time_vector; //[sec]
-    std::vector<float> brightness_vector;
 
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -190,7 +154,7 @@ int main()
                                      -sin(glm::radians(cam_lat)));
         glm::mat4 view = glm::lookAt(cam_pos, glm::vec3(0.0f), cam_up);
 
-        glm::mat4 model = glm::rotate(glm::mat4(1.0f), ang_vel_z*t, glm::vec3(0.0f,0.0f,1.0f));
+        glm::mat4 model = glm::rotate(glm::mat4(1.0f), 0.1f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
 
         //Now we render :
 
@@ -204,10 +168,12 @@ int main()
         shad_depth.set_mat4_uniform("model", model);
         asteroid.draw_triangles();
 
-        //2) Render to the lightcurve framebuffer.
-        glBindFramebuffer(GL_FRAMEBUFFER, fbo_lightcurve); //Now we have both depth and color values (unlike to the fbo_depth).
+        //2) Render to the default framebuffer (monitor).
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
         glViewport(0,0, win_width,win_height);
-        //glDisable(GL_FRAMEBUFFER_SRGB);
+        static bool apply_gamma_correction = false;
+        if (apply_gamma_correction)
+            glEnable(GL_FRAMEBUFFER_SRGB);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shad_dir_light_with_shadow.use();
         shad_dir_light_with_shadow.set_mat4_uniform("projection", projection);
@@ -218,32 +184,10 @@ int main()
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, tex_depth);
         shad_dir_light_with_shadow.set_int_uniform("sample_shadow", 0);
-        asteroid.draw_triangles();
-
-        //3) Render to the default framebuffer (monitor window).
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        glViewport(0,0, win_width, win_height);
-        //Enable or disable sRGB gamma correction based on the imgui checkbox.
-        static bool apply_gamma_correction = false;
-        if (apply_gamma_correction)
-            glEnable(GL_FRAMEBUFFER_SRGB);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); //Again both depth and color values are present in this framebuffer.
-        asteroid.draw_triangles();     
+        asteroid.draw_triangles();   
         glBindTexture(GL_TEXTURE_2D, 0);
 
-        time_vector.push_back(t); //[sec]
-        static bool lightcurve_at_cpu = true, lightcurve_at_gpu = false;
-        if (lightcurve_at_cpu)
-            brightness_vector.push_back(get_brightness_cpu(tex_lightcurve, win_width, win_height));
-        else //At gpu.
-            brightness_vector.push_back(get_brightness_gpu(tex_lightcurve, win_width, win_height));
-
         t += dt; //[sec]
-        if (time_vector.size() > 4000)
-        {
-            time_vector.erase(time_vector.begin());
-            brightness_vector.erase(brightness_vector.begin());
-        }
 
         //Render GUI :   
 
@@ -265,30 +209,8 @@ int main()
         ImGui::SliderFloat("lat [deg]##cam_lat", &cam_lat, 0.0f, 180.0f);
         ImGui::BulletText("Gamma correction");
         ImGui::Checkbox("Apply", &apply_gamma_correction);
-        ImGui::BulletText("Compute brightness at");
-        if (ImGui::Checkbox("CPU", &lightcurve_at_cpu))
-            lightcurve_at_gpu = !lightcurve_at_cpu;
-        ImGui::SameLine();
-        if (ImGui::Checkbox("GPU", &lightcurve_at_gpu))
-            lightcurve_at_cpu = !lightcurve_at_gpu;
-
         ImGui::BulletText("Performance");
         ImGui::Text("FPS : [%.0f] ",ImGui::GetIO().Framerate);
-        ImGui::End();
-
-        ImGui::SetNextWindowPos(ImVec2(0.0f, 5.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::SetNextWindowSize(ImVec2(5.0f*ImGui::GetIO().DisplaySize.x/7.0f, 1.5f*ImGui::GetIO().DisplaySize.y/7.0f), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Real-time lightcurve", nullptr);
-        ImVec2 plot_win_size = ImVec2(ImGui::GetWindowSize().x - 20.0f, ImGui::GetWindowSize().y - 40.0f);
-        if (ImPlot::BeginPlot("Lightcurve", plot_win_size))
-        {
-            ImPlot::PushStyleColor(ImPlotCol_Line, ImVec4(0.75f, 0.0f, 0.0f, 1.0f)); //Red color for the lightcurve.
-            ImPlot::SetupAxes("Time [sec]", "Brightness [norm]");
-            ImPlot::SetupAxisLimits(ImAxis_X1, t-1000.0f, t, ImGuiCond_Always); //Automatically scroll with time along the t-axis.
-            ImPlot::PlotLine("", time_vector.data(), brightness_vector.data(), time_vector.size());
-            ImPlot::PopStyleColor();
-            ImPlot::EndPlot();
-        }
         ImGui::End();
 
         ImGui::Render();
@@ -300,7 +222,6 @@ int main()
 
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
-    ImPlot::DestroyContext();
     ImGui::DestroyContext();
 
     glfwTerminate();
