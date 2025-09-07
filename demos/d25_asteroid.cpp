@@ -13,8 +13,6 @@
 #include"../include/shader.h"
 #include"../include/mesh.h"
 
-const float PI = glm::pi<float>();
-
 int win_width = 1920, win_height = 1080;
 
 const int shadow_tex_reso_x = 4096, shadow_tex_reso_y = 4096; //Shadow image resolution.

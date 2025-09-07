@@ -100,6 +100,13 @@ public:
 
     //The following member functions are used to pass uniform variables to the shaders from the main code.
     
+    //Pass to the currently active shader 1 bool (uniform).
+    void set_bool_uniform(const std::string &name, bool value)
+    {
+        unsigned location = glGetUniformLocation(ID, name.c_str());
+        glUniform1i(location, value);
+    }
+
     //Pass to the currently active shader 1 int (uniform).
     void set_int_uniform(const std::string &name, int value)
     {
