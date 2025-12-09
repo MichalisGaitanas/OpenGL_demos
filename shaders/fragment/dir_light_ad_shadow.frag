@@ -41,7 +41,7 @@ float get_shadow(vec3 norm, vec3 light_dir_norm)
     
     //For any fragment that is outside the orthographic frustum, don't calculate shadow.
     if (projected_coords.x < 0.0f || projected_coords.x > 1.0f ||
-        projected_coords.y < 0.0f || projected_coords.x > 1.0f ||
+        projected_coords.y < 0.0f || projected_coords.y > 1.0f ||
         projected_coords.z > 1.0f)
     {
         return 0.0f; //No shadow. Fully lit.
