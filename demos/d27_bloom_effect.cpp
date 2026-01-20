@@ -54,7 +54,7 @@ void setup_buffers(int w, int h)
     //Ping :
     glGenFramebuffers(1, &ping_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, ping_fbo);
-    ping_tex = create_rgba16f_tex(w,h);
+    ping_tex = create_rgba16f_tex(w/4,h/4);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, ping_tex, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fprintf(stderr, "Ping fbo is not completed!\n");
@@ -62,7 +62,7 @@ void setup_buffers(int w, int h)
     //Pong :
     glGenFramebuffers(1, &pong_fbo);
     glBindFramebuffer(GL_FRAMEBUFFER, pong_fbo);
-    pong_tex = create_rgba16f_tex(w,h);
+    pong_tex = create_rgba16f_tex(w/4,h/4);
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, pong_tex, 0);
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
         fprintf(stderr, "Pong fbo is not completed!\n");
@@ -113,7 +113,7 @@ int main()
         return 0;
     }
 
-    meshvf asteroid("../obj/vf/didymain2019.obj");
+    meshvf asteroid("../obj/vf/uv_sphere_rad1_40x40.obj");
     quadtex screen_quad;
 
     shader sh_monochromatic("../shaders/vertex/trans_mvp.vert","../shaders/fragment/bloom_monochromatic.frag");
@@ -122,8 +122,8 @@ int main()
     shader sh_composite("../shaders/vertex/trans_nothing_texture.vert","../shaders/fragment/bloom_composite.frag");
 
     //Uniforms :
-    glm::vec3 mesh_col = glm::vec3(1.0f,1.0f,1.0f);
-    float bloom_intensity = 4.0f, bloom_strength = 0.2f, bloom_threshold = 1.0f, bloom_knee = 0.5f;
+    glm::vec3 mesh_col = glm::vec3(1.0f,0.3f,0.0f);
+    float bloom_intensity = 4.0f, bloom_strength = 0.2f, bloom_threshold = 1.0f, bloom_knee = 0.5f, bloom_radius = 1.0f;
     int blur_iterations = 6;
 
     IMGUI_CHECKVERSION();
@@ -158,7 +158,8 @@ int main()
                                       cos(glm::radians(cam_lat))*sin(glm::radians(cam_lon)),
                                      -sin(glm::radians(cam_lat)));
         glm::mat4 view = glm::lookAt(cam_pos, glm::vec3(0.0f), cam_up);
-        glm::mat4 model = glm::rotate(glm::mat4(1.0f), 3.4f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        //glm::mat4 model = glm::rotate(glm::mat4(1.0f), 1.0f*(float)glfwGetTime(), glm::vec3(0.0f,0.0f,1.0f));
+        glm::mat4 model = glm::mat4(1.0f);
 
         //1) Scene -> HDR FBO
         glBindFramebuffer(GL_FRAMEBUFFER, scene_fbo);
@@ -174,7 +175,7 @@ int main()
 
         //2) Bright-pass (scene -> ping)
         glBindFramebuffer(GL_FRAMEBUFFER, ping_fbo);
-        glViewport(0,0, win_width, win_height);
+        glViewport(0,0, win_width/4, win_height/4);
         glClear(GL_COLOR_BUFFER_BIT);
         sh_bright.use();
         sh_bright.set_int_uniform("scene", 0);
@@ -191,8 +192,10 @@ int main()
         for (int i = 0; i < blur_iterations; ++i)
         {
             glBindFramebuffer(GL_FRAMEBUFFER, horizontal ? pong_fbo : ping_fbo);
+            glViewport(0,0, win_width/4, win_height/4);
             glClear(GL_COLOR_BUFFER_BIT);
             sh_blur.set_bool_uniform("horizontal", horizontal);
+            sh_blur.set_float_uniform("bloom_radius", bloom_radius);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, horizontal ? ping_tex : pong_tex);
             screen_quad.draw_triangles(horizontal ? ping_tex : pong_tex);
@@ -236,6 +239,7 @@ int main()
         ImGui::SliderFloat("thresh ##bloom_threshold", &bloom_threshold, 0.0f, 5.0f);
         ImGui::SliderFloat("knee ##bloom_knee", &bloom_knee, 0.0f, 2.0f); 
         ImGui::SliderFloat("strength ##bloom_strength", &bloom_strength, 0.0f, 2.0f);
+        ImGui::SliderFloat("radius ##bloom_radius", &bloom_radius, 1.0f, 8.0f);
         ImGui::SliderInt("iter ##blur_iterations", &blur_iterations, 1, 12); 
         ImGui::Text("FPS : [%.0f] ",ImGui::GetIO().Framerate);
         ImGui::End();
